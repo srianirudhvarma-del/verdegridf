@@ -13,7 +13,7 @@ from typing import Callable
 
 from pydantic import BaseModel
 
-from shared.classification import WorkloadClassificationStore
+from shared.classification import WorkloadClassificationStore, classification_store
 from shared.contracts import ThermalHeadroom
 
 # ---------------------------------------------------------------------------
@@ -112,7 +112,7 @@ def suggest_deferrable(vm_name: str) -> bool:
 
 def filter_consolidation_candidates(
     vm_ids: list[str],
-    store: WorkloadClassificationStore,
+    store: WorkloadClassificationStore = classification_store,
 ) -> list[str]:
     """
     Hard filter: any VM without classification == "deferrable" (including

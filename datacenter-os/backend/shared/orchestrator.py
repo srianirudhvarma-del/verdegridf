@@ -25,7 +25,10 @@ from carbonclock.scheduler import SchedulingDecision, SchedulingPool, schedule_d
 from idlehunter.consolidation import filter_targets_by_thermal_headroom
 from idlehunter.power import DwellStateMachine, HostState
 from idlehunter.telemetry import IdleHunterTelemetry
-from shared.contracts import CapacityForecast, ThermalHeadroom
+from lightspeed.flow import Flow
+from lightspeed.routing import IpToVmLookup, auto_tag_latency_sensitivity
+from shared.classification import WorkloadClassificationStore, classification_store
+from shared.contracts import CapacityForecast, ThermalHeadroom, WorkloadTag
 from shared.eventbus import EventBus, event_bus
 from thermaltrace.model import IdleHunterRackReading, ThermalFeatureVector, build_feature_vector
 from thermaltrace.sensors import ThermalTelemetry
@@ -310,3 +313,54 @@ def compute_rack_cooling_performance(
     flow_l_per_s = waterwatch_telemetry.current(rack_id)["flow_rate"] * _LITERS_PER_HOUR_TO_LITERS_PER_SECOND
     t_return_c = thermal_telemetry.current(rack_id)["temperature"]
     return cooling_performance(flow_l_per_s, t_return_c, supply_temp_celsius)
+
+
+# ---------------------------------------------------------------------------
+# Dependency 7: IdleHunter -> LightSpeed (workload classification for
+# reroute safety)
+# ---------------------------------------------------------------------------
+
+
+def apply_operator_classification(
+    vm_id: str,
+    classification: str,
+    *,
+    max_delay_minutes: Optional[int] = None,
+    source: str = "operator",
+    store: WorkloadClassificationStore = classification_store,
+    timestamp: Optional[str] = None,
+) -> WorkloadTag:
+    """
+    IdleHunter's operator-facing classification write path (methodology
+    MUST HAVE #3 step 2: "PATCH /api/idlehunter/workloads/:vmId/classification
+    (operator-only)"). This is the one production code path that actually
+    calls classification_store.set_tag() -- every consumer
+    (idlehunter.consolidation.filter_consolidation_candidates,
+    carbonclock.jobs.submit_job, lightspeed.routing's
+    resolve_latency_sensitivity/tag_latency_sensitivity) reads through the
+    exact same store this writes to.
+    """
+    tag = WorkloadTag(
+        workloadId=vm_id,
+        classification=classification,
+        maxDelayMinutes=max_delay_minutes,
+        source=source,
+        updatedAt=timestamp or _now_iso(),
+    )
+    store.set_tag(tag)
+    return tag
+
+
+def tag_flow_with_real_classification(
+    flow: Flow,
+    lookup: IpToVmLookup,
+    *,
+    store: WorkloadClassificationStore = classification_store,
+) -> Flow:
+    """
+    Calls lightspeed.routing.auto_tag_latency_sensitivity(), reading
+    through the same classification store apply_operator_classification()
+    above writes to -- the real IdleHunter -> LightSpeed link, not just
+    two functions that happen to accept the same store type.
+    """
+    return auto_tag_latency_sensitivity(flow, lookup, store=store)

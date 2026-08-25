@@ -7,8 +7,13 @@ from carbonclock.scheduler import SchedulingPool
 from idlehunter.power import DwellStateMachine, HostState
 from idlehunter.telemetry import IdleHunterTelemetry
 from shared.eventbus import EventBus
+from idlehunter.consolidation import filter_consolidation_candidates
+from lightspeed.flow import classify_flow
+from lightspeed.routing import IpToVmLookup
+from shared.classification import WorkloadClassificationStore
 from shared.orchestrator import (
     PrewakeSubscriber,
+    apply_operator_classification,
     bucket_rack_load,
     build_rack_feature_vector,
     compute_capacity_forecast,
@@ -16,6 +21,7 @@ from shared.orchestrator import (
     compute_thermal_headroom,
     filter_consolidation_targets_by_real_headroom,
     schedule_job_with_real_capacity,
+    tag_flow_with_real_classification,
 )
 from thermaltrace.sensors import ThermalTelemetry
 from waterwatch.sensors import WaterWatchTelemetry
@@ -333,3 +339,63 @@ def test_cooling_performance_changes_when_real_flow_telemetry_changes():
     after = compute_rack_cooling_performance("rack-1", waterwatch_telemetry, thermal_telemetry, supply_temp_celsius=18.0)
 
     assert after != before
+
+
+# ---------------------------------------------------------------------------
+# Dependency 7: IdleHunter -> LightSpeed (workload classification for
+# reroute safety)
+# ---------------------------------------------------------------------------
+
+
+def make_elephant_flow(src_ip):
+    now = datetime(2026, 8, 25, 0, 0, 0, tzinfo=timezone.utc)
+    return classify_flow(
+        src_ip=src_ip, dst_ip="10.0.0.9", src_port=5000, dst_port=443, proto="tcp",
+        bytes_last_interval=20 * 1024 * 1024, first_seen=now.isoformat(),
+        last_seen=(now + timedelta(seconds=30)).isoformat(),
+    )
+
+
+def test_apply_operator_classification_actually_writes_to_the_store():
+    store = WorkloadClassificationStore()
+    apply_operator_classification("vm-batch", "deferrable", max_delay_minutes=60, store=store)
+
+    assert store.is_deferrable("vm-batch") is True
+
+
+def test_idlehunter_consolidation_filter_sees_the_real_write():
+    """End-to-end: apply_operator_classification() writes to a store;
+    idlehunter.consolidation.filter_consolidation_candidates() -- the real
+    MUST HAVE #3 consumer -- reads through that exact same store."""
+    store = WorkloadClassificationStore()
+    apply_operator_classification("vm-batch", "deferrable", max_delay_minutes=60, store=store)
+    apply_operator_classification("vm-db", "protected", store=store)
+
+    candidates = filter_consolidation_candidates(["vm-batch", "vm-db", "vm-untouched"], store)
+
+    assert candidates == ["vm-batch"]
+
+
+def test_lightspeed_reads_the_same_real_classification_write():
+    """End-to-end: the exact classification apply_operator_classification()
+    writes is what tag_flow_with_real_classification() (LightSpeed's real
+    consumer) reads back through the IP->VM lookup."""
+    store = WorkloadClassificationStore()
+    apply_operator_classification("vm-batch", "deferrable", max_delay_minutes=60, store=store)
+
+    lookup = IpToVmLookup()
+    lookup.sync({"10.0.0.5": "vm-batch"})
+
+    flow = tag_flow_with_real_classification(make_elephant_flow("10.0.0.5"), lookup, store=store)
+
+    assert flow.latencySensitive is False
+
+
+def test_lightspeed_never_reroutes_a_flow_whose_owner_was_never_classified():
+    store = WorkloadClassificationStore()  # nothing written for vm-unknown
+    lookup = IpToVmLookup()
+    lookup.sync({"10.0.0.7": "vm-unknown"})
+
+    flow = tag_flow_with_real_classification(make_elephant_flow("10.0.0.7"), lookup, store=store)
+
+    assert flow.latencySensitive is True  # fail-safe-open: untagged -> protected -> latency-sensitive
