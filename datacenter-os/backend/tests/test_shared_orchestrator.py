@@ -12,11 +12,13 @@ from shared.orchestrator import (
     bucket_rack_load,
     build_rack_feature_vector,
     compute_capacity_forecast,
+    compute_rack_cooling_performance,
     compute_thermal_headroom,
     filter_consolidation_targets_by_real_headroom,
     schedule_job_with_real_capacity,
 )
 from thermaltrace.sensors import ThermalTelemetry
+from waterwatch.sensors import WaterWatchTelemetry
 
 NOW = datetime(2026, 8, 25, 0, 0, 0, tzinfo=timezone.utc)
 
@@ -291,3 +293,43 @@ def test_bucket_rack_load_raises_for_a_rack_with_no_registered_hosts():
     idlehunter_telemetry = IdleHunterTelemetry()
     with pytest.raises(ValueError):
         bucket_rack_load("rack-empty", [], idlehunter_telemetry)
+
+
+# ---------------------------------------------------------------------------
+# Dependency 6: ThermalTrace -> WaterWatch (cooling-performance estimate)
+# ---------------------------------------------------------------------------
+
+
+def test_cooling_performance_uses_real_flow_and_temperature_readings():
+    waterwatch_telemetry = WaterWatchTelemetry()
+    waterwatch_telemetry.register_loop("rack-1", seed=1)
+    waterwatch_telemetry.poll("rack-1")
+
+    thermal_telemetry = ThermalTelemetry()
+    thermal_telemetry.register_rack("rack-1", seed=1)
+    thermal_telemetry.poll("rack-1")
+
+    performance = compute_rack_cooling_performance("rack-1", waterwatch_telemetry, thermal_telemetry, supply_temp_celsius=18.0)
+
+    real_flow_l_per_s = waterwatch_telemetry.current("rack-1")["flow_rate"] / 3600.0
+    real_t_return = thermal_telemetry.current("rack-1")["temperature"]
+    expected = real_flow_l_per_s * 4.186 * (real_t_return - 18.0)
+    assert performance == pytest.approx(expected)
+
+
+def test_cooling_performance_changes_when_real_flow_telemetry_changes():
+    waterwatch_telemetry = WaterWatchTelemetry()
+    waterwatch_telemetry.register_loop("rack-1", seed=1)
+    waterwatch_telemetry.poll("rack-1")
+    thermal_telemetry = ThermalTelemetry()
+    thermal_telemetry.register_rack("rack-1", seed=1)
+    thermal_telemetry.poll("rack-1")
+
+    before = compute_rack_cooling_performance("rack-1", waterwatch_telemetry, thermal_telemetry, supply_temp_celsius=18.0)
+
+    waterwatch_telemetry.inject_anomaly("rack-1", "flow_rate", "flow_spike", magnitude=100.0, duration_ticks=1)
+    waterwatch_telemetry.poll("rack-1")
+
+    after = compute_rack_cooling_performance("rack-1", waterwatch_telemetry, thermal_telemetry, supply_temp_celsius=18.0)
+
+    assert after != before

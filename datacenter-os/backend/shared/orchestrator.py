@@ -30,6 +30,8 @@ from shared.eventbus import EventBus, event_bus
 from thermaltrace.model import IdleHunterRackReading, ThermalFeatureVector, build_feature_vector
 from thermaltrace.sensors import ThermalTelemetry
 from waterwatch.baseline import LoadBucket, bucket_utilization
+from waterwatch.cooling import cooling_performance
+from waterwatch.sensors import WaterWatchTelemetry
 
 # Same idle/active watt figures api/routes.py's mock ServerData already uses,
 # reused here to derive a power estimate from a host's real cpu utilization.
@@ -280,3 +282,31 @@ def bucket_rack_load(
         historical.extend(idlehunter_telemetry.history(host_id, "cpu", history_window))
 
     return bucket_utilization(current_avg, historical)
+
+
+# ---------------------------------------------------------------------------
+# Dependency 6: ThermalTrace -> WaterWatch (cooling-performance estimate)
+# ---------------------------------------------------------------------------
+
+# waterwatch/sensors.py's flow_rate metric, like api/routes.py's original
+# WaterFlowData mock, is in L/hr; cooling_performance() wants L/s.
+_LITERS_PER_HOUR_TO_LITERS_PER_SECOND = 1.0 / 3600.0
+
+
+def compute_rack_cooling_performance(
+    rack_id: str,
+    waterwatch_telemetry: WaterWatchTelemetry,
+    thermal_telemetry: ThermalTelemetry,
+    *,
+    supply_temp_celsius: float,
+) -> float:
+    """
+    Pulls real flow from WaterWatch's own telemetry and real T_return from
+    ThermalTrace's telemetry (rack_id must be a loop registered in both),
+    then calls waterwatch.cooling.cooling_performance() with both real
+    readings -- SHOULD HAVE #16's cross-wire, not two caller-supplied
+    floats.
+    """
+    flow_l_per_s = waterwatch_telemetry.current(rack_id)["flow_rate"] * _LITERS_PER_HOUR_TO_LITERS_PER_SECOND
+    t_return_c = thermal_telemetry.current(rack_id)["temperature"]
+    return cooling_performance(flow_l_per_s, t_return_c, supply_temp_celsius)
