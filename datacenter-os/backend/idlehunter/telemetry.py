@@ -43,3 +43,35 @@ class IdleHunterTelemetry(TelemetryAdapter):
 
     def host_ids(self) -> list[str]:
         return self._simulator.entity_ids()
+
+
+class K8sTelemetryAdapter(TelemetryAdapter):
+    """
+    SHOULD HAVE #8 -- second telemetry adapter, normalizing Kubernetes
+    metrics-server-shaped node metrics into the exact same resource keys
+    (cpu, mem, diskIO, network) as IdleHunterTelemetry, so
+    threshold.py/consolidation.py/power.py work unchanged regardless of
+    which adapter is plugged in -- adapter-agnostic by construction. No
+    real cluster access exists; this is simulator-backed like every other
+    adapter in this codebase (Phase 0 Decision #1). A real implementation
+    would poll /apis/metrics.k8s.io/v1beta1/nodes here instead.
+    """
+
+    def __init__(self, simulator: TelemetrySimulator | None = None) -> None:
+        self._simulator = simulator or TelemetrySimulator()
+
+    def register_node(self, node_id: str, *, seed: int | None = None) -> None:
+        for resource, params in RESOURCE_DEFAULTS.items():
+            self._simulator.register_metric(node_id, resource, seed=seed, **params)
+
+    def poll(self, node_id: str) -> dict[str, float]:
+        return self._simulator.sample(node_id)
+
+    def current(self, node_id: str) -> dict[str, float]:
+        return self._simulator.current(node_id)
+
+    def history(self, node_id: str, resource: str, n: int) -> list[float]:
+        return self._simulator.history(node_id, resource, n)
+
+    def node_ids(self) -> list[str]:
+        return self._simulator.entity_ids()

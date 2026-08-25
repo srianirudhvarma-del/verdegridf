@@ -4,14 +4,17 @@ idlehunter/consolidation.py
 MUST HAVE #2 -- migration-cost check before triggering a move.
 MUST HAVE #3 -- workload classification hard filter on the candidate list.
 MUST HAVE #4 -- redundancy-aware placement (minRedundancy + anti-affinity).
+SHOULD HAVE #7 -- thermal-headroom cross-wiring with ThermalTrace.
 """
 
 import re
 from dataclasses import dataclass
+from typing import Callable
 
 from pydantic import BaseModel
 
 from shared.classification import WorkloadClassificationStore
+from shared.contracts import ThermalHeadroom
 
 # ---------------------------------------------------------------------------
 # MUST HAVE #2 -- migration-cost check
@@ -180,3 +183,28 @@ def violates_anti_affinity(
             if current_placements.get(other_vm_id) == target_host:
                 return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# SHOULD HAVE #7 -- thermal-headroom cross-wiring
+# ---------------------------------------------------------------------------
+
+
+def filter_targets_by_thermal_headroom(
+    host_to_rack: dict[str, str],
+    candidate_target_hosts: list[str],
+    get_headroom: Callable[[str], ThermalHeadroom],
+) -> list[str]:
+    """
+    Before finalizing any consolidation plan, exclude any candidate target
+    host whose rack's thermal headroom status isn't "ok" for this cycle.
+    A host with no known rack mapping is left in the candidate list --
+    this check only ever removes hosts, never adds unknown ones.
+    """
+    allowed = []
+    for host_id in candidate_target_hosts:
+        rack_id = host_to_rack.get(host_id)
+        if rack_id is not None and get_headroom(rack_id).status != "ok":
+            continue
+        allowed.append(host_id)
+    return allowed
