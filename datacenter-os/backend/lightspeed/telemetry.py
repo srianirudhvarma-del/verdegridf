@@ -1,11 +1,16 @@
 """
 lightspeed/telemetry.py -- LightSpeed's per-link utilization telemetry
-source, feeding MUST HAVE #15's congestion dwell timer. The streaming
-gNMI/SNMP-fallback transport itself is SHOULD HAVE #20 (Phase 7); this
-module only needs to produce plausible per-link utilization time series,
-same pattern as every other module (shared/telemetry_sim.py, Phase 0
-Decision #1).
+source, feeding MUST HAVE #15's congestion dwell timer, same pattern as
+every other module (shared/telemetry_sim.py, Phase 0 Decision #1).
+
+SHOULD HAVE #20 -- explicit SNMP-fallback telemetry path: connect_telemetry
+tries the real streaming transport (gNMI/gRPC) first, falling back to SNMP
+polling instead of failing telemetry collection entirely when a switch
+doesn't support streaming.
 """
+
+from dataclasses import dataclass
+from typing import Callable, Literal, Optional
 
 from shared.telemetry_sim import TelemetryAdapter, TelemetrySimulator
 
@@ -33,3 +38,39 @@ class LightSpeedTelemetry(TelemetryAdapter):
 
     def link_ids(self) -> list[str]:
         return self._simulator.entity_ids()
+
+
+# ---------------------------------------------------------------------------
+# SHOULD HAVE #20 -- explicit SNMP-fallback telemetry path
+# ---------------------------------------------------------------------------
+
+DEFAULT_SNMP_POLL_INTERVAL_SECONDS = 15.0
+
+
+class UnsupportedStreamingTelemetryError(Exception):
+    """Raised by a streaming_subscribe callback when a switch doesn't support gNMI/gRPC streaming."""
+
+
+@dataclass
+class TelemetryConnection:
+    switch: str
+    mode: Literal["streaming", "snmp_fallback"]
+    pollIntervalSeconds: Optional[float] = None
+
+
+def connect_telemetry(
+    switch: str,
+    *,
+    streaming_subscribe: Callable[[str], None],
+    snmp_poll_interval_seconds: float = DEFAULT_SNMP_POLL_INTERVAL_SECONDS,
+) -> TelemetryConnection:
+    """
+    telemetryClient.connect(switch):
+        try streamingTelemetry.subscribe(switch)
+        catch (unsupported): fallback to snmpPoller.poll(switch, intervalSeconds=15)
+    """
+    try:
+        streaming_subscribe(switch)
+        return TelemetryConnection(switch=switch, mode="streaming")
+    except UnsupportedStreamingTelemetryError:
+        return TelemetryConnection(switch=switch, mode="snmp_fallback", pollIntervalSeconds=snmp_poll_interval_seconds)

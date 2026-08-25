@@ -133,3 +133,49 @@ def auto_reroute_allowed(
     if alt_path_utilization_pct is None or alt_path_utilization_pct >= alt_path_threshold_pct:
         return False
     return True
+
+
+# ---------------------------------------------------------------------------
+# SHOULD HAVE #21 -- latency-sensitivity tagging cross-wired with
+# IdleHunter, automating the IP->VM mapping this module's docstring above
+# deferred from Phase 5.
+# ---------------------------------------------------------------------------
+
+
+class IpToVmLookup:
+    """
+    Simple IP->VM lookup table, synced from the hypervisor. A real
+    implementation would sync this from vCenter/libvirt; no real
+    hypervisor access exists here, so callers populate/update the mapping
+    directly (the same adapter-boundary pattern used everywhere else in
+    this codebase).
+    """
+
+    def __init__(self) -> None:
+        self._ip_to_vm: dict[str, str] = {}
+
+    def sync(self, mapping: dict[str, str]) -> None:
+        self._ip_to_vm.update(mapping)
+
+    def lookup(self, ip: str) -> Optional[str]:
+        return self._ip_to_vm.get(ip)
+
+
+def auto_tag_latency_sensitivity(
+    flow: Flow,
+    lookup: IpToVmLookup,
+    *,
+    store: WorkloadClassificationStore = classification_store,
+) -> Flow:
+    """
+    Maps flow.srcIp to its owning VM via the IP->VM lookup table, then
+    resolves latency sensitivity through the same shared classification
+    store MUST HAVE #17's resolve_latency_sensitivity() already uses. If
+    the owning VM can't be resolved (no mapping synced yet), the flow is
+    returned unchanged -- latencySensitive stays None, never assumed
+    non-latency-sensitive just because the lookup came up empty.
+    """
+    owning_vm_id = lookup.lookup(flow.srcIp)
+    if owning_vm_id is None:
+        return flow
+    return tag_latency_sensitivity(flow, owning_vm_id, store=store)

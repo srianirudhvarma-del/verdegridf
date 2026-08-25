@@ -9,15 +9,22 @@ onRerouteExecuted(link, flow):
     startCooldown(link, flow, cooldownSeconds=300)  // no repeat reroute of
                                                       // the same flow/link
                                                       // for 5 min
+
+SHOULD HAVE #18 -- packet-loss and queue-depth telemetry are additional OR
+conditions alongside raw utilization: sustained high queue depth or packet
+loss can confirm congestion even when utilization alone looks borderline.
 """
 
 from datetime import datetime, timedelta
+from typing import Optional
 
 from lightspeed.flow import Flow
 
 DEFAULT_CONGESTION_THRESHOLD_PCT = 80.0
 DEFAULT_DWELL_TIME_SECONDS = 45.0  # methodology default range: 30-60s
 DEFAULT_COOLDOWN_SECONDS = 300.0
+DEFAULT_QUEUE_DEPTH_THRESHOLD_PACKETS = 100.0
+DEFAULT_PACKET_LOSS_THRESHOLD_PCT = 1.0
 
 FlowKey = tuple[str, str, int, int, str]
 
@@ -35,16 +42,39 @@ class CongestionTracker:
         congestion_threshold_pct: float = DEFAULT_CONGESTION_THRESHOLD_PCT,
         dwell_time_seconds: float = DEFAULT_DWELL_TIME_SECONDS,
         cooldown_seconds: float = DEFAULT_COOLDOWN_SECONDS,
+        queue_depth_threshold_packets: float = DEFAULT_QUEUE_DEPTH_THRESHOLD_PACKETS,
+        packet_loss_threshold_pct: float = DEFAULT_PACKET_LOSS_THRESHOLD_PCT,
     ) -> None:
         self.congestion_threshold_pct = congestion_threshold_pct
         self.dwell_time_seconds = dwell_time_seconds
         self.cooldown_seconds = cooldown_seconds
+        self.queue_depth_threshold_packets = queue_depth_threshold_packets
+        self.packet_loss_threshold_pct = packet_loss_threshold_pct
         self._congested_since: dict[str, datetime] = {}
         self._cooldown_expiry: dict[tuple[str, FlowKey], datetime] = {}
 
-    def observe_utilization(self, link: str, utilization_pct: float, at: datetime) -> None:
-        """Feed one utilization sample for `link`. Non-congested samples reset the dwell timer."""
-        if utilization_pct > self.congestion_threshold_pct:
+    def observe_utilization(
+        self,
+        link: str,
+        utilization_pct: float,
+        at: datetime,
+        *,
+        queue_depth: Optional[float] = None,
+        packet_loss_pct: Optional[float] = None,
+    ) -> None:
+        """
+        Feed one telemetry sample for `link`. Congested if utilization
+        alone exceeds threshold, OR (SHOULD HAVE #18) sustained queue
+        depth or packet loss exceeds its own threshold -- either signal
+        alone is enough. Non-congested samples reset the dwell timer.
+        """
+        congested = utilization_pct > self.congestion_threshold_pct
+        if queue_depth is not None and queue_depth > self.queue_depth_threshold_packets:
+            congested = True
+        if packet_loss_pct is not None and packet_loss_pct > self.packet_loss_threshold_pct:
+            congested = True
+
+        if congested:
             self._congested_since.setdefault(link, at)
         else:
             self._congested_since.pop(link, None)
