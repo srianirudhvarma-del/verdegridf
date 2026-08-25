@@ -29,6 +29,7 @@ from shared.contracts import CapacityForecast, ThermalHeadroom
 from shared.eventbus import EventBus, event_bus
 from thermaltrace.model import IdleHunterRackReading, ThermalFeatureVector, build_feature_vector
 from thermaltrace.sensors import ThermalTelemetry
+from waterwatch.baseline import LoadBucket, bucket_utilization
 
 # Same idle/active watt figures api/routes.py's mock ServerData already uses,
 # reused here to derive a power estimate from a host's real cpu utilization.
@@ -247,3 +248,35 @@ class PrewakeSubscriber:
                 machine.request_wake(reason=f"carbonclock prewake for job {payload.get('jobId')}")
                 self.actions.append((host_id, payload))
                 return
+
+
+# ---------------------------------------------------------------------------
+# Dependency 5: IdleHunter -> WaterWatch (per-rack workload signal)
+# ---------------------------------------------------------------------------
+
+
+def bucket_rack_load(
+    rack_id: str,
+    host_ids: list[str],
+    idlehunter_telemetry: IdleHunterTelemetry,
+    *,
+    history_window: int = 60,
+) -> LoadBucket:
+    """
+    Aggregates this rack's hosts' real current + historical IdleHunter cpu
+    utilization and calls waterwatch.baseline.bucket_utilization() with
+    it -- MUST HAVE #12's "bucket time into load buckets using IdleHunter's
+    per-rack utilization signal" step, fed by real telemetry instead of a
+    caller-supplied list of floats.
+    """
+    if not host_ids:
+        raise ValueError(f"no hosts registered for rack {rack_id!r}")
+
+    current_values = [idlehunter_telemetry.current(host_id)["cpu"] for host_id in host_ids]
+    current_avg = sum(current_values) / len(current_values)
+
+    historical: list[float] = []
+    for host_id in host_ids:
+        historical.extend(idlehunter_telemetry.history(host_id, "cpu", history_window))
+
+    return bucket_utilization(current_avg, historical)

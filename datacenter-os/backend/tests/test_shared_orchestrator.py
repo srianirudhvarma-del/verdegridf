@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from carbonclock.grid import HourlyForecast
 from carbonclock.scheduler import SchedulingPool
 from idlehunter.power import DwellStateMachine, HostState
@@ -7,6 +9,7 @@ from idlehunter.telemetry import IdleHunterTelemetry
 from shared.eventbus import EventBus
 from shared.orchestrator import (
     PrewakeSubscriber,
+    bucket_rack_load,
     build_rack_feature_vector,
     compute_capacity_forecast,
     compute_thermal_headroom,
@@ -252,3 +255,39 @@ def test_prewake_subscriber_wakes_a_real_standby_host_when_the_real_scheduler_pu
     assert machine.state == HostState.WAKING  # the real state machine actually transitioned
     assert len(subscriber.actions) == 1
     assert subscriber.actions[0][0] == "host-1"
+
+
+# ---------------------------------------------------------------------------
+# Dependency 5: IdleHunter -> WaterWatch (per-rack workload signal)
+# ---------------------------------------------------------------------------
+
+
+def test_bucket_rack_load_uses_real_idlehunter_history():
+    idlehunter_telemetry = IdleHunterTelemetry()
+    idlehunter_telemetry.register_host("host-1", seed=1)
+    for _ in range(65):
+        idlehunter_telemetry.poll("host-1")
+
+    bucket = bucket_rack_load("rack-1", ["host-1"], idlehunter_telemetry)
+    assert bucket in {"low", "medium", "high"}
+
+
+def test_bucket_rack_load_reflects_a_real_idle_spike():
+    """Forcing the real telemetry idle (very low cpu) should genuinely
+    bucket the rack as low, not a stubbed answer."""
+    idlehunter_telemetry = IdleHunterTelemetry()
+    idlehunter_telemetry.register_host("host-1", seed=1)
+    for _ in range(65):
+        idlehunter_telemetry.poll("host-1")
+
+    idlehunter_telemetry.inject_anomaly("host-1", "cpu", "idle_drop", magnitude=-30.0, duration_ticks=1)
+    idlehunter_telemetry.poll("host-1")
+
+    bucket = bucket_rack_load("rack-1", ["host-1"], idlehunter_telemetry)
+    assert bucket == "low"
+
+
+def test_bucket_rack_load_raises_for_a_rack_with_no_registered_hosts():
+    idlehunter_telemetry = IdleHunterTelemetry()
+    with pytest.raises(ValueError):
+        bucket_rack_load("rack-empty", [], idlehunter_telemetry)
