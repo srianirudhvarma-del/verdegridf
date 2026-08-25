@@ -1,0 +1,19 @@
+[
+  {
+    "zone_id": "aisle-a",
+    "x_coord": 2,
+    "y_coord": 5,
+    "temp_celsius": 24.5,
+    "delta_t": 3.2,
+    "status": "NORMAL"
+  },
+  {
+    "zone_id": "aisle-b",
+    "x_coord": 10,
+    "y_coord": 8,
+    "temp_celsius": 32.1,
+    "delta_t": 8.5,
+    "status": "CRITICAL",
+    "note": "Hotspot predicted by TT-LSTM-V1"
+  }
+]

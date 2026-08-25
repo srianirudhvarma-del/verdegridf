@@ -1,0 +1,23 @@
+{
+  "racks": [
+    { "id": "Rack A1", "usage": 120, "anomaly": false, "wue": 1.2 },
+    { "id": "Rack A2", "usage": 110, "anomaly": false, "wue": 1.1 },
+    { "id": "Rack B1", "usage": 150, "anomaly": true, "wue": 1.8 },
+    { "id": "Rack B2", "usage": 130, "anomaly": false, "wue": 1.3 },
+    { "id": "Rack C1", "usage": 140, "anomaly": false, "wue": 1.4 },
+    { "id": "Rack C2", "usage": 125, "anomaly": false, "wue": 1.25 }
+  ],
+  "industryAverage": 1.5,
+  "yourAverage": 1.35,
+  "anomalies": [
+    { "rack": "Rack B1", "issue": "Leak detected", "impact": "20% higher usage" }
+  ],
+  "timeline": [
+    { "time": "00:00", "usage": 120 },
+    { "time": "04:00", "usage": 110 },
+    { "time": "08:00", "usage": 140 },
+    { "time": "12:00", "usage": 160 },
+    { "time": "16:00", "usage": 130 },
+    { "time": "20:00", "usage": 125 }
+  ]
+}

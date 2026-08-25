@@ -1,0 +1,17 @@
+[
+  {
+    "timestamp": "2026-04-07T10:00:00Z",
+    "grid_intensity_gCO2_per_kWh": 210,
+    "dc_power_load_mw": 14.5,
+    "renewable_mix_percent": 65.0,
+    "status": "NORMAL"
+  },
+  {
+    "timestamp": "2026-04-07T10:15:00Z",
+    "grid_intensity_gCO2_per_kWh": 450,
+    "dc_power_load_mw": 14.8,
+    "renewable_mix_percent": 30.0,
+    "status": "ALERT",
+    "note": "Grid shifted to coal peaker plants"
+  }
+]

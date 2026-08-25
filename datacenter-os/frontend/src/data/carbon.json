@@ -1,0 +1,18 @@
+{
+  "currentIntensity": 280,
+  "timeline": [
+    { "time": "00:00", "intensity": 200, "period": "clean" },
+    { "time": "04:00", "intensity": 180, "period": "clean" },
+    { "time": "08:00", "intensity": 250, "period": "moderate" },
+    { "time": "12:00", "intensity": 300, "period": "dirty" },
+    { "time": "16:00", "intensity": 280, "period": "moderate" },
+    { "time": "20:00", "intensity": 220, "period": "clean" }
+  ],
+  "jobs": [
+    { "id": "J1", "name": "Batch Processing", "status": "deferred", "co2Saved": 0.5 },
+    { "id": "J2", "name": "Data Backup", "status": "run_now", "co2Saved": 0 },
+    { "id": "J3", "name": "Analytics", "status": "deferred", "co2Saved": 0.3 },
+    { "id": "J4", "name": "ML Training", "status": "run_now", "co2Saved": 0 }
+  ],
+  "totalCO2Saved": 0.8
+}

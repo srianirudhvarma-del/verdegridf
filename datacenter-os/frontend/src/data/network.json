@@ -1,0 +1,22 @@
+{
+  "nodes": [
+    { "id": "Node1", "x": 100, "y": 100 },
+    { "id": "Node2", "x": 200, "y": 100 },
+    { "id": "Node3", "x": 100, "y": 200 },
+    { "id": "Node4", "x": 200, "y": 200 },
+    { "id": "Node5", "x": 150, "y": 150 }
+  ],
+  "links": [
+    { "source": "Node1", "target": "Node2", "utilization": 45, "capacity": 100 },
+    { "source": "Node1", "target": "Node3", "utilization": 67, "capacity": 100 },
+    { "source": "Node2", "target": "Node4", "utilization": 23, "capacity": 100 },
+    { "source": "Node3", "target": "Node4", "utilization": 89, "capacity": 100 },
+    { "source": "Node5", "target": "Node1", "utilization": 34, "capacity": 100 },
+    { "source": "Node5", "target": "Node2", "utilization": 56, "capacity": 100 },
+    { "source": "Node5", "target": "Node3", "utilization": 78, "capacity": 100 },
+    { "source": "Node5", "target": "Node4", "utilization": 12, "capacity": 100 }
+  ],
+  "bottlenecks": [
+    { "link": "Node3-Node4", "utilization": 89, "status": "critical" }
+  ]
+}

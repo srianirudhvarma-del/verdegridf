@@ -1,0 +1,43 @@
+{
+  "current": {
+    "grid": [
+      [25, 30, 35, 40, 45, 50, 55, 60],
+      [20, 25, 30, 35, 40, 45, 50, 55],
+      [15, 20, 25, 30, 35, 40, 45, 50],
+      [10, 15, 20, 25, 30, 35, 40, 45],
+      [5, 10, 15, 20, 25, 30, 35, 40],
+      [0, 5, 10, 15, 20, 25, 30, 35],
+      [5, 10, 15, 20, 25, 30, 35, 40],
+      [10, 15, 20, 25, 30, 35, 40, 45]
+    ],
+    "hotspots": [
+      { "x": 3, "y": 0, "temp": 60, "severity": "high" },
+      { "x": 6, "y": 1, "temp": 55, "severity": "medium" }
+    ],
+    "alerts": [
+      "Hotspot detected at Rack A4 - Temperature: 60°C",
+      "Potential thermal spread in 2 hours if unaddressed"
+    ]
+  },
+  "predicted": {
+    "grid": [
+      [30, 35, 40, 50, 60, 70, 80, 90],
+      [25, 30, 35, 45, 55, 65, 75, 85],
+      [20, 25, 30, 40, 50, 60, 70, 80],
+      [15, 20, 25, 35, 45, 55, 65, 75],
+      [10, 15, 20, 30, 40, 50, 60, 70],
+      [5, 10, 15, 25, 35, 45, 55, 65],
+      [10, 15, 20, 30, 40, 50, 60, 70],
+      [15, 20, 25, 35, 45, 55, 65, 75]
+    ],
+    "hotspots": [
+      { "x": 3, "y": 0, "temp": 90, "severity": "critical" },
+      { "x": 6, "y": 1, "temp": 75, "severity": "high" },
+      { "x": 4, "y": 2, "temp": 70, "severity": "high" }
+    ],
+    "alerts": [
+      "Critical hotspot spreading - Rack A4: 90°C",
+      "Multiple racks at risk - Immediate cooling adjustment needed"
+    ]
+  }
+}

@@ -1,0 +1,304 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Build outputs
+dist/
+build/
+*.pyc
+__pycache__/
+.next/
+out/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE / System files
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# GSD / Antigravity artifacts (optional to ignore, but usually good)
+.planning/
+.gemini/
+.agent/
+.agents/
+tmp/
+CWD_ARTIFACTS/
+walkthrough.md
+task.md
+implementation_plan.md
+research_notes.md
+analysis_results.md
+experiment_results.md
+PR.md
+REVIEW.md
+REVIEW-FIX.md
+UI-SPEC.md
+ROADMAP.md
+PROJECT.md
+UAT.md
+NYQUIST.md
+FORENSICS.md
+RE reappearing_lines.txt
+RE missing_files.txt
+RE conflict_markers.txt
+RE corrupted_files.txt
+RE permission_errors.txt
+RE disk_space_errors.txt
+RE lock_errors.txt
+RE git_errors.txt
+RE lint_errors.txt
+RE test_failure_summary.txt
+RE test_output_log.txt
+RE test_error_traces.txt
+RE code_metrics.txt
+RE architecture_map.txt
+RE security_audit.txt
+RE performance_report.txt
+RE accessibility_checklist.txt
+RE documentation_index.txt
+RE log_summary.txt
+RE debug_state.txt
+RE thread_index.txt
+RE context_handoff.txt
+RE session_report.txt
+RE user_profile.txt
+RE brainstorm_log.txt
+RE ideation_map.txt
+RE backlog_parking_lot.txt
+RE plant_seed_index.txt
+RE update_changelog.txt
+RE settings_config.txt
+RE health_status.txt
+RE stats_dashboard.txt
+RE workspace_list.txt
+RE thread_manager.txt
+RE manager_state.txt
+RE audit_summary.txt
+RE commit_manifest.txt
+RE phase_log.txt
+RE parallel_wave_log.txt
+RE thread_context.txt
+RE intelligent_cache.txt
+RE codebase_intelligence.txt
+RE vector_store_status.txt
+RE semantic_index.txt
+RE file_structure.txt
+RE component_hierarchy.txt
+RE data_flow_diagram.txt
+RE api_endpoints.txt
+RE state_management_map.txt
+RE route_index.txt
+RE asset_inventory.txt
+RE style_tokens.txt
+RE theme_definitions.txt
+RE animation_logic.txt
+RE svg_components.txt
+RE responsive_breakpoints.txt
+RE browser_compatibility.txt
+RE error_handling_patterns.txt
+RE utility_functions.txt
+RE environmental_variables_template.txt
+RE docker_configs.txt
+RE ci_cd_pipelines.txt
+RE deployment_scripts.txt
+RE cloud_resources.txt
+RE database_schemas.txt
+RE migrations_log.txt
+RE seed_data.txt
+RE testing_fixtures.txt
+RE e2e_test_recordings.txt
+RE unit_test_coverage.txt
+RE integration_test_results.txt
+RE mock_services.txt
+RE socket_messaging_spec.txt
+RE websocket_events.txt
+RE p2p_mesh_topology.txt
+RE signal_server_config.txt
+RE qr_pairing_logic.txt
+RE auto_discovery_log.txt
+RE mesh_stability_tracking.txt
+RE disaster_response_workflow.txt
+RE offline_messaging_db.txt
+RE biometric_auth_spec.txt
+RE encryption_keys_index.txt
+RE identity_verify_log.txt
+RE sb_skill_registry.txt
+RE bitcoin_anchor_status.txt
+RE ethereum_sepolia_mock.txt
+RE blockchain_bridge_spec.txt
+RE transaction_verification_log.txt
+RE gas_optimization_report.txt
+RE soulbound_certificate_templates.txt
+RE academic_records_mapping.txt
+RE verify_page_logic.txt
+RE dashboard_analytics_spec.txt
+RE user_dashboard_mockups.txt
+RE mobile_view_logic.txt
+RE apple_app_store_spec.txt
+RE google_play_store_spec.txt
+RE cross_platform_sync_logic.txt
+RE deep_link_index.txt
+RE push_notification_spec.txt
+RE background_tasks_log.txt
+RE foreground_service_logic.txt
+RE power_management_notes.txt
+RE connectivity_monitor.txt
+RE geofencing_logic.txt
+RE localized_string_keys.txt
+RE multilingual_support_spec.txt
+RE dark_mode_transition_logic.txt
+RE industrial_professional_aesthetic.txt
+RE monochrome_palette_mapping.txt
+RE minimalist_ui_tokens.txt
+RE typography_scale_index.txt
+RE glassmorphism_effects.txt
+RE micro_animation_logic.txt
+RE interactive_components_map.txt
+RE sustainability_glossary.txt
+RE energy_mitigation_vector.txt
+RE carbon_flux_capacitor.txt
+RE high_intensity_threshold_logic.txt
+RE wue_benchmark_data.txt
+RE datacenter_topology_map.txt
+RE cooling_loop_simulation.txt
+RE fluid_dynamics_logic.txt
+RE power_usage_effectiveness_math.txt
+RE server_cluster_states.txt
+RE idlehunter_logic.txt
+RE zombie_server_detection.txt
+RE harvest_queue_priority.txt
+RE pdu_control_logic.txt
+RE ups_monitoring_spec.txt
+RE fuel_cell_integration.txt
+RE hydrogen_economy_notes.txt
+RE modular_datacenter_spec.txt
+RE edge_node_registry.txt
+RE cloud_orchestration_bridge.txt
+RE hybrid_cloud_connectivity.txt
+RE vpc_peering_config.txt
+RE dns_resolution_logic.txt
+RE load_balancer_distribution.txt
+RE cache_invalidation_spec.txt
+RE api_throttling_logic.txt
+RE authentication_middleware.txt
+RE authorization_rbac_map.txt
+RE session_management_logic.txt
+RE audit_log_spec.txt
+RE compliance_standards_checklist.txt
+RE regulatory_reporting_logic.txt
+RE esg_scorecard_calculation.txt
+RE scope_1_2_3_emissions_logic.txt
+RE renewable_energy_certificates.txt
+RE carbon_offset_tracking.txt
+RE environmental_impact_report.txt
+RE sustainability_roadmap.txt
+RE community_impact_notes.txt
+RE circular_economy_spec.txt
+RE e_waste_management_logic.txt
+RE lifecycle_analysis_report.txt
+RE supplier_audit_log.txt
+RE sustainable_procurement_spec.txt
+RE hardware_efficiency_benchmarks.txt
+RE chip_set_spec.txt
+RE accelerator_optimization_logic.txt
+RE gpu_scheduling_logic.txt
+RE tpu_utilization_tracking.txt
+RE quantum_computing_bridge.txt
+RE ai_model_governance.txt
+RE llm_ops_workflow.txt
+RE dataset_lineage_tracking.txt
+RE training_checkpoint_manager.txt
+RE inference_serving_spec.txt
+RE prompt_engineering_log.txt
+RE agentic_workflow_diagram.txt
+RE multi_agent_coordination.txt
+RE autonomous_task_routing.txt
+RE tool_calling_spec.txt
+RE subagent_hierarchy_map.txt
+RE conversation_context_bridge.txt
+RE persistent_memory_spec.txt
+RE short_term_scratch_pad.txt
+RE knowledge_item_registry.txt
+RE vector_embedding_log.txt
+RE RAG_pipeline_spec.txt
+RE retrieval_optimization_logic.txt
+RE generation_safety_filter.txt
+RE user_feedback_loop.txt
+RE continuous_learning_log.txt
+RE model_version_index.txt
+RE sdk_spec.txt
+RE cli_usage_guide.txt
+RE plugin_architecture_map.txt
+RE third_party_integration_spec.txt
+RE marketplace_catalog.txt
+RE developer_onboarding_guide.txt
+RE code_contribution_rules.txt
+RE bug_report_template.txt
+RE feature_request_backlog.txt
+RE release_notes.txt
+RE maintenance_schedule.txt
+RE deprecation_policy.txt
+RE end_of_life_statement.txt
+RE legal_disclaimers.txt
+RE privacy_policy_text.txt
+RE terms_of_service_text.txt
+RE data_use_consent_log.txt
+RE accessibility_statement.txt
+RE diversity_inclusion_report.txt
+RE corporate_citizenship_log.txt
+RE team_directory.txt
+RE organization_chart.txt
+RE project_funding_index.txt
+RE expense_tracking_log.txt
+RE budget_allocation_map.txt
+RE risk_management_index.txt
+RE incident_response_plan.txt
+RE business_continuity_guide.txt
+RE disaster_recovery_spec.txt
+RE stakeholder_communication_log.txt
+RE meeting_minutes_index.txt
+RE action_item_tracking.txt
+RE strategic_vision_document.txt
+RE product_roadmap_visuals.txt
+RE competitor_analysis_report.txt
+RE market_opportunity_assessment.txt
+RE user_persona_profiles.txt
+RE customer_journey_map.txt
+RE value_proposition_canvas.txt
+RE business_model_spec.txt
+RE monetization_strategy.txt
+RE growth_hacking_experiment_log.txt
+RE marketing_asset_inventory.txt
+RE sales_enablement_guide.txt
+RE customer_success_stories.txt
+RE support_ticket_analytics.txt
+RE forum_moderation_log.txt
+RE community_engagement_metrics.txt
+RE global_expansion_roadmap.txt
+RE regional_localization_spec.txt
+RE culture_fit_notes.txt
+RE hiring_pipeline_status.txt
+RE onboarding_checklist.txt
+RE training_curriculum_index.txt
+RE performance_review_template.txt
+RE compensation_structure_notes.txt
+RE exit_interview_summary.txt
+RE alumni_network_directory.txt
+RE final_goodbye_message.txt
+RE archive_manifest.txt
+RE checksums.txt
+RE signatures.txt
+RE end_of_file.txt
+
+get-shit-done/

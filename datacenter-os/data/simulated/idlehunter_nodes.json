@@ -1,0 +1,29 @@
+[
+  {
+    "node_id": "compute-rack4-blade12",
+    "cpu_utilization": 2.4,
+    "memory_utilization": 8.1,
+    "power_draw_watts": 145,
+    "status": "ZOMBIE",
+    "uptime_days": 142,
+    "last_active": "2026-03-01T10:00:00Z"
+  },
+  {
+    "node_id": "compute-rack4-blade13",
+    "cpu_utilization": 84.5,
+    "memory_utilization": 72.0,
+    "power_draw_watts": 420,
+    "status": "ACTIVE",
+    "uptime_days": 45,
+    "last_active": "2026-04-07T10:00:00Z"
+  },
+  {
+    "node_id": "compute-rack5-blade01",
+    "cpu_utilization": 0.5,
+    "memory_utilization": 4.0,
+    "power_draw_watts": 120,
+    "status": "ZOMBIE",
+    "uptime_days": 210,
+    "last_active": "2025-11-15T08:30:00Z"
+  }
+]
