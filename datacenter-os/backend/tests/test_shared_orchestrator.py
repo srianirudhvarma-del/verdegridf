@@ -1,10 +1,19 @@
+from datetime import datetime, timedelta, timezone
+
+from carbonclock.grid import HourlyForecast
+from carbonclock.scheduler import SchedulingPool
+from idlehunter.power import DwellStateMachine, HostState
 from idlehunter.telemetry import IdleHunterTelemetry
 from shared.orchestrator import (
     build_rack_feature_vector,
+    compute_capacity_forecast,
     compute_thermal_headroom,
     filter_consolidation_targets_by_real_headroom,
+    schedule_job_with_real_capacity,
 )
 from thermaltrace.sensors import ThermalTelemetry
+
+NOW = datetime(2026, 8, 25, 0, 0, 0, tzinfo=timezone.utc)
 
 
 # ---------------------------------------------------------------------------
@@ -107,3 +116,85 @@ def test_filter_targets_excludes_hosts_on_a_real_constrained_rack():
 
     assert "host-1" not in allowed
     assert "host-2" in allowed
+
+
+# ---------------------------------------------------------------------------
+# Dependency 3: IdleHunter -> CarbonClock (capacity state)
+# ---------------------------------------------------------------------------
+
+
+def test_compute_capacity_forecast_uses_real_idlehunter_utilization():
+    idlehunter_telemetry = IdleHunterTelemetry()
+    idlehunter_telemetry.register_host("host-1", seed=1)
+    idlehunter_telemetry.poll("host-1")
+
+    forecast = compute_capacity_forecast(idlehunter_telemetry, {}, NOW.isoformat(), (NOW + timedelta(hours=1)).isoformat())
+
+    real_cpu = idlehunter_telemetry.current("host-1")["cpu"]
+    assert forecast.poweredOnHostCount == 1
+    assert forecast.standbyHostCount == 0
+    assert forecast.availableCpuCapacity == max(0.0, 100.0 - real_cpu)
+
+
+def test_compute_capacity_forecast_excludes_real_standby_hosts():
+    idlehunter_telemetry = IdleHunterTelemetry()
+    idlehunter_telemetry.register_host("host-1", seed=1)
+    idlehunter_telemetry.register_host("host-2", seed=2)
+    idlehunter_telemetry.poll("host-1")
+    idlehunter_telemetry.poll("host-2")
+
+    machine = DwellStateMachine("host-2", dwell_time_down_samples=1)
+    machine.observe("idle-candidate")
+    machine.consolidation_succeeded()
+    assert machine.state == HostState.STANDBY
+
+    forecast = compute_capacity_forecast(
+        idlehunter_telemetry, {"host-2": machine}, NOW.isoformat(), (NOW + timedelta(hours=1)).isoformat()
+    )
+
+    assert forecast.poweredOnHostCount == 1
+    assert forecast.standbyHostCount == 1
+
+
+def test_schedule_job_with_real_capacity_proceeds_when_real_telemetry_has_room():
+    idlehunter_telemetry = IdleHunterTelemetry()
+    idlehunter_telemetry.register_host("host-1", seed=1)
+    idlehunter_telemetry.poll("host-1")  # low baseline cpu -- plenty of real headroom
+
+    windows = [
+        HourlyForecast(
+            windowStart=NOW.isoformat(), windowEnd=(NOW + timedelta(hours=1)).isoformat(), carbonIntensity=50.0
+        )
+    ]
+    pool = SchedulingPool(total_flexible_capacity=1000.0)
+
+    decision = schedule_job_with_real_capacity(
+        "job-1", 5.0, windows, pool, idlehunter_telemetry, {}, now=NOW, deadline=NOW + timedelta(hours=5)
+    )
+
+    assert decision.proceed is True
+
+
+def test_schedule_job_with_real_capacity_reflects_real_scarcity():
+    """If every real host is pegged near 100% cpu, the real capacity
+    forecast should have too little room, and scheduling must fail --
+    proving the scheduler actually consumed the real telemetry rather
+    than a fixed stub."""
+    idlehunter_telemetry = IdleHunterTelemetry()
+    idlehunter_telemetry.register_host("host-1", seed=1)
+    idlehunter_telemetry.poll("host-1")
+    idlehunter_telemetry.inject_anomaly("host-1", "cpu", "spike", magnitude=95.0, duration_ticks=1)
+    idlehunter_telemetry.poll("host-1")
+
+    windows = [
+        HourlyForecast(
+            windowStart=NOW.isoformat(), windowEnd=(NOW + timedelta(hours=1)).isoformat(), carbonIntensity=50.0
+        )
+    ]
+    pool = SchedulingPool(total_flexible_capacity=1000.0)
+
+    decision = schedule_job_with_real_capacity(
+        "job-1", 50.0, windows, pool, idlehunter_telemetry, {}, now=NOW, deadline=NOW + timedelta(hours=5)
+    )
+
+    assert decision.proceed is False

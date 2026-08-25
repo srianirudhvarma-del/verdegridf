@@ -20,9 +20,13 @@ through.
 from datetime import datetime, timezone
 from typing import Optional
 
+from carbonclock.grid import HourlyForecast
+from carbonclock.scheduler import SchedulingDecision, SchedulingPool, schedule_deferrable_job
 from idlehunter.consolidation import filter_targets_by_thermal_headroom
+from idlehunter.power import DwellStateMachine, HostState
 from idlehunter.telemetry import IdleHunterTelemetry
-from shared.contracts import ThermalHeadroom
+from shared.contracts import CapacityForecast, ThermalHeadroom
+from shared.eventbus import EventBus, event_bus
 from thermaltrace.model import IdleHunterRackReading, ThermalFeatureVector, build_feature_vector
 from thermaltrace.sensors import ThermalTelemetry
 
@@ -35,6 +39,10 @@ HOST_ACTIVE_WATTS = 280.0
 # per rack; this is a facility-wide placeholder default, tunable per site.
 DEFAULT_THERMAL_CEILING_CELSIUS = 35.0
 DEFAULT_CONSTRAINED_HEADROOM_CELSIUS = 5.0
+
+# No real BMC wake-latency measurement exists; a documented placeholder,
+# same spirit as every other simulated constant in this codebase.
+DEFAULT_ESTIMATED_WAKE_LATENCY_SECONDS = 180.0
 
 
 def _now_iso() -> str:
@@ -129,4 +137,82 @@ def filter_consolidation_targets_by_real_headroom(
         host_to_rack,
         candidate_target_hosts,
         lambda rack_id: compute_thermal_headroom(rack_id, thermal_telemetry, ceiling_celsius=ceiling_celsius),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Dependency 3: IdleHunter -> CarbonClock (capacity state)
+# ---------------------------------------------------------------------------
+
+
+def compute_capacity_forecast(
+    idlehunter_telemetry: IdleHunterTelemetry,
+    dwell_state_machines: dict[str, DwellStateMachine],
+    window_start: str,
+    window_end: str,
+    *,
+    estimated_wake_latency_seconds: float = DEFAULT_ESTIMATED_WAKE_LATENCY_SECONDS,
+) -> CapacityForecast:
+    """
+    Aggregates real IdleHunter telemetry + real dwell-state-machine state
+    across every registered host into a genuine CapacityForecast: hosts
+    currently STANDBY count toward standbyHostCount, everything else
+    contributes its real (100 - current_utilization) headroom to the
+    available capacity totals.
+    """
+    powered_on = 0
+    standby = 0
+    available_cpu = 0.0
+    available_mem = 0.0
+
+    for host_id in idlehunter_telemetry.host_ids():
+        machine = dwell_state_machines.get(host_id)
+        if machine is not None and machine.state == HostState.STANDBY:
+            standby += 1
+            continue
+        powered_on += 1
+        current = idlehunter_telemetry.current(host_id)
+        available_cpu += max(0.0, 100.0 - current["cpu"])
+        available_mem += max(0.0, 100.0 - current["mem"])
+
+    return CapacityForecast(
+        timestampRangeStart=window_start,
+        timestampRangeEnd=window_end,
+        poweredOnHostCount=powered_on,
+        availableCpuCapacity=available_cpu,
+        availableMemCapacity=available_mem,
+        standbyHostCount=standby,
+        estimatedWakeLatencySeconds=estimated_wake_latency_seconds,
+    )
+
+
+def schedule_job_with_real_capacity(
+    job_id: str,
+    required_capacity: float,
+    ranked_windows: list[HourlyForecast],
+    pool: SchedulingPool,
+    idlehunter_telemetry: IdleHunterTelemetry,
+    dwell_state_machines: dict[str, DwellStateMachine],
+    *,
+    now,
+    deadline,
+    bus: EventBus = event_bus,
+) -> SchedulingDecision:
+    """
+    Calls carbonclock.scheduler.schedule_deferrable_job with a
+    get_capacity_forecast backed by compute_capacity_forecast() above --
+    real IdleHunter telemetry and real dwell state, not a caller-supplied
+    CapacityForecast.
+    """
+    return schedule_deferrable_job(
+        job_id,
+        required_capacity,
+        ranked_windows,
+        pool,
+        now=now,
+        deadline=deadline,
+        get_capacity_forecast=lambda start, end: compute_capacity_forecast(
+            idlehunter_telemetry, dwell_state_machines, start, end
+        ),
+        bus=bus,
     )
