@@ -29,7 +29,7 @@ Read these, in this order, before writing code:
 
 <!-- Update this line as we progress. Example: -->
 <!-- Currently on: Phase 0 — shared infrastructure (contracts, event bus, classification, telemetry simulator) -->
-Phase 0 and Phase 1 complete. Phase 0: `shared/contracts.py`, `shared/eventbus.py`, `shared/classification.py`, `shared/telemetry_sim.py`. Phase 1: `idlehunter/threshold.py` (#1 MAD threshold), `idlehunter/consolidation.py` (#2 migration-cost check, #3 classification hard filter, #4 redundancy-aware placement), `idlehunter/power.py` (#5 dwell/wake state machine), `idlehunter/telemetry.py` (simulator-backed adapter). All tested, full suite passing (89 tests). Next up: Phase 2 — ThermalTrace MUST HAVE #18–#21.
+Phase 0, 1, and 2 complete. Phase 0: `shared/contracts.py`, `shared/eventbus.py`, `shared/classification.py`, `shared/telemetry_sim.py`. Phase 1: `idlehunter/threshold.py` (#1 MAD threshold), `idlehunter/consolidation.py` (#2 migration-cost check, #3 classification hard filter, #4 redundancy-aware placement), `idlehunter/power.py` (#5 dwell/wake state machine), `idlehunter/telemetry.py` (simulator-backed adapter). Phase 2: `thermaltrace/sensors.py` (#21 airflow/pressure sensing — `PressureReading` defined here for WaterWatch's Phase 4 MUST HAVE #10 to reuse, since ThermalTrace needs it first), `thermaltrace/model.py` (#20 physics-lite RC core + ML residual corrector, #18 MC-Dropout-style uncertainty bands, #19 IdleHunter telemetry join into the feature vector). All tested, full suite passing (109 tests). Next up: Phase 3 — CarbonClock MUST HAVE #6–#9.
 
 ## Working rhythm — follow this strictly
 
