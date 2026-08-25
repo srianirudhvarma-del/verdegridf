@@ -4,7 +4,9 @@ from carbonclock.grid import HourlyForecast
 from carbonclock.scheduler import SchedulingPool
 from idlehunter.power import DwellStateMachine, HostState
 from idlehunter.telemetry import IdleHunterTelemetry
+from shared.eventbus import EventBus
 from shared.orchestrator import (
+    PrewakeSubscriber,
     build_rack_feature_vector,
     compute_capacity_forecast,
     compute_thermal_headroom,
@@ -198,3 +200,55 @@ def test_schedule_job_with_real_capacity_reflects_real_scarcity():
     )
 
     assert decision.proceed is False
+
+
+# ---------------------------------------------------------------------------
+# Dependency 4: CarbonClock -> IdleHunter (prewake subscription)
+# ---------------------------------------------------------------------------
+
+
+def test_prewake_subscriber_wakes_a_real_standby_host_when_the_real_scheduler_publishes():
+    """Full round trip: the real scheduler publishes
+    carbonclock.prewake.requested; the real PrewakeSubscriber, registered
+    on the same bus, actually calls the standby host's real
+    DwellStateMachine.request_wake() -- not a logged no-op."""
+    bus = EventBus()
+
+    machine = DwellStateMachine("host-1", dwell_time_down_samples=1)
+    machine.observe("idle-candidate")
+    machine.consolidation_succeeded()
+    assert machine.state == HostState.STANDBY
+
+    subscriber = PrewakeSubscriber({"host-1": machine}, bus=bus)
+    subscriber.register()
+
+    idlehunter_telemetry = IdleHunterTelemetry()
+    idlehunter_telemetry.register_host("host-1", seed=1)  # the standby host -- excluded from capacity by its dwell state, not its telemetry
+    idlehunter_telemetry.register_host("host-2", seed=2)  # a second, powered-on host
+    idlehunter_telemetry.poll("host-1")
+    idlehunter_telemetry.poll("host-2")
+
+    # Window starts an hour out, so there's real lead time for a prewake
+    # (estimatedWakeLatencySeconds default is 180s).
+    window_start = NOW + timedelta(hours=1)
+    windows = [
+        HourlyForecast(
+            windowStart=window_start.isoformat(), windowEnd=(window_start + timedelta(hours=1)).isoformat(),
+            carbonIntensity=50.0,
+        )
+    ]
+    pool = SchedulingPool(total_flexible_capacity=1000.0)
+
+    # host-2 alone can't cover this job's required capacity (max 100
+    # headroom), but host-1 is standby with wake latency well within the
+    # lead time -- the real scheduler should request a prewake, which the
+    # real subscriber acts on.
+    decision = schedule_job_with_real_capacity(
+        "job-1", 150.0, windows, pool, idlehunter_telemetry, {"host-1": machine},
+        now=NOW, deadline=NOW + timedelta(hours=5), bus=bus,
+    )
+
+    assert decision.prewakeRequested is True
+    assert machine.state == HostState.WAKING  # the real state machine actually transitioned
+    assert len(subscriber.actions) == 1
+    assert subscriber.actions[0][0] == "host-1"

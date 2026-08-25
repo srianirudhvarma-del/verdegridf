@@ -216,3 +216,34 @@ def schedule_job_with_real_capacity(
         ),
         bus=bus,
     )
+
+
+# ---------------------------------------------------------------------------
+# Dependency 4: CarbonClock -> IdleHunter (prewake subscription / wake scheduling)
+# ---------------------------------------------------------------------------
+
+
+class PrewakeSubscriber:
+    """
+    Subscribes to carbonclock.prewake.requested on the event bus and
+    actually calls a STANDBY host's real DwellStateMachine.request_wake()
+    -- not just logging the event. carbonclock/scheduler.py's
+    schedule_deferrable_job() is the publisher (MUST HAVE #9); this is
+    the subscriber the methodology's cross-wire assumed would exist.
+    register() must be called once to wire the subscription up.
+    """
+
+    def __init__(self, dwell_state_machines: dict[str, DwellStateMachine], *, bus: EventBus = event_bus) -> None:
+        self.dwell_state_machines = dwell_state_machines
+        self.bus = bus
+        self.actions: list[tuple[str, dict]] = []
+
+    def register(self) -> None:
+        self.bus.subscribe("carbonclock.prewake.requested", self._on_prewake_requested)
+
+    def _on_prewake_requested(self, payload: dict) -> None:
+        for host_id, machine in self.dwell_state_machines.items():
+            if machine.state == HostState.STANDBY:
+                machine.request_wake(reason=f"carbonclock prewake for job {payload.get('jobId')}")
+                self.actions.append((host_id, payload))
+                return
