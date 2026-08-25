@@ -84,10 +84,14 @@ def test_thermal_headroom_status_is_constrained_to_known_values():
 
 
 def test_topics_cover_the_five_methodology_topics():
-    assert TOPICS == {
+    """Section 2's 5-topic list is the minimal starting set; later phases
+    add topics named explicitly by later MUST HAVE items (e.g. Phase 3's
+    carbonclock.prewake.requested from MUST HAVE #9) -- this checks the
+    original 5 are still a subset, not that the set is frozen at 5."""
+    assert {
         "idlehunter.capacity.updated",
         "idlehunter.workload.classified",
         "thermaltrace.headroom.updated",
         "carbonclock.job.scheduled",
         "lightspeed.flow.classified",
-    }
+    }.issubset(TOPICS)

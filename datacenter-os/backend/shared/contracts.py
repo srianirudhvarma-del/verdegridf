@@ -22,6 +22,11 @@ Topic = Literal[
     "thermaltrace.headroom.updated",
     "carbonclock.job.scheduled",
     "lightspeed.flow.classified",
+    # Section 2's Topic list is the minimal starting set ("even if backed by
+    # simple REST polling initially"); later MUST HAVE items name additional
+    # topics explicitly. carbonclock.prewake.requested comes from Phase 3's
+    # MUST HAVE #9 (cross-wiring with IdleHunter's capacity forecast).
+    "carbonclock.prewake.requested",
 ]
 
 # The full set of valid topics, for validation / iteration by the event bus.
@@ -32,6 +37,7 @@ TOPICS: frozenset[str] = frozenset(
         "thermaltrace.headroom.updated",
         "carbonclock.job.scheduled",
         "lightspeed.flow.classified",
+        "carbonclock.prewake.requested",
     }
 )
 
