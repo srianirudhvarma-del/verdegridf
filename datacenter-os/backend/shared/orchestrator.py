@@ -20,7 +20,9 @@ through.
 from datetime import datetime, timezone
 from typing import Optional
 
+from idlehunter.consolidation import filter_targets_by_thermal_headroom
 from idlehunter.telemetry import IdleHunterTelemetry
+from shared.contracts import ThermalHeadroom
 from thermaltrace.model import IdleHunterRackReading, ThermalFeatureVector, build_feature_vector
 from thermaltrace.sensors import ThermalTelemetry
 
@@ -28,6 +30,11 @@ from thermaltrace.sensors import ThermalTelemetry
 # reused here to derive a power estimate from a host's real cpu utilization.
 HOST_IDLE_WATTS = 120.0
 HOST_ACTIVE_WATTS = 280.0
+
+# ThermalTrace doesn't (yet) expose a documented ASHRAE-envelope ceiling
+# per rack; this is a facility-wide placeholder default, tunable per site.
+DEFAULT_THERMAL_CEILING_CELSIUS = 35.0
+DEFAULT_CONSTRAINED_HEADROOM_CELSIUS = 5.0
 
 
 def _now_iso() -> str:
@@ -74,4 +81,52 @@ def build_rack_feature_vector(
         temp_grid=[[thermal_current["temperature"]]],
         humidity=thermal_current["humidity"],
         idlehunter_readings=readings,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Dependency 2: ThermalTrace -> IdleHunter (thermal headroom)
+# ---------------------------------------------------------------------------
+
+
+def compute_thermal_headroom(
+    rack_id: str,
+    thermal_telemetry: ThermalTelemetry,
+    *,
+    ceiling_celsius: float = DEFAULT_THERMAL_CEILING_CELSIUS,
+    constrained_headroom_celsius: float = DEFAULT_CONSTRAINED_HEADROOM_CELSIUS,
+    timestamp: Optional[str] = None,
+) -> ThermalHeadroom:
+    """Derives a real ThermalHeadroom from this rack's actual current ThermalTrace temperature reading."""
+    current_temp = thermal_telemetry.current(rack_id)["temperature"]
+    headroom_celsius = ceiling_celsius - current_temp
+
+    if headroom_celsius <= 0:
+        status = "critical"
+    elif headroom_celsius < constrained_headroom_celsius:
+        status = "constrained"
+    else:
+        status = "ok"
+
+    return ThermalHeadroom(
+        rackId=rack_id, timestamp=timestamp or _now_iso(), headroomCelsius=headroom_celsius, status=status
+    )
+
+
+def filter_consolidation_targets_by_real_headroom(
+    host_to_rack: dict[str, str],
+    candidate_target_hosts: list[str],
+    thermal_telemetry: ThermalTelemetry,
+    *,
+    ceiling_celsius: float = DEFAULT_THERMAL_CEILING_CELSIUS,
+) -> list[str]:
+    """
+    Calls idlehunter.consolidation.filter_targets_by_thermal_headroom with
+    a get_headroom callback backed by real ThermalTrace telemetry --
+    compute_thermal_headroom() above -- instead of a caller-supplied stub.
+    """
+    return filter_targets_by_thermal_headroom(
+        host_to_rack,
+        candidate_target_hosts,
+        lambda rack_id: compute_thermal_headroom(rack_id, thermal_telemetry, ceiling_celsius=ceiling_celsius),
     )
