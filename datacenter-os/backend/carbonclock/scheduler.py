@@ -152,3 +152,41 @@ def schedule_deferrable_job(
         prewakeRequested=False,
         reason="no window before the deadline has sufficient capacity",
     )
+
+
+# ---------------------------------------------------------------------------
+# SHOULD HAVE #12 -- electricity-price signal alongside carbon
+# ---------------------------------------------------------------------------
+
+DEFAULT_CARBON_WEIGHT = 0.7
+DEFAULT_PRICE_WEIGHT = 0.3
+
+
+def rank_windows_by_carbon_and_price(
+    windows: list[HourlyForecast],
+    price_by_window_start: Optional[dict[str, float]],
+    *,
+    w_carbon: float = DEFAULT_CARBON_WEIGHT,
+    w_price: float = DEFAULT_PRICE_WEIGHT,
+) -> list[HourlyForecast]:
+    """
+    score(hour) = w_carbon * carbonRank(hour) + w_price * priceRank(hour)
+    Falls back to carbon-only ranking if no price feed is available (the
+    methodology's own fallback for an unreachable price API).
+    """
+    if not price_by_window_start:
+        return rank_windows_by_intensity(windows)
+
+    carbon_rank = {
+        w.windowStart: rank for rank, w in enumerate(sorted(windows, key=lambda w: w.carbonIntensity))
+    }
+    # Windows with no price data rank last on the price axis, rather than
+    # being dropped -- a missing single-hour price shouldn't disqualify a
+    # window the way a fully unreachable price API falls back entirely.
+    price_sorted = sorted(windows, key=lambda w: price_by_window_start.get(w.windowStart, float("inf")))
+    price_rank = {w.windowStart: rank for rank, w in enumerate(price_sorted)}
+
+    def score(window: HourlyForecast) -> float:
+        return w_carbon * carbon_rank[window.windowStart] + w_price * price_rank[window.windowStart]
+
+    return sorted(windows, key=score)
