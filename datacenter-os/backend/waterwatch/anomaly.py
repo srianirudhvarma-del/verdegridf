@@ -12,6 +12,7 @@ active for that loop.
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -115,3 +116,33 @@ def evaluate_and_log(
 
 def should_notify(event: AnomalyEvent) -> bool:
     return event.isAnomaly and not event.suppressed
+
+
+# ---------------------------------------------------------------------------
+# SHOULD HAVE #14 -- physical leak-detection point sensors as a backstop
+# ---------------------------------------------------------------------------
+
+
+class PointSensorReading(BaseModel):
+    sensorId: str
+    loopId: str
+    timestamp: str
+    wet: bool
+
+
+def evaluate_point_sensor(reading: PointSensorReading) -> Optional[AnomalyEvent]:
+    """
+    A hard trip-wire, not a Z-score input: any wet=True reading bypasses
+    the statistical pipeline entirely and is Critical immediately, always
+    -- including during an active maintenance window (a physical wet
+    reading is never something maintenance mode should silence).
+    """
+    if not reading.wet:
+        return None
+    return AnomalyEvent(
+        loopId=reading.loopId,
+        timestamp=reading.timestamp,
+        isAnomaly=True,
+        suppressed=False,
+        reason=f"point sensor {reading.sensorId} trip-wire: wet=True (Critical, bypasses statistical pipeline)",
+    )
