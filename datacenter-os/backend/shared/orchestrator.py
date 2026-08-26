@@ -239,35 +239,26 @@ class PrewakeSubscriber:
     register() must be called once to wire the subscription up.
     """
 
-    def __init__(
-        self,
-        dwell_state_machines: dict[str, DwellStateMachine],
-        *,
-        bus: EventBus = event_bus,
-        wake_started_at: Optional[dict[str, datetime]] = None,
-    ) -> None:
+    def __init__(self, dwell_state_machines: dict[str, DwellStateMachine], *, bus: EventBus = event_bus) -> None:
         self.dwell_state_machines = dwell_state_machines
         self.bus = bus
-        # Optional external dict this subscriber records a wake-start
-        # timestamp into. DwellStateMachine itself has no clock (see
-        # idlehunter/power.py) -- nothing else knows when a WAKING host
-        # actually started waking unless something records it here.
-        # shared.scheduler_driver.SchedulerRegistry's wake_started_at is
-        # what production code passes in; tests may pass None (default) to
-        # exercise the state transition alone.
-        self.wake_started_at = wake_started_at
         self.actions: list[tuple[str, dict]] = []
 
     def register(self) -> None:
         self.bus.subscribe("carbonclock.prewake.requested", self._on_prewake_requested)
 
     def _on_prewake_requested(self, payload: dict) -> None:
+        # Deliberately does not record a wake-start timestamp here:
+        # DwellStateMachine has no clock of its own, and this subscriber
+        # only ever sees real wall-clock time when it's actually invoked,
+        # which would conflict with shared.scheduler_driver.tick()'s
+        # simulated `now`. tick() itself is the sole timekeeper -- it
+        # records the wake start on the first tick that observes a host as
+        # WAKING, so the whole driver stays driven by one clock.
         for host_id, machine in self.dwell_state_machines.items():
             if machine.state == HostState.STANDBY:
                 machine.request_wake(reason=f"carbonclock prewake for job {payload.get('jobId')}")
                 self.actions.append((host_id, payload))
-                if self.wake_started_at is not None:
-                    self.wake_started_at[host_id] = datetime.now(timezone.utc)
                 return
 
 
