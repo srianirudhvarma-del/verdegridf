@@ -266,6 +266,42 @@ def test_prewake_subscriber_wakes_a_real_standby_host_when_the_real_scheduler_pu
     assert subscriber.actions[0][0] == "host-1"
 
 
+def test_prewake_subscriber_records_wake_start_when_given_a_dict_to_record_into():
+    """DwellStateMachine has no clock of its own -- PrewakeSubscriber must
+    record when a host started waking somewhere external, or nothing can
+    later know when the wake should be considered complete."""
+    bus = EventBus()
+    machine = DwellStateMachine("host-1", dwell_time_down_samples=1)
+    machine.observe("idle-candidate")
+    machine.consolidation_succeeded()
+
+    wake_started_at: dict = {}
+    subscriber = PrewakeSubscriber({"host-1": machine}, bus=bus, wake_started_at=wake_started_at)
+    subscriber.register()
+
+    assert "host-1" not in wake_started_at
+    bus.publish("carbonclock.prewake.requested", {"jobId": "job-1", "targetTime": NOW.isoformat()})
+
+    assert "host-1" in wake_started_at
+    assert machine.state == HostState.WAKING
+
+
+def test_prewake_subscriber_without_a_dict_still_transitions_the_state_machine():
+    """Backward compatibility: omitting wake_started_at (the Phase 8b
+    constructor shape) must keep working exactly as before."""
+    bus = EventBus()
+    machine = DwellStateMachine("host-1", dwell_time_down_samples=1)
+    machine.observe("idle-candidate")
+    machine.consolidation_succeeded()
+
+    subscriber = PrewakeSubscriber({"host-1": machine}, bus=bus)
+    subscriber.register()
+
+    bus.publish("carbonclock.prewake.requested", {"jobId": "job-1", "targetTime": NOW.isoformat()})
+
+    assert machine.state == HostState.WAKING
+
+
 # ---------------------------------------------------------------------------
 # Dependency 5: IdleHunter -> WaterWatch (per-rack workload signal)
 # ---------------------------------------------------------------------------
