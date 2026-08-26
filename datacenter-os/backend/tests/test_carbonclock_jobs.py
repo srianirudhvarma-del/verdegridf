@@ -131,3 +131,23 @@ def test_force_run_overdue_publishes_nothing_when_no_job_is_overdue():
 
     assert released == []
     assert received == []
+
+
+def test_remove_pops_a_specific_job_before_its_deadline():
+    store = WorkloadClassificationStore()
+    tag_job(store, "job-1", "deferrable", max_delay=60)
+    tag_job(store, "job-2", "deferrable", max_delay=90)
+    queue = DeadlineQueue()
+    queue.add(submit_job("job-1", NOW, store=store))
+    queue.add(submit_job("job-2", NOW, store=store))
+
+    removed = queue.remove("job-1")
+
+    assert removed.jobId == "job-1"
+    assert len(queue) == 1
+    assert queue.peek_next_deadline().jobId == "job-2"
+
+
+def test_remove_returns_none_for_an_unknown_job():
+    queue = DeadlineQueue()
+    assert queue.remove("does-not-exist") is None

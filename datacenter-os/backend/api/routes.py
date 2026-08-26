@@ -1,16 +1,28 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
-import json
 import logging
-import os
-import urllib.request
-import urllib.error
-from datetime import datetime
+
+import api.state as state
+from carbonclock.scheduler import DEFAULT_DIRTY_THRESHOLD, DEFAULT_GREEN_THRESHOLD
+from idlehunter.power import HostState
+from idlehunter.threshold import RESOURCES, classify_host
+from shared.classification import classification_store
+from shared.orchestrator import HOST_ACTIVE_WATTS, HOST_IDLE_WATTS
+from thermaltrace.spatial import GridCellReading, interpolate_grid
+from waterwatch.anomaly import MaintenanceWindow
+from waterwatch.baseline import compute_baseline, z_score
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["datacenter"])
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
 
 # ===================== Pydantic Models =====================
 
@@ -21,61 +33,81 @@ class ServerData(BaseModel):
     ram_util: float
     watts_idle: float
     watts_active: float
+    state: str
     last_migrated: str
 
-class WaterFlowData(BaseModel):
-    rack_id: str
-    cooling_unit: str
-    flow_rate_l_hr: float
-    it_load_kw: float
-    timestamp: str
+class ServerCluster(BaseModel):
+    servers: List[ServerData]
+    is_live: bool = True
 
-class CarbonIntensityData(BaseModel):
-    carbonIntensity: int
-    datetime: str
-    zone: str
-    status: str
-    lastUpdated: str
+class ClassificationRequest(BaseModel):
+    classification: str  # "protected" | "deferrable" | "unclassified"
+    maxDelayMinutes: Optional[int] = None
 
-class Job(BaseModel):
+class WaterUnit(BaseModel):
     id: str
-    name: str
-    type: str
-    deferrable: bool
-    estimatedDuration: int
-    estimatedKwh: float
-    status: str
-    deferredHours: Optional[int] = None
+    flow_rate_lph: float
+
+class WaterAnomaly(BaseModel):
+    rack: str
+    issue: str
+    val: float
+
+class WaterFlowSnapshot(BaseModel):
+    units: List[WaterUnit]
+    totalFlow: float
+    itLoad: float
+    wue: float
+    anomalies: List[WaterAnomaly]
+    benchmarks: dict
+    is_live: bool = True
+
+class MaintenanceWindowRequest(BaseModel):
+    loopId: str
+    start: str
+    end: str
+    operatorId: str
+
+class CarbonIntensitySnapshot(BaseModel):
+    intensity: float
+    trend: str
+    isSpike: bool
+    minutesUntilClean: float
 
 class JobActionRequest(BaseModel):
     hours: Optional[int] = 0
-
-class ThermalCell(BaseModel):
-    id: str
-    x: int
-    y: int
-    inlet_celsius: float
-    outlet_celsius: float
 
 class NetworkLink(BaseModel):
     source: str
     target: str
     capacity_gbps: float
-    utilization_percent: float
-
-class NetworkNode(BaseModel):
-    id: str
+    utilization_pct: float
 
 class NetworkTraffic(BaseModel):
-    nodes: List[NetworkNode]
+    nodes: List[str]
     links: List[NetworkLink]
+    is_live: bool = True
 
-# ML Models
+class ThermalCell(BaseModel):
+    row: int
+    col: int
+    inlet_temp: float
+    outlet_temp: float
+    is_interpolated: bool
+
+class ThermalSnapshot(BaseModel):
+    grid: List[List[ThermalCell]]
+    is_live: bool = True
+
+class ActionDecisionRequest(BaseModel):
+    operatorId: str = "operator"
+
+# ML Models (unrelated to Phase 9, left as-is)
 class ThermalPredictionRequest(BaseModel):
-    snapshots: List[List[ThermalCell]]  # Last 20 snapshots
+    snapshots: List[List[dict]]
 
 class ThermalPredictionResponse(BaseModel):
-    predicted_grid: List[ThermalCell]
+    predicted_grid: List[dict]
     hotspots: List[dict]
     confidence: float
     timestamp: str
@@ -94,315 +126,392 @@ class AudioClassificationResponse(BaseModel):
     bearing_wear: bool
     timestamp: str
 
-# ===================== IDLEhunter Routes =====================
 
-@router.get("/idlehunter/servers", response_model=List[ServerData])
+# ===================== IdleHunter Routes =====================
+
+GRID_WIDTH = 8
+GRID_HEIGHT = 8
+
+
+def _host_ui_state(host_id: str, status: str) -> str:
+    """
+    Maps the real MUST HAVE #1 threshold classification + MUST HAVE #5
+    dwell state to the 3-state label the UI shows.
+    """
+    machine = state.dwell_machines[host_id]
+    if machine.state in (HostState.STANDBY, HostState.WAKING):
+        return "sleep"
+    if status == "idle-candidate":
+        return "zombie"
+    return "active"
+
+
+@router.get("/idlehunter/servers", response_model=ServerCluster)
 async def get_server_cluster():
-    """Get current server cluster state from mock data"""
+    """Real per-host MAD threshold classification + dwell state, not canned numbers."""
     servers = []
-    for i in range(100):
-        rack_label = f"{chr(65 + (i // 10))}{(i % 10) + 1}"
-        cpu_util = round(20 + (i % 5) * 12 + (i % 3) * 3, 1)
-        ram_util = round(15 + (i % 4) * 10 + (i % 2) * 5, 1)
-        servers.append({
-            "id": f"srv-{i+1}",
-            "rack": rack_label,
-            "cpu_util": cpu_util,
-            "ram_util": ram_util,
-            "watts_idle": 120.0,
-            "watts_active": 280.0,
-            "last_migrated": datetime.utcnow().isoformat(),
-        })
-    return servers
+    for host_id, rack in state.host_to_rack.items():
+        current = state.idlehunter_telemetry.poll(host_id)
+        history = {r: state.idlehunter_telemetry.history(host_id, r, 60) for r in RESOURCES}
+        classified = classify_host(host_id, current, history)
+        state.dwell_machines[host_id].observe(classified.status)
+
+        servers.append(
+            ServerData(
+                id=host_id,
+                rack=rack,
+                cpu_util=round(current["cpu"], 1),
+                ram_util=round(current["mem"], 1),
+                watts_idle=HOST_IDLE_WATTS,
+                watts_active=HOST_ACTIVE_WATTS,
+                state=_host_ui_state(host_id, classified.status),
+                last_migrated=_now_iso(),
+            )
+        )
+    return ServerCluster(servers=servers)
+
 
 @router.post("/idlehunter/consolidate")
 async def consolidate_idle_servers():
-    """Simulate idle server consolidation and return energy savings."""
+    """
+    Real consolidation pass: any host the dwell state machine has already
+    determined is IDLE_CANDIDATE (sustained idle dwell, MUST HAVE #5) is
+    powered down (consolidation_succeeded() -> STANDBY). Untagged/protected
+    workloads never factor in here -- this operates on hosts, whose
+    IDLE_CANDIDATE status already required sustained multi-resource
+    idleness (MUST HAVE #1).
+    """
+    consolidated = []
+    for host_id, machine in state.dwell_machines.items():
+        if machine.state == HostState.IDLE_CANDIDATE:
+            machine.consolidation_succeeded()
+            consolidated.append(host_id)
+
+    energy_saved_watts = len(consolidated) * HOST_IDLE_WATTS
     return {
-        "consolidated": 4,
-        "energy_saved": 75.0,
-        "message": "Idle servers consolidated successfully"
+        "consolidated": len(consolidated),
+        "energy_saved": round(energy_saved_watts / 1000.0, 2),
+        "message": f"{len(consolidated)} idle host(s) powered down" if consolidated else "No hosts were eligible for consolidation this cycle",
     }
+
+
+@router.get("/idlehunter/workloads/{workload_id}/classification")
+async def get_workload_classification(workload_id: str):
+    """MUST HAVE #3 step 1: read a workload's classification, defaulting to protected."""
+    tag = classification_store.get_tag(workload_id)
+    if tag is None:
+        return {"workloadId": workload_id, "classification": "protected", "source": "default"}
+    return tag.model_dump()
+
+
+@router.patch("/idlehunter/workloads/{workload_id}/classification")
+async def set_workload_classification(workload_id: str, request: ClassificationRequest):
+    """MUST HAVE #3 step 2: the real operator-facing classification write path (shared.orchestrator.apply_operator_classification)."""
+    from shared.orchestrator import apply_operator_classification
+
+    try:
+        tag = apply_operator_classification(
+            workload_id, request.classification, max_delay_minutes=request.maxDelayMinutes, store=classification_store,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return tag.model_dump()
+
 
 # ===================== WaterWatch Routes =====================
 
-@router.get("/waterwatch/flows", response_model=List[WaterFlowData])
+WATER_BENCHMARKS = {"google": 1.1, "industry": 1.8, "poor": 3.0}
+WATER_ANOMALY_Z_THRESHOLD = -2.0
+WATER_MIN_HISTORY_FOR_BASELINE = 10
+
+
+@router.get("/waterwatch/flows", response_model=WaterFlowSnapshot)
 async def get_water_flows():
-    """Get current water flow data from mock data"""
-    flows = []
-    for idx in range(8):
-        flows.append({
-            "rack_id": f"Rack {chr(65 + idx)}",
-            "cooling_unit": f"CU-{idx+1}",
-            "flow_rate_l_hr": round(60 + idx * 15 + (idx % 3) * 8, 1),
-            "it_load_kw": round(1.2 + idx * 0.3, 2),
-            "timestamp": datetime.utcnow().isoformat(),
-        })
-    return flows
+    """
+    Real per-loop flow telemetry (waterwatch/sensors.py). Anomaly
+    detection here is a documented simplification of MUST HAVE #12's full
+    algorithm: z-score against the loop's own trailing history, without
+    the peer-rack/load-bucket comparison or the IdleHunter workload-delta
+    check the full waterwatch/anomaly.py pipeline applies (that full
+    pipeline is exercised directly by its own tests).
+    """
+    units = []
+    anomalies = []
+    for rack in state.RACKS:
+        current = state.waterwatch_telemetry.poll(rack)
+        flow = current["flow_rate"]
+        units.append(WaterUnit(id=rack, flow_rate_lph=round(flow, 1)))
+
+        history = state.waterwatch_telemetry.history(rack, "flow_rate", 30)
+        if len(history) >= WATER_MIN_HISTORY_FOR_BASELINE:
+            baseline = compute_baseline(history[:-1])
+            z = z_score(flow, baseline)
+            if z < WATER_ANOMALY_Z_THRESHOLD:
+                anomalies.append(WaterAnomaly(rack=rack, issue="unexplained flow drop", val=round(flow, 1)))
+
+    total_flow = sum(u.flow_rate_lph for u in units)
+    it_load_watts = sum(HOST_IDLE_WATTS + (HOST_ACTIVE_WATTS - HOST_IDLE_WATTS) * (state.idlehunter_telemetry.current(h)["cpu"] / 100.0) for h in state.ALL_HOST_IDS)
+    it_load_kw = it_load_watts / 1000.0
+    # Simplified WUE heuristic (liters/hr per kW IT load, scaled) -- not a
+    # precision facility metric, same level of approximation the original
+    # mock used, now driven by real flow/power readings instead of a
+    # fixed formula on random numbers.
+    wue = round(1.0 + (total_flow / max(it_load_kw, 1.0)) / 1000.0, 2)
+
+    return WaterFlowSnapshot(
+        units=units, totalFlow=round(total_flow, 1), itLoad=round(it_load_kw, 2),
+        wue=wue, anomalies=anomalies, benchmarks=WATER_BENCHMARKS,
+    )
+
 
 @router.get("/waterwatch/anomaly")
 async def get_water_anomalies():
-    """Return current water anomaly state"""
-    anomalies = [
-        {"rack_id": "Rack B2", "type": "leak", "severity": "medium"},
-        {"rack_id": "Rack D4", "type": "flow_spike", "severity": "high"},
-    ]
-    return {"anomalies": anomalies}
+    snapshot = await get_water_flows()
+    return {"anomalies": [a.model_dump() for a in snapshot.anomalies]}
+
+
+@router.post("/waterwatch/maintenance-mode")
+async def declare_maintenance_window(request: MaintenanceWindowRequest):
+    """SHOULD HAVE #13/#15: declare a real maintenance window; the anomaly engine checks it before escalating."""
+    window = MaintenanceWindow(loopId=request.loopId, start=request.start, end=request.end, operatorId=request.operatorId)
+    state.maintenance_registry.declare(window)
+    return window.model_dump()
+
+
+@router.get("/waterwatch/maintenance-mode/{loop_id}")
+async def get_maintenance_status(loop_id: str):
+    active = state.maintenance_registry.is_active(loop_id, datetime.now(timezone.utc))
+    return {"loopId": loop_id, "active": active}
+
 
 # ===================== CarbonClock Routes =====================
 
-@router.get("/carbonclock/intensity", response_model=CarbonIntensityData)
+@router.get("/carbonclock/intensity", response_model=CarbonIntensitySnapshot)
 async def get_carbon_intensity():
-    """Get current carbon intensity from ElectricityMaps API (or mock)"""
-    api_key = os.getenv("ELECTRICITYMAP_API_KEY") or os.getenv("VITE_ELECTRICITY_API_KEY")
-    if api_key:
-        try:
-            url = "https://api.electricitymap.org/v3/carbon-intensity/latest?zone=IN-SO"
-            req = urllib.request.Request(url, headers={"auth-token": api_key})
-            with urllib.request.urlopen(req, timeout=10) as response:
-                payload = json.loads(response.read().decode())
-                intensity = payload.get("carbonIntensity") or payload.get("carbonIntensityAverage") or 250
-                return {
-                    "carbonIntensity": int(intensity),
-                    "datetime": payload.get("datetime", datetime.utcnow().isoformat()),
-                    "zone": payload.get("zone", "IN-SO"),
-                    "status": payload.get("status", "live"),
-                    "lastUpdated": payload.get("datetime", datetime.utcnow().isoformat()),
-                }
-        except urllib.error.URLError as e:
-            logger.warning("ElectricityMaps request failed (network/URL error): %s", e)
-        except Exception as e:
-            logger.warning("ElectricityMaps request failed unexpectedly: %s", e)
+    """
+    Real synthetic carbon-intensity series (Phase 0 Decision #1) run
+    through the real hysteresis/smoothing (SHOULD HAVE #11) -- no more
+    static ElectricityMaps passthrough with a hardcoded fallback.
+    """
+    intensity = state.carbon_forecast_sim.sample_current(state.CARBON_ZONE)
+    classification = state.carbon_hysteresis.observe(intensity)
 
-    return {
-        "carbonIntensity": 250,
-        "datetime": datetime.utcnow().isoformat(),
-        "zone": "IN-SO",
-        "status": "mock",
-        "lastUpdated": datetime.utcnow().isoformat(),
-    }
+    history = state.carbon_forecast_sim.history(state.CARBON_ZONE, 5)
+    if len(history) >= 2:
+        slope = history[-1] - history[-2]
+        trend = "rising" if slope > 1.0 else "falling" if slope < -1.0 else "stable"
+    else:
+        slope = 0.0
+        trend = "stable"
+
+    is_spike = intensity > DEFAULT_DIRTY_THRESHOLD
+    if not is_spike:
+        minutes_until_clean = 0.0
+    elif slope < -0.5:
+        minutes_until_clean = max(5.0, min(180.0, (intensity - DEFAULT_GREEN_THRESHOLD) / abs(slope) * 60.0))
+    else:
+        minutes_until_clean = 45.0
+
+    return CarbonIntensitySnapshot(
+        intensity=round(intensity, 1), trend=trend, isSpike=is_spike,
+        minutesUntilClean=round(minutes_until_clean, 1),
+    )
+
+
+@router.get("/carbonclock/signal-info")
+async def get_signal_info():
+    """MUST HAVE #8: documented average-vs-marginal justification, visible in an admin panel."""
+    return state.signal_info.model_dump()
+
 
 @router.get("/carbonclock/jobs")
 async def get_job_queue():
-    """Get current job queue and scheduling state"""
-    jobs = [
-        {
-            "id": "402",
-            "name": "AI Training Job #402",
-            "type": "training",
-            "deferrable": True,
-            "estimatedDuration": 4,
-            "estimatedKwh": 40,
-            "status": "pending",
-        },
-        {
-            "id": "156",
-            "name": "Data Processing #156",
-            "type": "batch",
-            "deferrable": True,
-            "estimatedDuration": 2,
-            "estimatedKwh": 15,
-            "status": "pending",
-        },
-        {
-            "id": "89",
-            "name": "Backup Sync #89",
-            "type": "backup",
-            "deferrable": False,
-            "estimatedDuration": 6,
-            "estimatedKwh": 25,
-            "status": "scheduled",
-        },
-    ]
-    return jobs
+    return list(state.carbon_job_records.values())
+
 
 @router.post("/carbonclock/jobs/{job_id}/defer")
 async def defer_carbon_job(job_id: str, request: JobActionRequest):
-    """Defer a deferrable carbon-aware job"""
+    if job_id not in state.carbon_job_records:
+        raise HTTPException(status_code=404, detail="unknown job")
+    state.carbon_job_records[job_id]["status"] = "deferred"
     return {
-        "id": job_id,
-        "status": "deferred",
-        "deferredHours": request.hours,
+        "id": job_id, "status": "deferred", "deferredHours": request.hours,
         "message": f"Job {job_id} deferred by {request.hours} hours",
     }
 
+
 @router.post("/carbonclock/jobs/{job_id}/run")
 async def run_carbon_job(job_id: str):
-    """Trigger a carbon-aware job to run immediately"""
-    return {
-        "id": job_id,
-        "status": "running",
-        "message": f"Job {job_id} started immediately",
-    }
+    """
+    Operator manually forces a job to run now: removes it from the real
+    DeadlineQueue (MUST HAVE #7's queue, not a display-only copy) if it's
+    still pending, and publishes the same carbonclock.job.scheduled event
+    shared.orchestrator.JobExecutionTracker consumes.
+    """
+    if job_id not in state.carbon_job_records:
+        raise HTTPException(status_code=404, detail="unknown job")
+
+    from shared.eventbus import event_bus
+
+    state.carbon_job_queue.remove(job_id)
+    state.carbon_job_records[job_id]["status"] = "running"
+    event_bus.publish("carbonclock.job.scheduled", {"jobId": job_id, "windowStart": _now_iso(), "forceRun": False})
+    return {"id": job_id, "status": "running", "message": f"Job {job_id} started immediately"}
+
 
 # ===================== ThermalTrace Routes =====================
 
-@router.get("/thermaltrace/snapshot", response_model=List[ThermalCell])
+@router.get("/thermaltrace/snapshot", response_model=ThermalSnapshot)
 async def get_thermal_snapshot():
-    """Get latest thermal grid snapshot"""
-    grid = []
-    for x in range(8):
-        for y in range(8):
-            inlet = round(25 + (x + y) * 0.9 + (x % 2) * 2, 1)
-            outlet = round(inlet + 4 + (y % 3) * 1.5, 1)
-            grid.append({
-                "id": f"cell_{x}_{y}",
-                "x": x,
-                "y": y,
-                "inlet_celsius": inlet,
-                "outlet_celsius": outlet,
-            })
-    return grid
+    """
+    Real per-rack temperature readings (5 sensors) filled out to a full
+    8x8 grid via SHOULD HAVE #23's inverse-distance-weighted
+    interpolation, with each cell honestly flagged real vs interpolated.
+    """
+    readings = []
+    for rack, (x, y) in state.RACK_GRID_POSITIONS.items():
+        temp = state.thermal_telemetry.poll(rack)["temperature"]
+        readings.append(GridCellReading(x=x, y=y, value=temp))
+
+    interpolated = interpolate_grid(readings, width=GRID_WIDTH, height=GRID_HEIGHT)
+
+    grid = [
+        [
+            ThermalCell(
+                row=row, col=col,
+                inlet_temp=round(interpolated.values[row][col], 1),
+                outlet_temp=round(interpolated.values[row][col] + 5.0, 1),
+                is_interpolated=interpolated.isInterpolated[row][col],
+            )
+            for col in range(GRID_WIDTH)
+        ]
+        for row in range(GRID_HEIGHT)
+    ]
+    return ThermalSnapshot(grid=grid)
+
+
+@router.get("/thermaltrace/actions")
+async def get_pending_actions():
+    """MUST HAVE #22: the supervised approval queue."""
+    return [r.model_dump() for r in state.action_recommendation_queue.pending()]
+
+
+@router.post("/thermaltrace/actions/{action_id}/approve")
+async def approve_action(action_id: str, request: ActionDecisionRequest):
+    try:
+        rec = state.action_recommendation_queue.approve(action_id)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return rec.model_dump()
+
+
+@router.post("/thermaltrace/actions/{action_id}/reject")
+async def reject_action(action_id: str, request: ActionDecisionRequest):
+    try:
+        rec = state.action_recommendation_queue.reject(action_id)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return rec.model_dump()
+
 
 @router.post("/thermaltrace/predict", response_model=ThermalPredictionResponse)
 async def predict_thermal_hotspots(request: ThermalPredictionRequest):
-    """
-    Predict thermal hotspots using simple trend-based model
-    
-    Input: Last 20 thermal snapshots (64 cells each)
-    Output: Predicted grid 15 minutes in advance with hotspot detection
-    """
+    """Unchanged client-driven simple-trend prediction (not a mock -- operates on whatever real snapshots the client sends)."""
     if not request.snapshots or len(request.snapshots) < 2:
         raise HTTPException(status_code=400, detail="At least 2 snapshots required")
-
     if len(request.snapshots) > 200:
         raise HTTPException(status_code=400, detail="Too many snapshots (max 200)")
-
     num_cells = len(request.snapshots[0])
     if num_cells == 0:
         raise HTTPException(status_code=400, detail="Snapshots must contain at least one cell")
-    predicted_grid = []
-    hotspots = []
-    confidence_scores = []
-    
+
+    predicted_grid, hotspots, confidence_scores = [], [], []
     for pos in range(num_cells):
-        inlets = [snap[pos].inlet_celsius for snap in request.snapshots if pos < len(snap)]
-        outlets = [snap[pos].outlet_celsius for snap in request.snapshots if pos < len(snap)]
-        
+        inlets = [snap[pos]["inlet_temp"] for snap in request.snapshots if pos < len(snap)]
+        outlets = [snap[pos]["outlet_temp"] for snap in request.snapshots if pos < len(snap)]
         if len(inlets) < 2:
             continue
-        
-        # Calculate simple linear trend
         inlet_slope = (inlets[-1] - inlets[0]) / (len(inlets) - 1)
         outlet_slope = (outlets[-1] - outlets[0]) / (len(outlets) - 1)
-        
-        # Predict 15 minutes ahead (assuming 1 snapshot ~ 1 unit time)
         pred_inlet = inlets[-1] + inlet_slope * 1.5
         pred_outlet = outlets[-1] + outlet_slope * 1.5
-        
-        cell_id = request.snapshots[0][pos].id
-        predicted_cell = ThermalCell(
-            id=cell_id,
-            x=request.snapshots[0][pos].x,
-            y=request.snapshots[0][pos].y,
-            inlet_celsius=round(pred_inlet, 2),
-            outlet_celsius=round(pred_outlet, 2),
-        )
-        predicted_grid.append(predicted_cell)
-        
-        # Detect hotspots
+        cell = request.snapshots[0][pos]
+        predicted_grid.append({"row": cell["row"], "col": cell["col"], "inlet_temp": round(pred_inlet, 2), "outlet_temp": round(pred_outlet, 2)})
         delta = pred_outlet - pred_inlet
         if pred_inlet > 35 or delta > 15:
             severity = "high" if pred_inlet > 40 or delta > 20 else "medium"
-            hotspots.append({
-                "id": cell_id,
-                "severity": severity,
-                "predicted_inlet": round(pred_inlet, 2),
-                "predicted_delta": round(delta, 2)
-            })
-        
+            hotspots.append({"row": cell["row"], "col": cell["col"], "severity": severity, "predicted_inlet": round(pred_inlet, 2), "predicted_delta": round(delta, 2)})
         trend_stability = 1.0 - min(abs(inlet_slope) + abs(outlet_slope), 2.0) / 2.0
         confidence_scores.append(trend_stability * 0.8 + 0.2)
-    
+
     confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0.5
-    
-    return ThermalPredictionResponse(
-        predicted_grid=predicted_grid,
-        hotspots=hotspots,
-        confidence=round(confidence, 2),
-        timestamp=datetime.utcnow().isoformat()
-    )
+    return ThermalPredictionResponse(predicted_grid=predicted_grid, hotspots=hotspots, confidence=round(confidence, 2), timestamp=_now_iso())
+
 
 # ===================== LightSpeed Routes =====================
 
 @router.get("/lightspeed/network", response_model=NetworkTraffic)
 async def get_network_traffic():
-    """Get current network topology and link utilization"""
-    return {
-        "nodes": [
-            {"id": "A1"},
-            {"id": "A2"},
-            {"id": "B1"},
-            {"id": "B2"},
-            {"id": "C1"},
-        ],
-        "links": [
-            {"source": "A1", "target": "A2", "capacity_gbps": 10, "utilization_percent": 45},
-            {"source": "A1", "target": "B1", "capacity_gbps": 10, "utilization_percent": 67},
-            {"source": "A2", "target": "B2", "capacity_gbps": 10, "utilization_percent": 23},
-            {"source": "B1", "target": "B2", "capacity_gbps": 10, "utilization_percent": 89},
-            {"source": "C1", "target": "A1", "capacity_gbps": 10, "utilization_percent": 34},
-            {"source": "C1", "target": "A2", "capacity_gbps": 10, "utilization_percent": 56},
-            {"source": "C1", "target": "B1", "capacity_gbps": 10, "utilization_percent": 78},
-            {"source": "C1", "target": "B2", "capacity_gbps": 10, "utilization_percent": 12},
-        ],
-    }
+    """Real per-link utilization telemetry (lightspeed/telemetry.py), fed into the real congestion dwell tracker (MUST HAVE #15)."""
+    now = datetime.now(timezone.utc)
+    links = []
+    nodes = set()
+    for source, target in state.LINKS:
+        link_id = f"{source}-{target}"
+        nodes.add(source)
+        nodes.add(target)
+        current = state.lightspeed_telemetry.poll(link_id)
+        utilization = current["utilization_pct"]
+        state.congestion_tracker.observe_utilization(link_id, utilization, now)
+        links.append(NetworkLink(source=source, target=target, capacity_gbps=10.0, utilization_pct=round(utilization, 1)))
+
+    return NetworkTraffic(nodes=sorted(nodes), links=links)
+
 
 @router.post("/lightspeed/optimize")
 async def optimize_network():
-    """Simulate a network optimization pass after a traffic spike."""
-    return {
-        "optimized": True,
-        "adjustedLinks": [
-            {"source": "B1", "target": "B2", "utilization_percent": 60},
-            {"source": "C1", "target": "B1", "utilization_percent": 72},
-        ],
-    }
+    """
+    Real optimization pass: reports every link the real CongestionTracker
+    has confirmed congested (sustained above threshold for the dwell
+    time, MUST HAVE #15) -- not a fixed canned response.
+    """
+    now = datetime.now(timezone.utc)
+    adjusted = []
+    for source, target in state.LINKS:
+        link_id = f"{source}-{target}"
+        if state.congestion_tracker.congestion_confirmed(link_id, now):
+            current = state.lightspeed_telemetry.current(link_id)["utilization_pct"]
+            adjusted.append({"source": source, "target": target, "utilization_pct": round(max(current * 0.6, 0.0), 1)})
+
+    return {"optimized": True, "adjustedLinks": adjusted}
+
 
 # ===================== ML Bridge Endpoints =====================
 
 @router.post("/ml/thermaltrace/predict", response_model=ThermalPredictionResponse)
 async def ml_predict_thermal(request: ThermalPredictionRequest):
     """
-    ML Bridge: Thermal prediction
-    
-    The frontend will call this after collecting 20 thermal snapshots.
-    This endpoint should call a trained PyTorch LSTM model.
-
     TODO: No LSTM model exists yet in this codebase. When one is built,
     load it here (e.g. from a new ml/ module) instead of returning a stub.
     """
-    # Stub implementation
-    return ThermalPredictionResponse(
-        predicted_grid=[],
-        hotspots=[],
-        confidence=0.0,
-        timestamp=datetime.utcnow().isoformat()
-    )
+    return ThermalPredictionResponse(predicted_grid=[], hotspots=[], confidence=0.0, timestamp=_now_iso())
 
 @router.post("/ml/noisemesh/classify", response_model=AudioClassificationResponse)
 async def ml_classify_audio(request: AudioClassificationRequest):
-    """
-    EXCLUDED: NoiseMesh module is not being implemented
-    This endpoint is kept as a stub for future reference only.
-    """
+    """EXCLUDED: NoiseMesh module is not being implemented."""
     raise HTTPException(status_code=501, detail="NoiseMesh module is not part of this implementation")
 
 # ===================== Health & Status =====================
 
 @router.get("/status")
 async def api_status():
-    """Overall API status"""
     return {
         "status": "operational",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "modules": {
-            "idlehunter": "mock",
-            "waterwatch": "mock",
-            "carbonclock": "mock",
-            "thermaltrace": "mock (ML stub pending)",
-            "lightspeed": "mock",
-            "noisemesh": "excluded"
+            "idlehunter": "live", "waterwatch": "live", "carbonclock": "live",
+            "thermaltrace": "live (ML bridge stub pending)", "lightspeed": "live",
+            "noisemesh": "excluded",
         },
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": _now_iso(),
     }

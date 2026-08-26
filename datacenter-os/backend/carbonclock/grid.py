@@ -107,6 +107,13 @@ class CarbonForecastSimulator:
             )
         return buckets
 
+    def sample_current(self, zone: str) -> float:
+        """Advances and returns the zone's current carbon-intensity reading, for live polling (as opposed to forecast_48h's batch of 48 hourly buckets)."""
+        return self._simulator.sample(zone)["carbon_intensity"]
+
+    def history(self, zone: str, n: int) -> list[float]:
+        return self._simulator.history(zone, "carbon_intensity", n)
+
 
 # ---------------------------------------------------------------------------
 # SHOULD HAVE #10 -- ingest forecast on a refresh cycle, not every call

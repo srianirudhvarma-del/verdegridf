@@ -1,13 +1,24 @@
 from tests.conftest import make_snapshot
 
 
-def test_get_thermal_snapshot_returns_64_cell_grid(client):
+def test_get_thermal_snapshot_returns_an_8x8_grid(client):
+    """
+    Phase 9: the snapshot is now a real 8x8 grid interpolated (SHOULD
+    HAVE #23) from 5 real per-rack sensor readings, with each cell
+    honestly flagged real vs interpolated -- not a flat list of 64 fake
+    cells.
+    """
     resp = client.get("/api/thermaltrace/snapshot")
     assert resp.status_code == 200
-    grid = resp.json()
-    assert len(grid) == 64  # 8x8
-    for field in ("id", "x", "y", "inlet_celsius", "outlet_celsius"):
-        assert field in grid[0]
+    body = resp.json()
+    grid = body["grid"]
+    assert len(grid) == 8
+    assert all(len(row) == 8 for row in grid)
+    for field in ("row", "col", "inlet_temp", "outlet_temp", "is_interpolated"):
+        assert field in grid[0][0]
+    # Exactly 5 real sensor readings; the rest must be flagged interpolated.
+    real_cells = sum(1 for row in grid for cell in row if not cell["is_interpolated"])
+    assert real_cells == 5
 
 
 class TestPredictValidation:
@@ -50,7 +61,7 @@ class TestPredictLogic:
 
         assert len(body["predicted_grid"]) == 2
         for cell in body["predicted_grid"]:
-            assert abs(cell["inlet_celsius"] - 25.0) < 0.01 or abs(cell["inlet_celsius"] - 26.0) < 0.01
+            assert abs(cell["inlet_temp"] - 25.0) < 0.01 or abs(cell["inlet_temp"] - 26.0) < 0.01
 
     def test_rising_trend_flags_hotspot(self, client):
         # Sharp upward trend should push predicted inlet above the 35C hotspot threshold.

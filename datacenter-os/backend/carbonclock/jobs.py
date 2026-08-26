@@ -78,6 +78,20 @@ class DeadlineQueue:
     def peek_next_deadline(self) -> Optional[DeferrableJob]:
         return self._heap[0].job if self._heap else None
 
+    def remove(self, job_id: str) -> Optional[DeferrableJob]:
+        """
+        Remove and return a specific job by id, if present -- e.g. an
+        operator manually running it before its deadline. Not part of the
+        methodology's own deadline logic; a real, if uncommon, queue
+        operation an API layer needs.
+        """
+        for index, entry in enumerate(self._heap):
+            if entry.job.jobId == job_id:
+                removed = self._heap.pop(index)
+                heapq.heapify(self._heap)
+                return removed.job
+        return None
+
     def force_release_overdue(self, now: datetime) -> list[DeferrableJob]:
         """
         Rule: force-run any job where now >= deadline, regardless of

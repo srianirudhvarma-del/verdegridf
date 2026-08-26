@@ -10,11 +10,17 @@ def test_get_network_traffic(client):
 
 
 def test_optimize_network(client):
+    """
+    Phase 9: adjustedLinks now comes from the real CongestionTracker
+    (MUST HAVE #15's sustained-dwell confirmation), not a fixed pair --
+    freshly polled telemetry has no confirmed-congested links yet, so 0
+    is the expected real answer.
+    """
     resp = client.post("/api/lightspeed/optimize")
     assert resp.status_code == 200
     body = resp.json()
     assert body["optimized"] is True
-    assert len(body["adjustedLinks"]) == 2
+    assert isinstance(body["adjustedLinks"], list)
 
 
 def test_ml_thermaltrace_predict_is_a_labeled_stub(client):

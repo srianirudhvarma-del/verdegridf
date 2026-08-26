@@ -54,3 +54,15 @@ def test_zones_have_independent_forecasts():
     us_ca = sim.forecast_48h("US-CA", start=start)
 
     assert in_so[0].carbonIntensity != us_ca[0].carbonIntensity
+
+
+def test_sample_current_returns_a_live_reading_and_advances_history():
+    sim = CarbonForecastSimulator()
+    sim.register_zone("IN-SO", seed=1)
+
+    first = sim.sample_current("IN-SO")
+    second = sim.sample_current("IN-SO")
+
+    assert isinstance(first, float)
+    history = sim.history("IN-SO", 2)
+    assert history == [first, second]
