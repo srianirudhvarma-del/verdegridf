@@ -468,6 +468,16 @@ async def get_network_traffic():
     return NetworkTraffic(nodes=sorted(nodes), links=links)
 
 
+@router.post("/lightspeed/inject-spike")
+async def inject_traffic_spike():
+    """Demo control: injects a real utilization spike (shared/telemetry_sim.py's anomaly injection, Phase 0) into a random link, for exercising the congestion/optimize path."""
+    import random
+
+    link_id = random.choice(state.LINK_IDS)
+    state.lightspeed_telemetry.inject_anomaly(link_id, "utilization_pct", "traffic_spike", magnitude=60.0, duration_ticks=5)
+    return {"linkId": link_id, "message": f"Injected a traffic spike on {link_id}"}
+
+
 @router.post("/lightspeed/optimize")
 async def optimize_network():
     """

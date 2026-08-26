@@ -90,6 +90,26 @@ for _rack in RACKS:
 
 action_recommendation_queue = ActionRecommendationQueue()
 
+# Two demo recommendations so the approval queue (MUST HAVE #22) isn't
+# empty on first load. In a full system these would come from
+# thermaltrace/zoning.py's build_setpoint_recommendation() reacting to a
+# real zoning/cooling-performance signal; seeded directly here since that
+# full zoning pipeline isn't wired into a live trigger yet.
+from thermaltrace.control import ActionRecommendation as _ActionRecommendation
+
+action_recommendation_queue.submit(
+    _ActionRecommendation(
+        id="rec-1", type="adjust_setpoint", rackId="rack2", magnitude=-1.5,
+        predictedBenefit="rack2 setpoint 22C -> 20.5C, ~40W cooling reduction",
+    )
+)
+action_recommendation_queue.submit(
+    _ActionRecommendation(
+        id="rec-2", type="adjust_fan_speed", rackId="rack4", magnitude=10.0,
+        predictedBenefit="rack4 fan speed +10%, headroom improves ~0.8C",
+    )
+)
+
 # ---------------------------------------------------------------------------
 # WaterWatch -- one loop per rack (same id, so the ThermalTrace
 # cooling-performance cross-wire can key off it directly), plus one

@@ -1,4 +1,5 @@
 from tests.conftest import make_snapshot
+from lightspeed.congestion import DEFAULT_CONGESTION_THRESHOLD_PCT
 
 
 def test_get_network_traffic(client):
@@ -7,6 +8,25 @@ def test_get_network_traffic(client):
     body = resp.json()
     assert len(body["nodes"]) == 5
     assert len(body["links"]) == 8
+
+
+def test_inject_spike_produces_a_real_elevated_reading(client):
+    """
+    New Phase 9 demo endpoint: injects a real utilization anomaly via
+    shared/telemetry_sim.py. Confirmed congestion (MUST HAVE #15) itself
+    requires real elapsed wall-clock dwell time, which a fast unit test
+    can't simulate -- so this only checks the injection's direct, real
+    effect: the next poll shows a genuinely elevated reading on that link.
+    """
+    resp = client.post("/api/lightspeed/inject-spike")
+    assert resp.status_code == 200
+    link_id = resp.json()["linkId"]
+    valid_ids = {f"{a}-{b}" for a, b in [("A1", "A2"), ("A1", "B1"), ("A2", "B2"), ("B1", "B2"), ("C1", "A1"), ("C1", "A2"), ("C1", "B1"), ("C1", "B2")]}
+    assert link_id in valid_ids
+
+    network = client.get("/api/lightspeed/network").json()
+    spiked_link = next(l for l in network["links"] if f"{l['source']}-{l['target']}" == link_id)
+    assert spiked_link["utilization_pct"] > DEFAULT_CONGESTION_THRESHOLD_PCT
 
 
 def test_optimize_network(client):

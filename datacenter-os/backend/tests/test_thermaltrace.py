@@ -21,6 +21,34 @@ def test_get_thermal_snapshot_returns_an_8x8_grid(client):
     assert real_cells == 5
 
 
+class TestActionApprovalQueue:
+    """MUST HAVE #22, exposed via the API for the first time in Phase 9."""
+
+    def test_pending_actions_are_seeded_and_real(self, client):
+        resp = client.get("/api/thermaltrace/actions")
+        assert resp.status_code == 200
+        actions = resp.json()
+        assert len(actions) >= 1
+        for action in actions:
+            assert action["status"] == "pending"
+
+    def test_approve_transitions_a_real_action_to_approved(self, client):
+        actions = client.get("/api/thermaltrace/actions").json()
+        target = actions[0]["id"]
+
+        resp = client.post(f"/api/thermaltrace/actions/{target}/approve", json={"operatorId": "op1"})
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "approved"
+
+        # No longer in the pending list.
+        remaining_ids = {a["id"] for a in client.get("/api/thermaltrace/actions").json()}
+        assert target not in remaining_ids
+
+    def test_approve_unknown_action_returns_400(self, client):
+        resp = client.post("/api/thermaltrace/actions/does-not-exist/approve", json={})
+        assert resp.status_code == 400
+
+
 class TestPredictValidation:
     def test_rejects_zero_snapshots(self, client):
         resp = client.post("/api/thermaltrace/predict", json={"snapshots": []})
