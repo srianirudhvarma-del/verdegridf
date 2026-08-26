@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from carbonclock.jobs import DeadlineQueue, submit_job
 from shared.classification import WorkloadClassificationStore
 from shared.contracts import WorkloadTag
+from shared.eventbus import EventBus
 
 NOW = datetime(2026, 8, 25, 0, 0, 0, tzinfo=timezone.utc)
 
@@ -96,3 +97,37 @@ def test_deferrable_job_force_runs_at_deadline_even_if_never_scheduled_into_a_gr
 
     at_deadline = queue.force_release_overdue(NOW + timedelta(minutes=60))
     assert [j.jobId for j in at_deadline] == ["job-never-scheduled"]
+
+
+def test_force_run_overdue_publishes_carbonclock_job_scheduled():
+    store = WorkloadClassificationStore()
+    tag_job(store, "job-1", "deferrable", max_delay=10)
+    queue = DeadlineQueue()
+    queue.add(submit_job("job-1", NOW, store=store))
+
+    bus = EventBus()
+    received = []
+    bus.subscribe("carbonclock.job.scheduled", received.append)
+
+    released = queue.force_run_overdue(NOW + timedelta(minutes=10), bus=bus)
+
+    assert [j.jobId for j in released] == ["job-1"]
+    assert len(received) == 1
+    assert received[0]["jobId"] == "job-1"
+    assert received[0]["forceRun"] is True
+
+
+def test_force_run_overdue_publishes_nothing_when_no_job_is_overdue():
+    store = WorkloadClassificationStore()
+    tag_job(store, "job-1", "deferrable", max_delay=60)
+    queue = DeadlineQueue()
+    queue.add(submit_job("job-1", NOW, store=store))
+
+    bus = EventBus()
+    received = []
+    bus.subscribe("carbonclock.job.scheduled", received.append)
+
+    released = queue.force_run_overdue(NOW + timedelta(minutes=5), bus=bus)
+
+    assert released == []
+    assert received == []

@@ -12,6 +12,7 @@ from lightspeed.flow import classify_flow
 from lightspeed.routing import IpToVmLookup
 from shared.classification import WorkloadClassificationStore
 from shared.orchestrator import (
+    JobExecutionTracker,
     PrewakeSubscriber,
     apply_operator_classification,
     bucket_rack_load,
@@ -399,3 +400,32 @@ def test_lightspeed_never_reroutes_a_flow_whose_owner_was_never_classified():
     flow = tag_flow_with_real_classification(make_elephant_flow("10.0.0.7"), lookup, store=store)
 
     assert flow.latencySensitive is True  # fail-safe-open: untagged -> protected -> latency-sensitive
+
+
+# ---------------------------------------------------------------------------
+# JobExecutionTracker: real subscriber for carbonclock.job.scheduled
+# ---------------------------------------------------------------------------
+
+
+def test_job_execution_tracker_records_a_real_published_event():
+    bus = EventBus()
+    tracker = JobExecutionTracker(bus=bus)
+    tracker.register()
+
+    assert tracker.has_run("job-1") is False
+
+    bus.publish("carbonclock.job.scheduled", {"jobId": "job-1", "windowStart": NOW.isoformat(), "forceRun": True})
+
+    assert tracker.has_run("job-1") is True
+    assert tracker.has_run("job-2") is False
+
+
+def test_job_execution_tracker_unregistered_never_sees_events():
+    bus = EventBus()
+    tracker = JobExecutionTracker(bus=bus)
+    # register() deliberately not called
+
+    bus.subscribe("carbonclock.job.scheduled", lambda payload: None)  # some other subscriber exists
+    bus.publish("carbonclock.job.scheduled", {"jobId": "job-1"})
+
+    assert tracker.has_run("job-1") is False

@@ -364,3 +364,34 @@ def tag_flow_with_real_classification(
     two functions that happen to accept the same store type.
     """
     return auto_tag_latency_sensitivity(flow, lookup, store=store)
+
+
+# ---------------------------------------------------------------------------
+# JobExecutionTracker: the real subscriber for carbonclock.job.scheduled --
+# a topic defined since Phase 0 that had no publisher until
+# carbonclock/jobs.py's force_run_overdue() and no subscriber until this.
+# ---------------------------------------------------------------------------
+
+
+class JobExecutionTracker:
+    """
+    Subscribes to carbonclock.job.scheduled and records the real effect of
+    a job actually starting to run. Right now the only publisher is
+    carbonclock/jobs.py's DeadlineQueue.force_run_overdue() (a job forced
+    through past its deadline); this is deliberately generic so a future
+    publisher on the scheduler's own successful-placement path could reuse
+    the same topic and subscriber without new wiring.
+    """
+
+    def __init__(self, *, bus: EventBus = event_bus) -> None:
+        self.bus = bus
+        self.executions: list[dict] = []
+
+    def register(self) -> None:
+        self.bus.subscribe("carbonclock.job.scheduled", self._on_job_scheduled)
+
+    def _on_job_scheduled(self, payload: dict) -> None:
+        self.executions.append(payload)
+
+    def has_run(self, job_id: str) -> bool:
+        return any(execution.get("jobId") == job_id for execution in self.executions)

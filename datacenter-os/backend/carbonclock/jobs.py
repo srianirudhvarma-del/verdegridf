@@ -21,6 +21,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from shared.classification import WorkloadClassificationStore, classification_store
+from shared.eventbus import EventBus, event_bus
 
 
 class DeferrableJob(BaseModel):
@@ -83,10 +84,34 @@ class DeadlineQueue:
         current carbon state. Pops and returns every job whose deadline
         has passed; a scheduled cron/interval check (every 1-5 min per the
         methodology) is expected to call this repeatedly.
+
+        This is a pure queue operation -- it does not, by itself, cause
+        anything else in the system to know the job ran. Production code
+        should call force_run_overdue() below instead, which is the same
+        release plus the real production side-effect.
         """
         released = []
         while self._heap and self._heap[0].deadline <= now:
             released.append(heapq.heappop(self._heap).job)
+        return released
+
+    def force_run_overdue(self, now: datetime, *, bus: EventBus = event_bus) -> list[DeferrableJob]:
+        """
+        The real production path for MUST HAVE #7: force-releases every
+        job past its deadline (force_release_overdue above) and publishes
+        carbonclock.job.scheduled for each one, tagged forceRun=True.
+
+        carbonclock.job.scheduled has been a defined topic since Phase 0
+        but nothing ever published to it -- the same "publish to nobody"
+        gap the Phase 8b verification found for carbonclock.prewake.requested.
+        shared.orchestrator.JobExecutionTracker is the real subscriber.
+        """
+        released = self.force_release_overdue(now)
+        for job in released:
+            bus.publish(
+                "carbonclock.job.scheduled",
+                {"jobId": job.jobId, "windowStart": now.isoformat(), "forceRun": True},
+            )
         return released
 
     def __len__(self) -> int:
