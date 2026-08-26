@@ -1,21 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { getSnapshot, subscribe } from '../../data/mock/thermalSensors';
+import React, { useCallback, useState } from 'react';
+import { getThermalSnapshot } from '../../services/thermaltraceApi';
+import { useLiveResource } from '../../hooks/useLiveResource';
 import ModuleHeader from '../../components/shared/ModuleHeader';
 import MetricCard from '../../components/shared/MetricCard';
 import AlertBadge from '../../components/shared/AlertBadge';
+import ActionApprovalQueue from './ActionApprovalQueue';
 import { Activity } from 'lucide-react';
 
 export default function ThermalTrace() {
-  const [data, setData] = useState(() => getSnapshot());
+  const fetcher = useCallback(() => getThermalSnapshot(), []);
+  const [snapshot] = useLiveResource(fetcher, 5000);
+  const data = snapshot; // { grid, is_live }
   const [showML, setShowML] = useState(false);
   const [hoveredCell, setHoveredCell] = useState(null);
-
-  useEffect(() => {
-    const unsub = subscribe((newData) => {
-      setData({ ...newData });
-    }, 5000);
-    return unsub;
-  }, []);
 
   if (!data?.grid) return null;
 
@@ -206,6 +203,8 @@ export default function ThermalTrace() {
           </div>
         </div>
       </div>
+
+      <ActionApprovalQueue />
     </div>
   );
 }

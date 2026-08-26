@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getSnapshot as getIdle } from '../../data/mock/serverCluster';
-import { getSnapshot as getWater } from '../../data/mock/waterFlow';
-import { getSnapshot as getNetwork } from '../../data/mock/networkTraffic';
-import { getSnapshot as getThermal } from '../../data/mock/thermalSensors';
+import { getServerCluster } from '../../services/idlehunterApi';
+import { getWaterFlows } from '../../services/waterwatchApi';
+import { getNetworkTraffic } from '../../services/lightspeedApi';
+import { getThermalSnapshot } from '../../services/thermaltraceApi';
+import { useLiveResource } from '../../hooks/useLiveResource';
 import ModuleHeader from '../../components/shared/ModuleHeader';
 import { Bot, AlertTriangle } from 'lucide-react';
 
@@ -195,20 +196,19 @@ export default function Overview({ onNavigate, globalCarbonIntensity, setGlobalC
     else if (globalCarbonIntensity < 400 && isDeferralActive) setIsDeferralActive(false);
   }, [globalCarbonIntensity, isDeferralActive]);
 
-  const idleData = getIdle();
-  const waterData = getWater();
-  const networkData = getNetwork();
-  const thermalData = getThermal();
-
-  const zombieCount = idleData.servers.filter(s => s.state === 'zombie').length;
-  const wue = waterData.wue;
-  const leaks = waterData.anomalies.length;
-  const maxInlet = Math.max(...thermalData.grid.flat().map(c => c.inlet_temp));
-  const hotspotsCount = thermalData.grid.flat().filter(c => c.inlet_temp > 32).length;
-  const maxUtil = Math.max(...networkData.links.map(l => l.utilization_pct));
+  const idleFetcher = useCallback(() => getServerCluster(), []);
+  const [idleData] = useLiveResource(idleFetcher, 10000);
+  const waterFetcher = useCallback(() => getWaterFlows(), []);
+  const [waterData] = useLiveResource(waterFetcher, 10000);
+  const networkFetcher = useCallback(() => getNetworkTraffic(), []);
+  const [networkData] = useLiveResource(networkFetcher, 10000);
+  const thermalFetcher = useCallback(() => getThermalSnapshot(), []);
+  const [thermalData] = useLiveResource(thermalFetcher, 10000);
 
   const [energySaved, setEnergySaved] = useState(14022.45);
   const [co2Avoided, setCo2Avoided] = useState(250.31);
+
+  const zombieCount = idleData?.servers ? idleData.servers.filter(s => s.state === 'zombie').length : 0;
 
   useEffect(() => {
     const iv = setInterval(() => {
@@ -217,6 +217,14 @@ export default function Overview({ onNavigate, globalCarbonIntensity, setGlobalC
     }, 1000);
     return () => clearInterval(iv);
   }, [zombieCount]);
+
+  if (!idleData?.servers || !waterData?.units || !networkData?.links || !thermalData?.grid) return null;
+
+  const wue = waterData.wue;
+  const leaks = waterData.anomalies.length;
+  const maxInlet = Math.max(...thermalData.grid.flat().map(c => c.inlet_temp));
+  const hotspotsCount = thermalData.grid.flat().filter(c => c.inlet_temp > 32).length;
+  const maxUtil = Math.max(...networkData.links.map(l => l.utilization_pct));
 
   const handleSimulateSpike = () => setGlobalCarbonIntensity(480);
   const handleReturnNormal = () => setGlobalCarbonIntensity(245);

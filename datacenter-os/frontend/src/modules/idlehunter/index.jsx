@@ -1,32 +1,29 @@
-import React, { useEffect, useState } from 'react';
-import { getSnapshot, subscribe, performConsolidation } from '../../data/mock/serverCluster';
+import React, { useCallback, useEffect, useState } from 'react';
+import { getServerCluster, consolidateIdleServers } from '../../services/idlehunterApi';
+import { useLiveResource } from '../../hooks/useLiveResource';
 import ModuleHeader from '../../components/shared/ModuleHeader';
 import MetricCard from '../../components/shared/MetricCard';
 import SavingsMeter from '../../components/shared/SavingsMeter';
+import ClassificationOverride from './ClassificationOverride';
 
 export default function IdleHunter() {
-  const [data, setData] = useState(() => getSnapshot());
+  const fetcher = useCallback(() => getServerCluster(), []);
+  const [data] = useLiveResource(fetcher, 3000);
   const [autoConsolidate, setAutoConsolidate] = useState(false);
 
   useEffect(() => {
-    const unsub = subscribe((newData) => {
-      setData({ ...newData }); // force new ref
-    }, 3000);
-    return unsub;
-  }, []);
-
-  useEffect(() => {
+    // The real backend's consolidation pass is bulk (idlehunter/power.py's
+    // dwell state machine decides per-host, not per API call) -- auto-mode
+    // just triggers that real pass on an interval instead of harvesting one
+    // mock zombie at a time.
     let interval;
-    if (autoConsolidate && data?.servers) {
+    if (autoConsolidate) {
       interval = setInterval(() => {
-        const zombies = data.servers.filter(s => s.state === 'zombie');
-        if (zombies.length > 0) {
-          performConsolidation(zombies[0].id);
-        }
-      }, 1000);
+        consolidateIdleServers().catch((err) => console.error('auto-consolidate failed:', err));
+      }, 5000);
     }
     return () => clearInterval(interval);
-  }, [autoConsolidate, data]);
+  }, [autoConsolidate]);
 
   if (!data?.servers) return null;
 
@@ -53,9 +50,11 @@ export default function IdleHunter() {
         </div>
       </div>
 
+      <ClassificationOverride hostIds={servers.map((s) => s.id)} />
+
       {/* Top row metric cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <MetricCard 
+        <MetricCard
           title="ACTIVE ZOMBIE NODES"
           value={zombies.length}
           statusColor={zombies.length > 5 ? 'text-accent-red' : 'text-accent-green'}
@@ -81,7 +80,7 @@ export default function IdleHunter() {
           <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-6">
             <h3 className="text-lg font-sans font-light text-textMain tracking-widest uppercase flex items-center">
                Cluster Grid
-               <span className="text-[10px] font-mono text-textMuted ml-4 opacity-50 tracking-[0.2em]">50 NODE POOL</span>
+               <span className="text-[10px] font-mono text-textMuted ml-4 opacity-50 tracking-[0.2em]">{servers.length} NODE POOL</span>
             </h3>
             
             {/* Extremely Obvious Legend */}
@@ -174,8 +173,8 @@ export default function IdleHunter() {
                       <div className="text-[10px] text-textMuted font-mono opacity-60">CPU: {server.cpu_util.toFixed(1)}% · RAM: {server.ram_util.toFixed(1)}%</div>
                       <div className="text-[10px] text-accent-red font-mono font-bold tracking-tight bg-accent-red/5 px-2 py-0.5 rounded mt-2 inline-block">WASTE: {server.watts_idle} WATTS</div>
                     </div>
-                    <button 
-                      onClick={() => performConsolidation(server.id)}
+                    <button
+                      onClick={() => consolidateIdleServers().catch((err) => console.error('consolidate failed:', err))}
                       className="bg-card hover:bg-accent-green text-textMain hover:text-black border border-white/10 hover:border-accent-green text-[10px] px-3 py-1.5 rounded-lg transition-all font-bold uppercase tracking-widest"
                     >
                       Harvest

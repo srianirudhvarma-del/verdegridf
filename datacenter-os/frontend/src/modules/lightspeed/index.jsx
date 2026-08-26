@@ -1,21 +1,16 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import * as d3 from 'd3';
-import { getSnapshot, subscribe, injectSpike } from '../../data/mock/networkTraffic';
+import { getNetworkTraffic, injectTrafficSpike } from '../../services/lightspeedApi';
+import { useLiveResource } from '../../hooks/useLiveResource';
 import ModuleHeader from '../../components/shared/ModuleHeader';
 import MetricCard from '../../components/shared/MetricCard';
 import AlertBadge from '../../components/shared/AlertBadge';
 import { Activity, Zap, Clock } from 'lucide-react';
 
 export default function LightSpeed({ isDeferralActive }) {
-  const [data, setData] = useState(() => getSnapshot());
+  const fetcher = useCallback(() => getNetworkTraffic(), []);
+  const [data, refresh] = useLiveResource(fetcher, 4000);
   const svgRef = useRef(null);
-
-  useEffect(() => {
-    const unsub = subscribe((newData) => {
-      setData({ ...newData });
-    }, 4000);
-    return unsub;
-  }, []);
 
   useEffect(() => {
     if (!svgRef.current || !data?.nodes) return;
@@ -118,8 +113,8 @@ export default function LightSpeed({ isDeferralActive }) {
           subtitle="Network map and traffic management"
           moduleName="LightSpeed"
         />
-        <button 
-          onClick={injectSpike}
+        <button
+          onClick={() => injectTrafficSpike().then(refresh).catch((err) => console.error('inject spike failed:', err))}
           className="relative z-10 bg-card border border-borderC text-textMuted hover:text-textMain hover:bg-white/5 hover:border-borderC px-6 py-2.5 rounded-lg text-[10px] font-bold transition-all uppercase tracking-[0.2em] flex items-center group"
         >
           <Zap className="w-3 h-3 mr-2 text-accent-gold group-hover:animate-pulse" />

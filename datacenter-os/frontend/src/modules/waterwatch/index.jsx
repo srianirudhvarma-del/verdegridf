@@ -1,19 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { getSnapshot, subscribe } from '../../data/mock/waterFlow';
+import React, { useCallback, useState } from 'react';
+import { getWaterFlows } from '../../services/waterwatchApi';
+import { useLiveResource } from '../../hooks/useLiveResource';
 import ModuleHeader from '../../components/shared/ModuleHeader';
 import MetricCard from '../../components/shared/MetricCard';
 import AlertBadge from '../../components/shared/AlertBadge';
+import MaintenanceModeToggle from './MaintenanceModeToggle';
 
 export default function WaterWatch() {
-  const [data, setData] = useState(() => getSnapshot());
+  const fetcher = useCallback(() => getWaterFlows(), []);
+  const [data] = useLiveResource(fetcher, 5000);
   const [reportOpen, setReportOpen] = useState(false);
-
-  useEffect(() => {
-    const unsub = subscribe((newData) => {
-      setData({ ...newData });
-    }, 5000);
-    return unsub;
-  }, []);
 
   if (!data?.units) return null;
 
@@ -81,6 +77,8 @@ export default function WaterWatch() {
           statusColor={data.anomalies.length > 0 ? 'text-accent-red' : 'text-textMain'} 
         />
       </div>
+
+      <MaintenanceModeToggle loopIds={data.units.map((u) => u.id)} />
 
       {data.anomalies.map((a, i) => (
         <AlertBadge 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Navigation from './components/shared/Navigation';
 import AIAgent from './components/shared/AIAgent';
 import Onboarding from './pages/Onboarding';
@@ -10,10 +10,10 @@ import WaterWatch from './modules/waterwatch';
 import CarbonClock from './modules/carbonclock';
 import ThermalTrace from './modules/thermaltrace';
 import LightSpeed from './modules/lightspeed';
-import { getSnapshot as getIdle } from './data/mock/serverCluster';
-import { getSnapshot as getWater } from './data/mock/waterFlow';
-import { getSnapshot as getNetwork } from './data/mock/networkTraffic';
-import { getSnapshot as getThermal } from './data/mock/thermalSensors';
+import { getServerCluster } from './services/idlehunterApi';
+import { getWaterFlows } from './services/waterwatchApi';
+import { getNetworkTraffic } from './services/lightspeedApi';
+import { getThermalSnapshot } from './services/thermaltraceApi';
 import './index.css';
 
 // ─── Facility profile helper ──────────────────────────────────────────────
@@ -39,18 +39,47 @@ const MODULE_SUGGESTED_QUESTIONS = {
   overview:     ["What are my biggest savings opportunities?", "Which module should I focus on first?", "How is my facility performing overall?"],
 };
 
-function getDashboardSystemPrompt(activeModule, facilityProfile) {
-  let moduleData = {};
-  try {
-    switch (activeModule) {
-      case 'idlehunter': { const d = getIdle(); moduleData = { zombie_count: d.servers.filter(s => s.state === 'zombie').length, total_servers: d.servers.length, avg_cpu: (d.servers.reduce((a, b) => a + b.cpu_util, 0) / d.servers.length).toFixed(1) }; break; }
-      case 'waterwatch': { const d = getWater(); moduleData = { wue: d.wue?.toFixed(2), total_flow: Math.round(d.totalFlow), anomalies: d.anomalies.length, unit_count: d.units?.length }; break; }
-      case 'thermaltrace': { const d = getThermal(); const flat = d.grid.flat(); moduleData = { max_inlet_temp: Math.max(...flat.map(c => c.inlet_temp)).toFixed(1), avg_inlet_temp: (flat.reduce((a, c) => a + c.inlet_temp, 0) / flat.length).toFixed(1), hotspots: flat.filter(c => c.inlet_temp > 32).length }; break; }
-      case 'lightspeed': { const d = getNetwork(); moduleData = { max_utilization: Math.max(...d.links.map(l => l.utilization_pct)).toFixed(1), bottleneck_links: d.links.filter(l => l.utilization_pct > 80).length, total_links: d.links.length }; break; }
-      default: moduleData = {};
+// Real backend fetch per module, for the AI assistant's grounding context.
+// Async (unlike the old synchronous mock reads) -- App holds the last
+// successfully fetched snapshot in state (see useModuleDataSnapshot below)
+// rather than fetching inline during prompt construction.
+async function fetchModuleData(activeModule) {
+  switch (activeModule) {
+    case 'idlehunter': {
+      const d = await getServerCluster();
+      return { zombie_count: d.servers.filter(s => s.state === 'zombie').length, total_servers: d.servers.length, avg_cpu: (d.servers.reduce((a, b) => a + b.cpu_util, 0) / d.servers.length).toFixed(1) };
     }
-  } catch {}
+    case 'waterwatch': {
+      const d = await getWaterFlows();
+      return { wue: d.wue?.toFixed(2), total_flow: Math.round(d.totalFlow), anomalies: d.anomalies.length, unit_count: d.units?.length };
+    }
+    case 'thermaltrace': {
+      const d = await getThermalSnapshot();
+      const flat = d.grid.flat();
+      return { max_inlet_temp: Math.max(...flat.map(c => c.inlet_temp)).toFixed(1), avg_inlet_temp: (flat.reduce((a, c) => a + c.inlet_temp, 0) / flat.length).toFixed(1), hotspots: flat.filter(c => c.inlet_temp > 32).length };
+    }
+    case 'lightspeed': {
+      const d = await getNetworkTraffic();
+      return { max_utilization: Math.max(...d.links.map(l => l.utilization_pct)).toFixed(1), bottleneck_links: d.links.filter(l => l.utilization_pct > 80).length, total_links: d.links.length };
+    }
+    default:
+      return {};
+  }
+}
 
+function useModuleDataSnapshot(activeModule) {
+  const [moduleData, setModuleData] = useState({});
+  useEffect(() => {
+    let cancelled = false;
+    fetchModuleData(activeModule)
+      .then((data) => { if (!cancelled) setModuleData(data); })
+      .catch(() => { if (!cancelled) setModuleData({}); });
+    return () => { cancelled = true; };
+  }, [activeModule]);
+  return moduleData;
+}
+
+function getDashboardSystemPrompt(activeModule, facilityProfile, moduleData) {
   return `You are GreenCore's datacenter intelligence assistant. You have full context of this facility's monitoring data.
 
 Facility: ${facilityProfile?.facility_name || 'Unknown'}
@@ -82,6 +111,7 @@ function App() {
   const [isDeferralActive, setIsDeferralActive] = useState(false);
 
   const facilityProfile = useMemo(() => getProfile(), [activeTab]);
+  const moduleData = useModuleDataSnapshot(activeTab);
 
   const handleOnboardingComplete = () => setActiveTab('plan');
   const handleReconfigure = () => {
@@ -90,8 +120,8 @@ function App() {
   };
 
   const dashboardSystemPrompt = useMemo(
-    () => getDashboardSystemPrompt(activeTab, facilityProfile),
-    [activeTab, facilityProfile]
+    () => getDashboardSystemPrompt(activeTab, facilityProfile, moduleData),
+    [activeTab, facilityProfile, moduleData]
   );
 
   const renderContent = () => {
