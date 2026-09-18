@@ -2,7 +2,7 @@ import pytest
 
 from thermos.model import (
     MIN_RESIDUAL_TRAINING_SAMPLES,
-    IdleHunterRackReading,
+    PowerPruneRackReading,
     RCThermalModel,
     ResidualCorrector,
     build_feature_vector,
@@ -134,14 +134,14 @@ def test_prediction_is_deterministic_given_a_seed():
 
 
 # ---------------------------------------------------------------------------
-# MUST HAVE #19 -- IdleHunter telemetry join
+# MUST HAVE #19 -- PowerPrune telemetry join
 # ---------------------------------------------------------------------------
 
 
 def test_join_finds_the_most_recent_reading_within_tolerance():
     readings = [
-        IdleHunterRackReading(rackId="rack-1", timestamp="2026-08-25T00:00:00+00:00", workloadUtil=0.4, powerDrawWatts=800.0),
-        IdleHunterRackReading(rackId="rack-1", timestamp="2026-08-25T00:00:30+00:00", workloadUtil=0.6, powerDrawWatts=900.0),
+        PowerPruneRackReading(rackId="rack-1", timestamp="2026-08-25T00:00:00+00:00", workloadUtil=0.4, powerDrawWatts=800.0),
+        PowerPruneRackReading(rackId="rack-1", timestamp="2026-08-25T00:00:30+00:00", workloadUtil=0.6, powerDrawWatts=900.0),
     ]
 
     util, power = join_workload_telemetry("rack-1", "2026-08-25T00:00:45+00:00", readings)
@@ -152,7 +152,7 @@ def test_join_finds_the_most_recent_reading_within_tolerance():
 
 def test_join_ignores_readings_from_a_different_rack():
     readings = [
-        IdleHunterRackReading(rackId="rack-2", timestamp="2026-08-25T00:00:00+00:00", workloadUtil=0.9, powerDrawWatts=1200.0),
+        PowerPruneRackReading(rackId="rack-2", timestamp="2026-08-25T00:00:00+00:00", workloadUtil=0.9, powerDrawWatts=1200.0),
     ]
 
     util, power = join_workload_telemetry("rack-1", "2026-08-25T00:00:05+00:00", readings)
@@ -163,7 +163,7 @@ def test_join_ignores_readings_from_a_different_rack():
 
 def test_join_falls_back_to_none_when_reading_is_too_stale():
     readings = [
-        IdleHunterRackReading(rackId="rack-1", timestamp="2026-08-25T00:00:00+00:00", workloadUtil=0.4, powerDrawWatts=800.0),
+        PowerPruneRackReading(rackId="rack-1", timestamp="2026-08-25T00:00:00+00:00", workloadUtil=0.4, powerDrawWatts=800.0),
     ]
 
     util, power = join_workload_telemetry(
@@ -176,14 +176,14 @@ def test_join_falls_back_to_none_when_reading_is_too_stale():
 
 def test_build_feature_vector_matches_the_shared_schema_shape():
     readings = [
-        IdleHunterRackReading(rackId="rack-1", timestamp="2026-08-25T00:00:00+00:00", workloadUtil=0.3, powerDrawWatts=700.0),
+        PowerPruneRackReading(rackId="rack-1", timestamp="2026-08-25T00:00:00+00:00", workloadUtil=0.3, powerDrawWatts=700.0),
     ]
     vector = build_feature_vector(
         "rack-1",
         "2026-08-25T00:00:10+00:00",
         temp_grid=[[25.0, 26.0], [27.0, 28.0]],
         humidity=45.0,
-        idlehunter_readings=readings,
+        powerprune_readings=readings,
     )
 
     assert vector.workloadUtil == 0.3

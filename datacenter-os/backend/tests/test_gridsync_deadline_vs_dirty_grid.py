@@ -66,9 +66,9 @@ def make_dirty_windows() -> list[HourlyForecast]:
 
 def abundant_capacity_forecast(start: str, end: str) -> CapacityForecast:
     """
-    Generous IdleHunter capacity on every window, so that if scheduling
+    Generous PowerPrune capacity on every window, so that if scheduling
     still fails, it can only be because of the dirty-grid flexible-capacity
-    cap -- never because IdleHunter capacity was also scarce.
+    cap -- never because PowerPrune capacity was also scarce.
     """
     return CapacityForecast(
         timestampRangeStart=start, timestampRangeEnd=end,
@@ -115,7 +115,7 @@ def test_deferrable_job_force_runs_at_deadline_even_when_the_grid_is_dirty_throu
     assert tracker.has_run(JOB_ID) is False  # confirmed unrun at every point before the deadline
 
     # Independently confirm *why* it was blocked: the dirty grid's floor
-    # cap, not IdleHunter capacity (made abundant above) or a deadline
+    # cap, not PowerPrune capacity (made abundant above) or a deadline
     # already having passed (all attempts were well before DEADLINE).
     assert pool.available_capacity(windows[0]) == 50.0
     assert pool.available_capacity(windows[0]) < REQUIRED_CAPACITY

@@ -1,15 +1,15 @@
-from idlehunter.telemetry import IdleHunterTelemetry
-from idlehunter.threshold import RESOURCES, classify_host
+from powerprune.telemetry import PowerPruneTelemetry
+from powerprune.threshold import RESOURCES, classify_host
 from shared.telemetry_sim import TelemetryAdapter
 
 
 def test_adapter_implements_the_shared_telemetry_interface():
-    telemetry = IdleHunterTelemetry()
+    telemetry = PowerPruneTelemetry()
     assert isinstance(telemetry, TelemetryAdapter)
 
 
 def test_registered_host_polls_all_four_resources():
-    telemetry = IdleHunterTelemetry()
+    telemetry = PowerPruneTelemetry()
     telemetry.register_host("host-1", seed=1)
 
     sample = telemetry.poll("host-1")
@@ -20,7 +20,7 @@ def test_registered_host_polls_all_four_resources():
 def test_end_to_end_history_feeds_the_threshold_engine():
     """Real integration proof: the simulator's output is directly usable by
     the MAD threshold engine without any adaptation."""
-    telemetry = IdleHunterTelemetry()
+    telemetry = PowerPruneTelemetry()
     telemetry.register_host("host-1", seed=42)
 
     for _ in range(65):
@@ -37,7 +37,7 @@ def test_end_to_end_history_feeds_the_threshold_engine():
 
 
 def test_injected_anomaly_pushes_a_host_into_overloaded():
-    telemetry = IdleHunterTelemetry()
+    telemetry = PowerPruneTelemetry()
     telemetry.register_host("host-1", seed=7)
 
     for _ in range(65):

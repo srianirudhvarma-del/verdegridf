@@ -1,5 +1,5 @@
 """
-Phase 9 update: api/routes.py's IdleHunter/CoolSense endpoints now
+Phase 9 update: api/routes.py's PowerPrune/CoolSense endpoints now
 delegate to the real module packages (api/state.py's fixed 5-rack x
 4-host topology) instead of generating canned/random mock data. These
 tests were written against the old mock shapes; updated to match the real
@@ -8,7 +8,7 @@ contract -- 20 real hosts, real per-host state, real per-loop flow.
 
 
 def test_get_server_cluster_returns_20_real_hosts_with_expected_shape(client):
-    resp = client.get("/api/idlehunter/servers")
+    resp = client.get("/api/powerprune/servers")
     assert resp.status_code == 200
     body = resp.json()
     servers = body["servers"]
@@ -25,7 +25,7 @@ def test_get_server_cluster_returns_20_real_hosts_with_expected_shape(client):
 
 
 def test_consolidate_idle_servers_returns_a_real_count_not_a_fixed_four(client):
-    resp = client.post("/api/idlehunter/consolidate")
+    resp = client.post("/api/powerprune/consolidate")
     assert resp.status_code == 200
     body = resp.json()
     # Real consolidation count depends on how many hosts have actually

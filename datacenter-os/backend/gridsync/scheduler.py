@@ -2,7 +2,7 @@
 gridsync/scheduler.py
 
 Core capacity-curve scheduling algorithm (methodology Section 4, "Core
-scheduling algorithm") plus MUST HAVE #9 (cross-wire with IdleHunter's
+scheduling algorithm") plus MUST HAVE #9 (cross-wire with PowerPrune's
 capacity forecast before finalizing a scheduling window).
 
 Only deferrable jobs (gridsync/jobs.py's DeferrableJob, produced only
@@ -84,8 +84,8 @@ class SchedulingDecision:
     reason: str
 
 
-# (windowStart, windowEnd) -> CapacityForecast, i.e. IdleHunter's
-# GET /api/idlehunter/capacity-forecast?start=...&end=...
+# (windowStart, windowEnd) -> CapacityForecast, i.e. PowerPrune's
+# GET /api/powerprune/capacity-forecast?start=...&end=...
 CapacityForecastProvider = Callable[[str, str], CapacityForecast]
 
 
@@ -103,7 +103,7 @@ def schedule_deferrable_job(
     """
     Walk ranked_windows (ascending by carbon intensity) within [now,
     deadline). For the first window with flexible-pool room, cross-wire
-    with IdleHunter's capacity forecast (MUST HAVE #9):
+    with PowerPrune's capacity forecast (MUST HAVE #9):
       - enough capacity -> proceed with this window.
       - not enough, but standby hosts exist and there's more lead time
         than the wake latency -> request a pre-wake and proceed anyway.
@@ -125,7 +125,7 @@ def schedule_deferrable_job(
                 windowStart=window.windowStart,
                 proceed=True,
                 prewakeRequested=False,
-                reason="sufficient IdleHunter-reported capacity in ranked window",
+                reason="sufficient PowerPrune-reported capacity in ranked window",
             )
 
         lead_time_seconds = (window_start - now).total_seconds()

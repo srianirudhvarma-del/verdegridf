@@ -1,6 +1,6 @@
 import pytest
 
-from idlehunter.power import DwellStateMachine, HostState, InvalidTransition
+from powerprune.power import DwellStateMachine, HostState, InvalidTransition
 
 
 def test_single_idle_sample_does_not_power_down_host():
@@ -85,6 +85,6 @@ def test_cannot_wake_a_host_that_is_not_standby():
 
 
 def test_dwell_samples_default_is_within_methodology_range():
-    from idlehunter.power import DEFAULT_DWELL_TIME_DOWN_SAMPLES
+    from powerprune.power import DEFAULT_DWELL_TIME_DOWN_SAMPLES
 
     assert 20 <= DEFAULT_DWELL_TIME_DOWN_SAMPLES <= 40

@@ -175,7 +175,7 @@ RE cooling_loop_simulation.txt
 RE fluid_dynamics_logic.txt
 RE power_usage_effectiveness_math.txt
 RE server_cluster_states.txt
-RE idlehunter_logic.txt
+RE powerprune_logic.txt
 RE zombie_server_detection.txt
 RE harvest_queue_priority.txt
 RE pdu_control_logic.txt

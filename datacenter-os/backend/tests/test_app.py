@@ -30,7 +30,7 @@ def test_api_status(client):
     assert resp.status_code == 200
     body = resp.json()
     assert body["status"] == "operational"
-    assert "idlehunter" in body["modules"]
+    assert "powerprune" in body["modules"]
     assert "noisemesh" in body["modules"]
 
 

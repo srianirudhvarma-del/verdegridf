@@ -1,5 +1,5 @@
 """
-idlehunter/power.py -- MUST HAVE #5: asymmetric dwell-time / wake policy.
+powerprune/power.py -- MUST HAVE #5: asymmetric dwell-time / wake policy.
 
 NORMAL --(idle-candidate for >= dwellTimeDownSamples)--> IDLE_CANDIDATE
 IDLE_CANDIDATE --(migration+consolidation succeeds)--> STANDBY
@@ -15,7 +15,7 @@ fast to wake."
 
 from enum import Enum
 
-from idlehunter.threshold import HostStatus
+from powerprune.threshold import HostStatus
 
 # Methodology default: 20-40 samples of continuous idle-candidate status at
 # 30-60s cadence (~15-20 min).

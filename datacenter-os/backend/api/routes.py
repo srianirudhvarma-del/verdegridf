@@ -7,8 +7,8 @@ import logging
 
 import api.state as state
 from gridsync.scheduler import DEFAULT_DIRTY_THRESHOLD, DEFAULT_GREEN_THRESHOLD
-from idlehunter.power import HostState
-from idlehunter.threshold import RESOURCES, classify_host
+from powerprune.power import HostState
+from powerprune.threshold import RESOURCES, classify_host
 from shared.classification import classification_store
 from shared.orchestrator import HOST_ACTIVE_WATTS, HOST_IDLE_WATTS
 from thermos.spatial import GridCellReading, interpolate_grid
@@ -127,7 +127,7 @@ class AudioClassificationResponse(BaseModel):
     timestamp: str
 
 
-# ===================== IdleHunter Routes =====================
+# ===================== PowerPrune Routes =====================
 
 GRID_WIDTH = 8
 GRID_HEIGHT = 8
@@ -146,13 +146,13 @@ def _host_ui_state(host_id: str, status: str) -> str:
     return "active"
 
 
-@router.get("/idlehunter/servers", response_model=ServerCluster)
+@router.get("/powerprune/servers", response_model=ServerCluster)
 async def get_server_cluster():
     """Real per-host MAD threshold classification + dwell state, not canned numbers."""
     servers = []
     for host_id, rack in state.host_to_rack.items():
-        current = state.idlehunter_telemetry.poll(host_id)
-        history = {r: state.idlehunter_telemetry.history(host_id, r, 60) for r in RESOURCES}
+        current = state.powerprune_telemetry.poll(host_id)
+        history = {r: state.powerprune_telemetry.history(host_id, r, 60) for r in RESOURCES}
         classified = classify_host(host_id, current, history)
         state.dwell_machines[host_id].observe(classified.status)
 
@@ -171,7 +171,7 @@ async def get_server_cluster():
     return ServerCluster(servers=servers)
 
 
-@router.post("/idlehunter/consolidate")
+@router.post("/powerprune/consolidate")
 async def consolidate_idle_servers():
     """
     Real consolidation pass: any host the dwell state machine has already
@@ -195,7 +195,7 @@ async def consolidate_idle_servers():
     }
 
 
-@router.get("/idlehunter/workloads/{workload_id}/classification")
+@router.get("/powerprune/workloads/{workload_id}/classification")
 async def get_workload_classification(workload_id: str):
     """MUST HAVE #3 step 1: read a workload's classification, defaulting to protected."""
     tag = classification_store.get_tag(workload_id)
@@ -204,7 +204,7 @@ async def get_workload_classification(workload_id: str):
     return tag.model_dump()
 
 
-@router.patch("/idlehunter/workloads/{workload_id}/classification")
+@router.patch("/powerprune/workloads/{workload_id}/classification")
 async def set_workload_classification(workload_id: str, request: ClassificationRequest):
     """MUST HAVE #3 step 2: the real operator-facing classification write path (shared.orchestrator.apply_operator_classification)."""
     from shared.orchestrator import apply_operator_classification
@@ -231,7 +231,7 @@ async def get_water_flows():
     Real per-loop flow telemetry (coolsense/sensors.py). Anomaly
     detection here is a documented simplification of MUST HAVE #12's full
     algorithm: z-score against the loop's own trailing history, without
-    the peer-rack/load-bucket comparison or the IdleHunter workload-delta
+    the peer-rack/load-bucket comparison or the PowerPrune workload-delta
     check the full coolsense/anomaly.py pipeline applies (that full
     pipeline is exercised directly by its own tests).
     """
@@ -250,7 +250,7 @@ async def get_water_flows():
                 anomalies.append(WaterAnomaly(rack=rack, issue="unexplained flow drop", val=round(flow, 1)))
 
     total_flow = sum(u.flow_rate_lph for u in units)
-    it_load_watts = sum(HOST_IDLE_WATTS + (HOST_ACTIVE_WATTS - HOST_IDLE_WATTS) * (state.idlehunter_telemetry.current(h)["cpu"] / 100.0) for h in state.ALL_HOST_IDS)
+    it_load_watts = sum(HOST_IDLE_WATTS + (HOST_ACTIVE_WATTS - HOST_IDLE_WATTS) * (state.powerprune_telemetry.current(h)["cpu"] / 100.0) for h in state.ALL_HOST_IDS)
     it_load_kw = it_load_watts / 1000.0
     # Simplified WUE heuristic (liters/hr per kW IT load, scaled) -- not a
     # precision facility metric, same level of approximation the original
@@ -519,7 +519,7 @@ async def api_status():
         "status": "operational",
         "version": "2.0.0",
         "modules": {
-            "idlehunter": "live", "coolsense": "live", "gridsync": "live",
+            "powerprune": "live", "coolsense": "live", "gridsync": "live",
             "thermos": "live (ML bridge stub pending)", "netpulse": "live",
             "noisemesh": "excluded",
         },

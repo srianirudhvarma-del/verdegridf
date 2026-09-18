@@ -1,7 +1,7 @@
 """
 shared/scheduler_driver.py -- Phase 8c: periodic driver.
 
-Investigation finding (see idlehunter/power.py): DwellStateMachine has no
+Investigation finding (see powerprune/power.py): DwellStateMachine has no
 internal clock. NORMAL->IDLE_CANDIDATE depends on the *count* of observe()
 calls (consecutive samples), not elapsed wall-clock time, and
 STANDBY->WAKING/WAKING->NORMAL are purely reactive to explicit
@@ -30,7 +30,7 @@ from datetime import datetime
 from typing import TypedDict
 
 from gridsync.jobs import DeadlineQueue
-from idlehunter.power import DwellStateMachine, HostState
+from powerprune.power import DwellStateMachine, HostState
 from shared.eventbus import EventBus, event_bus
 
 # Mirrors shared/orchestrator.py's DEFAULT_ESTIMATED_WAKE_LATENCY_SECONDS --
@@ -97,7 +97,7 @@ def tick(
     1. GridSync deadlines: force_run_overdue(now) on every registered
        DeadlineQueue -- MUST HAVE #7's backstop, actually invoked over
        time instead of only when a caller happens to call it directly.
-    2. IdleHunter wake completion: for every DwellStateMachine currently
+    2. PowerPrune wake completion: for every DwellStateMachine currently
        WAKING whose recorded wake start is at least wake_latency_seconds
        in the past relative to `now`, call wake_confirmed() -- the real
        production path for "BMC wake confirmed + host rejoins the pool,"

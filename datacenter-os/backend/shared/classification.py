@@ -1,11 +1,11 @@
 """
 shared/classification.py
 
-Shared workload-classification logic reused by IdleHunter, GridSync, and
+Shared workload-classification logic reused by PowerPrune, GridSync, and
 NetPulse (methodology Section 1 & 2). This module owns *tag resolution and
 storage* -- looking up a workload's protected/deferrable status and applying
 the fail-safe-open default. It does not own any module's domain algorithm
-(e.g. IdleHunter's MAD threshold, GridSync's deadline enforcement) --
+(e.g. PowerPrune's MAD threshold, GridSync's deadline enforcement) --
 those consume this module's output in later phases.
 
 RULE (from methodology Section 0 & 2): every classification defaults to the

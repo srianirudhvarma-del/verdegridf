@@ -1,4 +1,4 @@
-from idlehunter.threshold import (
+from powerprune.threshold import (
     COLD_START_LOWER,
     RESOURCES,
     classify_host,

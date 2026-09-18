@@ -22,7 +22,7 @@ from coolsense.baseline import peer_z_score, z_score  # noqa: F401  (re-exported
 Z_FLOW_DROP_THRESHOLD = -2.5
 PEER_Z_DIVERGENCE_THRESHOLD = 2.0
 
-# The methodology doesn't give an exact number for "IdleHunter utilization
+# The methodology doesn't give an exact number for "PowerPrune utilization
 # delta ... within its own normal range" -- reusing the same z-score
 # approach as the flow baseline itself (coolsense/baseline.py) is the
 # natural, documented simplification: the rack's utilization delta gets

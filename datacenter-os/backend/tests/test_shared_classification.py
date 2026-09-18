@@ -57,9 +57,9 @@ def test_store_reclassification_overwrites_previous_tag():
 def test_store_shared_across_lookups_reflects_latest_state():
     """Simulates two 'modules' reading through the same store instance."""
     store = WorkloadClassificationStore()
-    idlehunter_view_before = store.classification_for("vm-5")
+    powerprune_view_before = store.classification_for("vm-5")
     store.set_tag(make_tag("vm-5", "deferrable", max_delay=45, source="inferred"))
     gridsync_view_after = store.classification_for("vm-5")
 
-    assert idlehunter_view_before == "protected"
+    assert powerprune_view_before == "protected"
     assert gridsync_view_after == "deferrable"

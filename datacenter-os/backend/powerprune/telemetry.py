@@ -1,5 +1,5 @@
 """
-idlehunter/telemetry.py -- IdleHunter's telemetry source.
+powerprune/telemetry.py -- PowerPrune's telemetry source.
 
 Wraps the shared synthetic simulator behind the shared TelemetryAdapter
 interface, pre-registering the 4 MAD-relevant resources (cpu, mem, diskIO,
@@ -19,7 +19,7 @@ RESOURCE_DEFAULTS = {
 }
 
 
-class IdleHunterTelemetry(TelemetryAdapter):
+class PowerPruneTelemetry(TelemetryAdapter):
     def __init__(self, simulator: TelemetrySimulator | None = None) -> None:
         self._simulator = simulator or TelemetrySimulator()
 
@@ -49,7 +49,7 @@ class K8sTelemetryAdapter(TelemetryAdapter):
     """
     SHOULD HAVE #8 -- second telemetry adapter, normalizing Kubernetes
     metrics-server-shaped node metrics into the exact same resource keys
-    (cpu, mem, diskIO, network) as IdleHunterTelemetry, so
+    (cpu, mem, diskIO, network) as PowerPruneTelemetry, so
     threshold.py/consolidation.py/power.py work unchanged regardless of
     which adapter is plugged in -- adapter-agnostic by construction. No
     real cluster access exists; this is simulator-backed like every other

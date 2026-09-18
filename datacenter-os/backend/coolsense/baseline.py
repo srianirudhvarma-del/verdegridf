@@ -1,8 +1,8 @@
 """
 coolsense/baseline.py -- MUST HAVE #12: per-rack baseline + peer-rack
-comparison, cross-wired with IdleHunter's per-rack utilization signal.
+comparison, cross-wired with PowerPrune's per-rack utilization signal.
 
-1. Bucket time into "load buckets" using IdleHunter's per-rack utilization
+1. Bucket time into "load buckets" using PowerPrune's per-rack utilization
    signal: low / medium / high (tertiles of historical utilization).
 2. baseline(rack, signal, loadBucket) = {mean, std}, computed over
    trailing 7 days, only using samples from the matching load bucket.

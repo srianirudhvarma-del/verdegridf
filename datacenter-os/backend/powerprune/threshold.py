@@ -1,5 +1,5 @@
 """
-idlehunter/threshold.py -- MUST HAVE #1: adaptive multi-resource threshold.
+powerprune/threshold.py -- MUST HAVE #1: adaptive multi-resource threshold.
 
 Replaces the old fixed "15% CPU-only" idle check with a per-resource Median
 Absolute Deviation (MAD) adaptive threshold (Beloglazov & Buyya pattern),
@@ -8,7 +8,7 @@ idle-candidate if ALL resources are below their adaptive floor -- a
 CPU-idle-but-memory-bound host must never qualify.
 
 Pure algorithm module: operates on plain per-resource history lists, no
-dependency on idlehunter/telemetry.py, so it's independently testable and
+dependency on powerprune/telemetry.py, so it's independently testable and
 reusable against any adapter's output.
 """
 

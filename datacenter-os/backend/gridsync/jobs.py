@@ -2,7 +2,7 @@
 gridsync/jobs.py
 
 MUST HAVE #6 -- workload classification, reusing the shared WorkloadTag
-contract exactly as IdleHunter does (shared/classification.py), keyed by
+contract exactly as PowerPrune does (shared/classification.py), keyed by
 jobId instead of vmId. Same fail-safe-open default: an untagged or
 unclassified job is "protected" and is never delayed.
 

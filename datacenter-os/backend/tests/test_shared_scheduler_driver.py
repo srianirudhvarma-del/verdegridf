@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 from gridsync.jobs import DeadlineQueue, submit_job
-from idlehunter.power import DwellStateMachine, HostState
+from powerprune.power import DwellStateMachine, HostState
 from shared.classification import WorkloadClassificationStore
 from shared.contracts import WorkloadTag
 from shared.eventbus import EventBus
@@ -106,7 +106,7 @@ def test_tick_drives_multiple_registered_queues_independently():
 
 
 # ---------------------------------------------------------------------------
-# tick() -- IdleHunter wake side, through ticking alone
+# tick() -- PowerPrune wake side, through ticking alone
 # ---------------------------------------------------------------------------
 
 

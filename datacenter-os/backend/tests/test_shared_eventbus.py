@@ -6,9 +6,9 @@ from shared.eventbus import EventBus
 def test_subscriber_receives_published_payload():
     bus = EventBus()
     received = []
-    bus.subscribe("idlehunter.capacity.updated", received.append)
+    bus.subscribe("powerprune.capacity.updated", received.append)
 
-    bus.publish("idlehunter.capacity.updated", {"poweredOnHostCount": 40})
+    bus.publish("powerprune.capacity.updated", {"poweredOnHostCount": 40})
 
     assert received == [{"poweredOnHostCount": 40}]
 
@@ -28,10 +28,10 @@ def test_subscriber_only_receives_events_for_its_topic():
     bus = EventBus()
     capacity_events = []
     headroom_events = []
-    bus.subscribe("idlehunter.capacity.updated", capacity_events.append)
+    bus.subscribe("powerprune.capacity.updated", capacity_events.append)
     bus.subscribe("thermos.headroom.updated", headroom_events.append)
 
-    bus.publish("idlehunter.capacity.updated", "capacity-payload")
+    bus.publish("powerprune.capacity.updated", "capacity-payload")
 
     assert capacity_events == ["capacity-payload"]
     assert headroom_events == []
@@ -71,9 +71,9 @@ def test_one_failing_subscriber_does_not_block_the_others():
     def broken_handler(payload):
         raise RuntimeError("boom")
 
-    bus.subscribe("idlehunter.workload.classified", broken_handler)
-    bus.subscribe("idlehunter.workload.classified", received.append)
+    bus.subscribe("powerprune.workload.classified", broken_handler)
+    bus.subscribe("powerprune.workload.classified", received.append)
 
-    bus.publish("idlehunter.workload.classified", "vm-1")
+    bus.publish("powerprune.workload.classified", "vm-1")
 
     assert received == ["vm-1"]

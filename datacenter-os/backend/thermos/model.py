@@ -8,7 +8,7 @@ historical residuals exist to train on.
 
 MUST HAVE #18 -- uncertainty bands via an MC-Dropout-style ensemble.
 
-MUST HAVE #19 -- feature vector wiring IdleHunter's workload/power
+MUST HAVE #19 -- feature vector wiring PowerPrune's workload/power
 telemetry into the thermal model, joined by rackId + nearest timestamp.
 """
 
@@ -166,13 +166,13 @@ def predict_with_uncertainty(
 
 
 # ---------------------------------------------------------------------------
-# MUST HAVE #19 -- wire IdleHunter's workload/power telemetry into the
+# MUST HAVE #19 -- wire PowerPrune's workload/power telemetry into the
 # thermal feature vector, joined by rackId + nearest timestamp
 # ---------------------------------------------------------------------------
 
 
-class IdleHunterRackReading(BaseModel):
-    """One rack-aggregated utilization/power sample, as IdleHunter would publish it."""
+class PowerPruneRackReading(BaseModel):
+    """One rack-aggregated utilization/power sample, as PowerPrune would publish it."""
 
     rackId: str
     timestamp: str
@@ -189,7 +189,7 @@ class ThermalFeatureVector(BaseModel):
     powerDrawWatts: Optional[float] = None
 
 
-# Methodology: "tolerate up to 1 sampling-interval staleness." IdleHunter
+# Methodology: "tolerate up to 1 sampling-interval staleness." PowerPrune
 # samples at 30-60s cadence; use the upper end as the default tolerance.
 DEFAULT_MAX_STALENESS_SECONDS = 60.0
 
@@ -197,21 +197,21 @@ DEFAULT_MAX_STALENESS_SECONDS = 60.0
 def join_workload_telemetry(
     rack_id: str,
     thermal_timestamp: str,
-    idlehunter_readings: list[IdleHunterRackReading],
+    powerprune_readings: list[PowerPruneRackReading],
     *,
     max_staleness_seconds: float = DEFAULT_MAX_STALENESS_SECONDS,
 ) -> tuple[Optional[float], Optional[float]]:
     """
-    Most recent IdleHunter reading for rack_id at or before
+    Most recent PowerPrune reading for rack_id at or before
     thermal_timestamp, within max_staleness_seconds. Fail-safe: no
     matching reading returns (None, None) rather than fabricating a value
     -- the same as "no telemetry available," the pre-change behavior.
     """
     target = datetime.fromisoformat(thermal_timestamp)
-    best: Optional[IdleHunterRackReading] = None
+    best: Optional[PowerPruneRackReading] = None
     best_delta: Optional[float] = None
 
-    for reading in idlehunter_readings:
+    for reading in powerprune_readings:
         if reading.rackId != rack_id:
             continue
         reading_time = datetime.fromisoformat(reading.timestamp)
@@ -233,12 +233,12 @@ def build_feature_vector(
     timestamp: str,
     temp_grid: list[list[float]],
     humidity: float,
-    idlehunter_readings: list[IdleHunterRackReading],
+    powerprune_readings: list[PowerPruneRackReading],
     *,
     max_staleness_seconds: float = DEFAULT_MAX_STALENESS_SECONDS,
 ) -> ThermalFeatureVector:
     workload_util, power_draw_watts = join_workload_telemetry(
-        rack_id, timestamp, idlehunter_readings, max_staleness_seconds=max_staleness_seconds
+        rack_id, timestamp, powerprune_readings, max_staleness_seconds=max_staleness_seconds
     )
     return ThermalFeatureVector(
         rackId=rack_id,

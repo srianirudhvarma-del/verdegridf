@@ -89,8 +89,8 @@ def test_topics_cover_the_five_methodology_topics():
     gridsync.prewake.requested from MUST HAVE #9) -- this checks the
     original 5 are still a subset, not that the set is frozen at 5."""
     assert {
-        "idlehunter.capacity.updated",
-        "idlehunter.workload.classified",
+        "powerprune.capacity.updated",
+        "powerprune.workload.classified",
         "thermos.headroom.updated",
         "gridsync.job.scheduled",
         "netpulse.flow.classified",

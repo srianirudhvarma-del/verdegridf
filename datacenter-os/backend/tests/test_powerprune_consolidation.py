@@ -1,4 +1,4 @@
-from idlehunter.consolidation import (
+from powerprune.consolidation import (
     HostPowerDownCandidate,
     enforce_min_redundancy,
     estimate_migration_decision,

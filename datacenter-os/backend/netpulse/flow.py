@@ -26,7 +26,7 @@ class Flow(BaseModel):
     firstSeen: str
     lastSeen: str
     isElephant: bool = False
-    # Populated only by the IdleHunter cross-wire (netpulse/routing.py's
+    # Populated only by the PowerPrune cross-wire (netpulse/routing.py's
     # resolve_latency_sensitivity) -- None means "not yet classified,"
     # never treated as "safe to auto-reroute."
     latencySensitive: Optional[bool] = None

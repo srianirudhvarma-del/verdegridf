@@ -22,15 +22,15 @@ from typing import Optional
 
 from gridsync.grid import HourlyForecast
 from gridsync.scheduler import SchedulingDecision, SchedulingPool, schedule_deferrable_job
-from idlehunter.consolidation import filter_targets_by_thermal_headroom
-from idlehunter.power import DwellStateMachine, HostState
-from idlehunter.telemetry import IdleHunterTelemetry
+from powerprune.consolidation import filter_targets_by_thermal_headroom
+from powerprune.power import DwellStateMachine, HostState
+from powerprune.telemetry import PowerPruneTelemetry
 from netpulse.flow import Flow
 from netpulse.routing import IpToVmLookup, auto_tag_latency_sensitivity
 from shared.classification import WorkloadClassificationStore, classification_store
 from shared.contracts import CapacityForecast, ThermalHeadroom, WorkloadTag
 from shared.eventbus import EventBus, event_bus
-from thermos.model import IdleHunterRackReading, ThermalFeatureVector, build_feature_vector
+from thermos.model import PowerPruneRackReading, ThermalFeatureVector, build_feature_vector
 from thermos.sensors import ThermalTelemetry
 from coolsense.baseline import LoadBucket, bucket_utilization
 from coolsense.cooling import cooling_performance
@@ -56,22 +56,22 @@ def _now_iso() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Dependency 1: IdleHunter -> ThermOS (load/power telemetry)
+# Dependency 1: PowerPrune -> ThermOS (load/power telemetry)
 # ---------------------------------------------------------------------------
 
 
 def build_rack_feature_vector(
     rack_id: str,
     host_ids: list[str],
-    idlehunter_telemetry: IdleHunterTelemetry,
+    powerprune_telemetry: PowerPruneTelemetry,
     thermal_telemetry: ThermalTelemetry,
     *,
     timestamp: Optional[str] = None,
 ) -> ThermalFeatureVector:
     """
-    Aggregates this rack's hosts' *real* current IdleHunter telemetry (mean
+    Aggregates this rack's hosts' *real* current PowerPrune telemetry (mean
     cpu utilization, total power draw estimated from it) into a single
-    rack-level IdleHunterRackReading, then calls
+    rack-level PowerPruneRackReading, then calls
     thermos.model.build_feature_vector -- the actual MUST HAVE #19
     join, fed by real upstream data instead of a caller-supplied list.
     """
@@ -79,13 +79,13 @@ def build_rack_feature_vector(
         raise ValueError(f"no hosts given for rack {rack_id!r}")
 
     ts = timestamp or _now_iso()
-    cpu_readings = [idlehunter_telemetry.current(host_id)["cpu"] for host_id in host_ids]
+    cpu_readings = [powerprune_telemetry.current(host_id)["cpu"] for host_id in host_ids]
     mean_cpu_pct = sum(cpu_readings) / len(cpu_readings)
     total_power_watts = sum(
         HOST_IDLE_WATTS + (HOST_ACTIVE_WATTS - HOST_IDLE_WATTS) * (cpu_pct / 100.0) for cpu_pct in cpu_readings
     )
     readings = [
-        IdleHunterRackReading(rackId=rack_id, timestamp=ts, workloadUtil=mean_cpu_pct / 100.0, powerDrawWatts=total_power_watts)
+        PowerPruneRackReading(rackId=rack_id, timestamp=ts, workloadUtil=mean_cpu_pct / 100.0, powerDrawWatts=total_power_watts)
     ]
 
     thermal_current = thermal_telemetry.current(rack_id)
@@ -94,12 +94,12 @@ def build_rack_feature_vector(
         ts,
         temp_grid=[[thermal_current["temperature"]]],
         humidity=thermal_current["humidity"],
-        idlehunter_readings=readings,
+        powerprune_readings=readings,
     )
 
 
 # ---------------------------------------------------------------------------
-# Dependency 2: ThermOS -> IdleHunter (thermal headroom)
+# Dependency 2: ThermOS -> PowerPrune (thermal headroom)
 # ---------------------------------------------------------------------------
 
 
@@ -135,7 +135,7 @@ def filter_consolidation_targets_by_real_headroom(
     ceiling_celsius: float = DEFAULT_THERMAL_CEILING_CELSIUS,
 ) -> list[str]:
     """
-    Calls idlehunter.consolidation.filter_targets_by_thermal_headroom with
+    Calls powerprune.consolidation.filter_targets_by_thermal_headroom with
     a get_headroom callback backed by real ThermOS telemetry --
     compute_thermal_headroom() above -- instead of a caller-supplied stub.
     """
@@ -147,12 +147,12 @@ def filter_consolidation_targets_by_real_headroom(
 
 
 # ---------------------------------------------------------------------------
-# Dependency 3: IdleHunter -> GridSync (capacity state)
+# Dependency 3: PowerPrune -> GridSync (capacity state)
 # ---------------------------------------------------------------------------
 
 
 def compute_capacity_forecast(
-    idlehunter_telemetry: IdleHunterTelemetry,
+    powerprune_telemetry: PowerPruneTelemetry,
     dwell_state_machines: dict[str, DwellStateMachine],
     window_start: str,
     window_end: str,
@@ -160,7 +160,7 @@ def compute_capacity_forecast(
     estimated_wake_latency_seconds: float = DEFAULT_ESTIMATED_WAKE_LATENCY_SECONDS,
 ) -> CapacityForecast:
     """
-    Aggregates real IdleHunter telemetry + real dwell-state-machine state
+    Aggregates real PowerPrune telemetry + real dwell-state-machine state
     across every registered host into a genuine CapacityForecast: hosts
     currently STANDBY count toward standbyHostCount, everything else
     contributes its real (100 - current_utilization) headroom to the
@@ -171,13 +171,13 @@ def compute_capacity_forecast(
     available_cpu = 0.0
     available_mem = 0.0
 
-    for host_id in idlehunter_telemetry.host_ids():
+    for host_id in powerprune_telemetry.host_ids():
         machine = dwell_state_machines.get(host_id)
         if machine is not None and machine.state == HostState.STANDBY:
             standby += 1
             continue
         powered_on += 1
-        current = idlehunter_telemetry.current(host_id)
+        current = powerprune_telemetry.current(host_id)
         available_cpu += max(0.0, 100.0 - current["cpu"])
         available_mem += max(0.0, 100.0 - current["mem"])
 
@@ -197,7 +197,7 @@ def schedule_job_with_real_capacity(
     required_capacity: float,
     ranked_windows: list[HourlyForecast],
     pool: SchedulingPool,
-    idlehunter_telemetry: IdleHunterTelemetry,
+    powerprune_telemetry: PowerPruneTelemetry,
     dwell_state_machines: dict[str, DwellStateMachine],
     *,
     now,
@@ -207,7 +207,7 @@ def schedule_job_with_real_capacity(
     """
     Calls gridsync.scheduler.schedule_deferrable_job with a
     get_capacity_forecast backed by compute_capacity_forecast() above --
-    real IdleHunter telemetry and real dwell state, not a caller-supplied
+    real PowerPrune telemetry and real dwell state, not a caller-supplied
     CapacityForecast.
     """
     return schedule_deferrable_job(
@@ -218,14 +218,14 @@ def schedule_job_with_real_capacity(
         now=now,
         deadline=deadline,
         get_capacity_forecast=lambda start, end: compute_capacity_forecast(
-            idlehunter_telemetry, dwell_state_machines, start, end
+            powerprune_telemetry, dwell_state_machines, start, end
         ),
         bus=bus,
     )
 
 
 # ---------------------------------------------------------------------------
-# Dependency 4: GridSync -> IdleHunter (prewake subscription / wake scheduling)
+# Dependency 4: GridSync -> PowerPrune (prewake subscription / wake scheduling)
 # ---------------------------------------------------------------------------
 
 
@@ -263,33 +263,33 @@ class PrewakeSubscriber:
 
 
 # ---------------------------------------------------------------------------
-# Dependency 5: IdleHunter -> CoolSense (per-rack workload signal)
+# Dependency 5: PowerPrune -> CoolSense (per-rack workload signal)
 # ---------------------------------------------------------------------------
 
 
 def bucket_rack_load(
     rack_id: str,
     host_ids: list[str],
-    idlehunter_telemetry: IdleHunterTelemetry,
+    powerprune_telemetry: PowerPruneTelemetry,
     *,
     history_window: int = 60,
 ) -> LoadBucket:
     """
-    Aggregates this rack's hosts' real current + historical IdleHunter cpu
+    Aggregates this rack's hosts' real current + historical PowerPrune cpu
     utilization and calls coolsense.baseline.bucket_utilization() with
-    it -- MUST HAVE #12's "bucket time into load buckets using IdleHunter's
+    it -- MUST HAVE #12's "bucket time into load buckets using PowerPrune's
     per-rack utilization signal" step, fed by real telemetry instead of a
     caller-supplied list of floats.
     """
     if not host_ids:
         raise ValueError(f"no hosts registered for rack {rack_id!r}")
 
-    current_values = [idlehunter_telemetry.current(host_id)["cpu"] for host_id in host_ids]
+    current_values = [powerprune_telemetry.current(host_id)["cpu"] for host_id in host_ids]
     current_avg = sum(current_values) / len(current_values)
 
     historical: list[float] = []
     for host_id in host_ids:
-        historical.extend(idlehunter_telemetry.history(host_id, "cpu", history_window))
+        historical.extend(powerprune_telemetry.history(host_id, "cpu", history_window))
 
     return bucket_utilization(current_avg, historical)
 
@@ -323,7 +323,7 @@ def compute_rack_cooling_performance(
 
 
 # ---------------------------------------------------------------------------
-# Dependency 7: IdleHunter -> NetPulse (workload classification for
+# Dependency 7: PowerPrune -> NetPulse (workload classification for
 # reroute safety)
 # ---------------------------------------------------------------------------
 
@@ -338,11 +338,11 @@ def apply_operator_classification(
     timestamp: Optional[str] = None,
 ) -> WorkloadTag:
     """
-    IdleHunter's operator-facing classification write path (methodology
-    MUST HAVE #3 step 2: "PATCH /api/idlehunter/workloads/:vmId/classification
+    PowerPrune's operator-facing classification write path (methodology
+    MUST HAVE #3 step 2: "PATCH /api/powerprune/workloads/:vmId/classification
     (operator-only)"). This is the one production code path that actually
     calls classification_store.set_tag() -- every consumer
-    (idlehunter.consolidation.filter_consolidation_candidates,
+    (powerprune.consolidation.filter_consolidation_candidates,
     gridsync.jobs.submit_job, netpulse.routing's
     resolve_latency_sensitivity/tag_latency_sensitivity) reads through the
     exact same store this writes to.
@@ -367,7 +367,7 @@ def tag_flow_with_real_classification(
     """
     Calls netpulse.routing.auto_tag_latency_sensitivity(), reading
     through the same classification store apply_operator_classification()
-    above writes to -- the real IdleHunter -> NetPulse link, not just
+    above writes to -- the real PowerPrune -> NetPulse link, not just
     two functions that happen to accept the same store type.
     """
     return auto_tag_latency_sensitivity(flow, lookup, store=store)

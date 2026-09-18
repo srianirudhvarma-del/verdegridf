@@ -1,5 +1,5 @@
 """
-idlehunter/consolidation.py
+powerprune/consolidation.py
 
 MUST HAVE #2 -- migration-cost check before triggering a move.
 MUST HAVE #3 -- workload classification hard filter on the candidate list.

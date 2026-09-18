@@ -65,7 +65,7 @@ def test_rank_windows_orders_ascending_by_intensity():
 
 
 # ---------------------------------------------------------------------------
-# MUST HAVE #9 -- cross-wire with IdleHunter capacity
+# MUST HAVE #9 -- cross-wire with PowerPrune capacity
 # ---------------------------------------------------------------------------
 
 

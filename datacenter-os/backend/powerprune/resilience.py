@@ -1,5 +1,5 @@
 """
-idlehunter/resilience.py -- SHOULD HAVE #6: failure-during-consolidation
+powerprune/resilience.py -- SHOULD HAVE #6: failure-during-consolidation
 handling.
 
 Subscribes conceptually to hypervisor HA/failure events during an active

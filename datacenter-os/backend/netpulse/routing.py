@@ -11,10 +11,10 @@ default ECMP automatically.
 MUST HAVE #17 -- scope automatic rerouting to the narrow, pre-validated
 case.
 
-flow.latencySensitive needs the IdleHunter cross-wire the methodology
+flow.latencySensitive needs the PowerPrune cross-wire the methodology
 scopes as SHOULD HAVE #21 ("map each flow's source/destination IP to its
 owning VM via an IP->VM lookup table synced from the hypervisor, then call
-IdleHunter's WorkloadTag API"). That automatic IP->VM discovery is Phase 7
+PowerPrune's WorkloadTag API"). That automatic IP->VM discovery is Phase 7
 work. What MUST HAVE #17 actually needs -- never auto-reroute a
 latency-sensitive flow -- doesn't require the auto-discovery step: the
 classification lookup itself already exists (shared/classification.py,
@@ -137,7 +137,7 @@ def auto_reroute_allowed(
 
 # ---------------------------------------------------------------------------
 # SHOULD HAVE #21 -- latency-sensitivity tagging cross-wired with
-# IdleHunter, automating the IP->VM mapping this module's docstring above
+# PowerPrune, automating the IP->VM mapping this module's docstring above
 # deferred from Phase 5.
 # ---------------------------------------------------------------------------
 

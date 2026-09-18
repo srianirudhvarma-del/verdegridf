@@ -17,23 +17,23 @@ TagSource = Literal["operator", "inferred", "default"]
 ThermalStatus = Literal["ok", "constrained", "critical"]
 
 Topic = Literal[
-    "idlehunter.capacity.updated",
-    "idlehunter.workload.classified",
+    "powerprune.capacity.updated",
+    "powerprune.workload.classified",
     "thermos.headroom.updated",
     "gridsync.job.scheduled",
     "netpulse.flow.classified",
     # Section 2's Topic list is the minimal starting set ("even if backed by
     # simple REST polling initially"); later MUST HAVE items name additional
     # topics explicitly. gridsync.prewake.requested comes from Phase 3's
-    # MUST HAVE #9 (cross-wiring with IdleHunter's capacity forecast).
+    # MUST HAVE #9 (cross-wiring with PowerPrune's capacity forecast).
     "gridsync.prewake.requested",
 ]
 
 # The full set of valid topics, for validation / iteration by the event bus.
 TOPICS: frozenset[str] = frozenset(
     {
-        "idlehunter.capacity.updated",
-        "idlehunter.workload.classified",
+        "powerprune.capacity.updated",
+        "powerprune.workload.classified",
         "thermos.headroom.updated",
         "gridsync.job.scheduled",
         "netpulse.flow.classified",
@@ -74,7 +74,7 @@ class CapacityForecast(BaseModel):
     """
     shared/contracts/capacity.ts -> CapacityForecast
 
-    Published by IdleHunter, consumed by GridSync, CoolSense
+    Published by PowerPrune, consumed by GridSync, CoolSense
     (baseline correlation), and NetPulse.
     """
 
@@ -91,7 +91,7 @@ class ThermalHeadroom(BaseModel):
     """
     shared/contracts/thermal.ts -> ThermalHeadroom
 
-    Published by ThermOS, consumed by IdleHunter (avoid consolidating
+    Published by ThermOS, consumed by PowerPrune (avoid consolidating
     into constrained racks).
     """
 

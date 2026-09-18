@@ -23,8 +23,8 @@ from datetime import datetime, timezone
 
 from gridsync.grid import CarbonForecastSimulator, DEFAULT_SIGNAL_INFO, HysteresisState
 from gridsync.jobs import DeadlineQueue, submit_job
-from idlehunter.power import DwellStateMachine
-from idlehunter.telemetry import IdleHunterTelemetry
+from powerprune.power import DwellStateMachine
+from powerprune.telemetry import PowerPruneTelemetry
 from netpulse.congestion import CongestionTracker
 from netpulse.telemetry import NetPulseTelemetry
 from shared.classification import classification_store
@@ -61,16 +61,16 @@ def _seed_for(name: str) -> int:
 
 
 # ---------------------------------------------------------------------------
-# IdleHunter
+# PowerPrune
 # ---------------------------------------------------------------------------
 
-idlehunter_telemetry = IdleHunterTelemetry()
+powerprune_telemetry = PowerPruneTelemetry()
 dwell_machines: dict[str, DwellStateMachine] = {}
 host_to_rack: dict[str, str] = {}
 
 for _rack, _hosts in HOST_IDS_BY_RACK.items():
     for _host_id in _hosts:
-        idlehunter_telemetry.register_host(_host_id, seed=_seed_for(_host_id))
+        powerprune_telemetry.register_host(_host_id, seed=_seed_for(_host_id))
         host_to_rack[_host_id] = _rack
         machine = DwellStateMachine(_host_id)
         dwell_machines[_host_id] = machine

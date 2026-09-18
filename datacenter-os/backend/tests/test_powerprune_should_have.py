@@ -1,7 +1,7 @@
-from idlehunter.consolidation import filter_targets_by_thermal_headroom
-from idlehunter.resilience import ConsolidationFailureHandler
-from idlehunter.telemetry import IdleHunterTelemetry, K8sTelemetryAdapter
-from idlehunter.threshold import RESOURCES, classify_host
+from powerprune.consolidation import filter_targets_by_thermal_headroom
+from powerprune.resilience import ConsolidationFailureHandler
+from powerprune.telemetry import PowerPruneTelemetry, K8sTelemetryAdapter
+from powerprune.threshold import RESOURCES, classify_host
 from shared.contracts import ThermalHeadroom
 
 
@@ -74,7 +74,7 @@ def test_hosts_with_no_known_rack_mapping_are_not_excluded():
 
 
 def test_k8s_adapter_produces_the_same_resource_keys_as_the_hypervisor_adapter():
-    hypervisor = IdleHunterTelemetry()
+    hypervisor = PowerPruneTelemetry()
     hypervisor.register_host("host-1", seed=1)
     k8s = K8sTelemetryAdapter()
     k8s.register_node("node-1", seed=1)
