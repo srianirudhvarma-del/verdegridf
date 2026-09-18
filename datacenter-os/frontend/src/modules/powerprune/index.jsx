@@ -1,18 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { getServerCluster, consolidateIdleServers } from '../../services/idlehunterApi';
+import { getServerCluster, consolidateIdleServers } from '../../services/powerpruneApi';
 import { useLiveResource } from '../../hooks/useLiveResource';
 import ModuleHeader from '../../components/shared/ModuleHeader';
 import MetricCard from '../../components/shared/MetricCard';
 import SavingsMeter from '../../components/shared/SavingsMeter';
 import ClassificationOverride from './ClassificationOverride';
 
-export default function IdleHunter() {
+export default function PowerPrune() {
   const fetcher = useCallback(() => getServerCluster(), []);
   const [data] = useLiveResource(fetcher, 3000);
   const [autoConsolidate, setAutoConsolidate] = useState(false);
 
   useEffect(() => {
-    // The real backend's consolidation pass is bulk (idlehunter/power.py's
+    // The real backend's consolidation pass is bulk (powerprune/power.py's
     // dwell state machine decides per-host, not per API call) -- auto-mode
     // just triggers that real pass on an interval instead of harvesting one
     // mock zombie at a time.
@@ -37,9 +37,9 @@ export default function IdleHunter() {
     <div className="animate-in fade-in duration-500">
       <div className="flex justify-between items-start mb-10">
         <ModuleHeader 
-          title="IdleHunter" 
+          title="PowerPrune" 
           subtitle="Autonomous load-migration heuristic — utilization threshold: 15%" 
-          moduleName="IDLEhunter"
+          moduleName="PowerPrune"
         />
         <div className="flex flex-col items-end space-y-2">
           <div className="flex items-center space-x-3 bg-card border border-white/5 px-4 py-2 rounded-xl">

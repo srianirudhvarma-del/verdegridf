@@ -37,8 +37,8 @@ function getBudgetValue(profile) {
   return BUDGET_VALUE[profile.budget] || 49999;
 }
 
-// Determine IDLEhunter status based on server vendors
-function getIdleHunterStatus(profile) {
+// Determine PowerPrune status based on server vendors
+function getPowerPruneStatus(profile) {
   const vendors = profile.server_vendors || [];
   const easyVendors = ['Dell PowerEdge (iDRAC)', 'HPE ProLiant (iLO)', 'Supermicro', 'Whitebox / Custom built', 'Virtual machines only (no bare metal)'];
   const hasEasyVendor = vendors.some(v => easyVendors.includes(v));
@@ -209,15 +209,15 @@ export function generateDeploymentPlan(profile) {
   const budgetValue = getBudgetValue(profile);
 
   // --- Module statuses ---
-  const idleHunterStatus = getIdleHunterStatus(profile);
+  const powerPruneStatus = getPowerPruneStatus(profile);
   const netPulseStatus = getNetPulseStatus(profile);
 
   const modulesActiveNow = ['GridSync'];
-  if (idleHunterStatus.status === 'active_now') modulesActiveNow.push('IDLEhunter');
+  if (powerPruneStatus.status === 'active_now') modulesActiveNow.push('PowerPrune');
   if (netPulseStatus.status === 'active_now') modulesActiveNow.push('NetPulse');
 
   const modulesNeedHardware = [];
-  if (idleHunterStatus.status !== 'active_now') modulesNeedHardware.push('IDLEhunter');
+  if (powerPruneStatus.status !== 'active_now') modulesNeedHardware.push('PowerPrune');
   modulesNeedHardware.push('ThermOS', 'CoolSense');
   if (netPulseStatus.status !== 'active_now') modulesNeedHardware.push('NetPulse');
 
@@ -234,9 +234,9 @@ export function generateDeploymentPlan(profile) {
     ? Math.round(phase1.totalCost / (totalAnnualSavings / 52))
     : 0;
 
-  // Add IDLEhunter modules if active now
-  if (idleHunterStatus.status === 'active_now') {
-    phase1.modulesUnlocked.unshift('IDLEhunter');
+  // Add PowerPrune modules if active now
+  if (powerPruneStatus.status === 'active_now') {
+    phase1.modulesUnlocked.unshift('PowerPrune');
   }
 
   // --- Architecture note ---
@@ -246,7 +246,7 @@ export function generateDeploymentPlan(profile) {
     facility_name: profile.facility_name || 'Your Facility',
     module_statuses: {
       GridSync: { status: 'active_now', label: 'Active Now — No Hardware Required', note: 'Uses ElectricityMaps API only.' },
-      IDLEhunter: { status: idleHunterStatus.status, label: idleHunterStatus.label, note: idleHunterStatus.note },
+      PowerPrune: { status: powerPruneStatus.status, label: powerPruneStatus.label, note: powerPruneStatus.note },
       NetPulse: { status: netPulseStatus.status, label: netPulseStatus.label, note: netPulseStatus.note },
       ThermOS: { status: 'phase1_hardware', label: 'Unlocks in Phase 1', note: 'Requires temperature sensors.' },
       CoolSense: { status: 'phase1_hardware', label: 'Unlocks in Phase 1', note: 'Requires flow sensor.' },
@@ -311,7 +311,7 @@ export function generateDeploymentPlan(profile) {
     roadmap: [
       {
         title: 'Week 1–2: Install sensors, activate modules',
-        description: 'Mount temperature & flow sensors. Connect to GreenCore agent. GridSync, IDLEhunter, and NetPulse go live immediately.',
+        description: 'Mount temperature & flow sensors. Connect to GreenCore agent. GridSync, PowerPrune, and NetPulse go live immediately.',
         when: 'Weeks 1–2'
       },
       {

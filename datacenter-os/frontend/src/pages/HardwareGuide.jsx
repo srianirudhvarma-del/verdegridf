@@ -22,7 +22,7 @@ function DiffBadge({ level }) {
 }
 
 const MODULE_COLORS = {
-  IDLEhunter: '#f0b429', CoolSense: '#00E5FF', ThermOS: '#ef4444',
+  PowerPrune: '#f0b429', CoolSense: '#00E5FF', ThermOS: '#ef4444',
   NetPulse: '#8B5CF6', GridSync: '#10b981', PowerWatch: '#f97316',
 };
 

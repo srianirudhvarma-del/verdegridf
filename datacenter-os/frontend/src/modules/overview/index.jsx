@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getServerCluster } from '../../services/idlehunterApi';
+import { getServerCluster } from '../../services/powerpruneApi';
 import { getWaterFlows } from '../../services/coolsenseApi';
 import { getNetworkTraffic } from '../../services/netpulseApi';
 import { getThermalSnapshot } from '../../services/thermosApi';
@@ -9,11 +9,11 @@ import ModuleHeader from '../../components/shared/ModuleHeader';
 import { Bot, AlertTriangle } from 'lucide-react';
 
 const MODULE_RELEVANCE = {
-  "Reduce electricity costs": ["idlehunter", "gridsync"],
+  "Reduce electricity costs": ["powerprune", "gridsync"],
   "Prevent cooling failures / downtime": ["thermos", "coolsense"],
   "Carbon reporting / ESG compliance": ["gridsync"],
-  "Improve visibility into what's happening": ["idlehunter", "thermos", "coolsense", "netpulse"],
-  "Automate manual monitoring tasks": ["idlehunter", "netpulse"],
+  "Improve visibility into what's happening": ["powerprune", "thermos", "coolsense", "netpulse"],
+  "Automate manual monitoring tasks": ["powerprune", "netpulse"],
   "Meet regulatory requirements": ["gridsync", "coolsense"],
 };
 
@@ -37,8 +37,8 @@ function ModuleCards({ onNavigate, zombieCount, energySaved, wue, leaks, globalC
 
   const ALL_CARDS = [
     {
-      id: 'idlehunter',
-      label: '01. IdleHunter',
+      id: 'powerprune',
+      label: '01. PowerPrune',
       color: 'text-accent-gold',
       content: (
         <div className="space-y-4">

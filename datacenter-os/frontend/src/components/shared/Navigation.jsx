@@ -14,11 +14,11 @@ import ThemeToggle from './ThemeToggle';
 
 // Maps user goals to recommended module IDs
 const MODULE_RELEVANCE = {
-  "Reduce electricity costs": ["IDLEhunter", "GridSync"],
+  "Reduce electricity costs": ["PowerPrune", "GridSync"],
   "Prevent cooling failures / downtime": ["ThermOS", "CoolSense"],
   "Carbon reporting / ESG compliance": ["GridSync"],
-  "Improve visibility into what's happening": ["IDLEhunter", "ThermOS", "CoolSense", "NetPulse"],
-  "Automate manual monitoring tasks": ["IDLEhunter", "NetPulse"],
+  "Improve visibility into what's happening": ["PowerPrune", "ThermOS", "CoolSense", "NetPulse"],
+  "Automate manual monitoring tasks": ["PowerPrune", "NetPulse"],
   "Meet regulatory requirements": ["GridSync", "CoolSense"],
 };
 
@@ -45,7 +45,7 @@ const Navigation = ({ active, onNavigate, onReconfigure }) => {
 
     const modules = [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard, recKey: null },
-        { id: 'idlehunter', label: 'IDLEhunter', icon: Terminal, recKey: 'IDLEhunter' },
+        { id: 'powerprune', label: 'PowerPrune', icon: Terminal, recKey: 'PowerPrune' },
         { id: 'coolsense', label: 'CoolSense', icon: Droplet, recKey: 'CoolSense' },
         { id: 'gridsync', label: 'GridSync', icon: Clock, recKey: 'GridSync' },
         { id: 'thermos', label: 'ThermOS', icon: Thermometer, recKey: 'ThermOS' },

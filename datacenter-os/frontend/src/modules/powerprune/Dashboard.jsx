@@ -3,7 +3,7 @@ import { serverClusterApi } from '../../data/mock/serverCluster';
 import MetricCard from '../../components/shared/MetricCard';
 import SavingsMeter from '../../components/shared/SavingsMeter';
 
-const IdleHunterDashboard = () => {
+const PowerPruneDashboard = () => {
     const [servers, setServers] = useState([]);
     const [candidates, setCandidates] = useState([]);
     const [isAutoConsolidating, setIsAutoConsolidating] = useState(false);
@@ -60,7 +60,7 @@ const IdleHunterDashboard = () => {
         <div className="p-8 bg-black min-h-screen text-white font-sans overflow-auto h-full">
             <header className="mb-8 flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-white mb-2">IDLEhunter</h1>
+                    <h1 className="text-3xl font-black tracking-tight text-white mb-2">PowerPrune</h1>
                     <p className="text-gray-400">Compute efficiency and zombie server consolidation.</p>
                 </div>
                 <div className="flex items-center gap-4 bg-gray-900 border border-gray-700 p-3 rounded-lg">
@@ -134,4 +134,4 @@ const IdleHunterDashboard = () => {
     );
 };
 
-export default IdleHunterDashboard;
+export default PowerPruneDashboard;

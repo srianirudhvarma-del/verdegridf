@@ -3,7 +3,7 @@ import React from 'react';
 /**
  * Shows a LIVE (green) or SIM (gray) badge based on the stored deployment plan.
  * Pass moduleName matching the keys in module_statuses from the plan
- * (e.g. "GridSync", "IDLEhunter", "CoolSense", "ThermOS", "NetPulse").
+ * (e.g. "GridSync", "PowerPrune", "CoolSense", "ThermOS", "NetPulse").
  *
  * GridSync always shows LIVE regardless of profile.
  */
@@ -21,7 +21,7 @@ export default function LiveSimBadge({ moduleName }) {
       const easyServers = ['Dell PowerEdge (iDRAC)', 'HPE ProLiant (iLO)', 'Supermicro', 'Whitebox / Custom built', 'Virtual machines only (no bare metal)'];
       const managedSwitches = ['Cisco Catalyst / Nexus', 'Arista', 'Juniper', 'HPE / Aruba'];
 
-      if (moduleName === 'IDLEhunter') {
+      if (moduleName === 'PowerPrune') {
         return servers.some(v => easyServers.includes(v));
       }
       if (moduleName === 'NetPulse') {

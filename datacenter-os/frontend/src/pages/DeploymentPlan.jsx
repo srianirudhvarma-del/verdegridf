@@ -8,7 +8,7 @@ import {
 
 const MODULE_ICONS = {
   GridSync: Leaf,
-  IDLEhunter: Terminal,
+  PowerPrune: Terminal,
   CoolSense: Droplet,
   ThermOS: Thermometer,
   NetPulse: Activity,

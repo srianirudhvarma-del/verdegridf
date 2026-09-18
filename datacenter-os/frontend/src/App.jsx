@@ -5,12 +5,12 @@ import Onboarding from './pages/Onboarding';
 import DeploymentPlan from './pages/DeploymentPlan';
 import HardwareGuide from './pages/HardwareGuide';
 import Overview from './modules/overview';
-import IdleHunter from './modules/idlehunter';
+import PowerPrune from './modules/powerprune';
 import CoolSense from './modules/coolsense';
 import GridSync from './modules/gridsync';
 import ThermOS from './modules/thermos';
 import NetPulse from './modules/netpulse';
-import { getServerCluster } from './services/idlehunterApi';
+import { getServerCluster } from './services/powerpruneApi';
 import { getWaterFlows } from './services/coolsenseApi';
 import { getNetworkTraffic } from './services/netpulseApi';
 import { getThermalSnapshot } from './services/thermosApi';
@@ -31,7 +31,7 @@ function hasProfile() {
 // ─── Per-module dashboard AI prompts ─────────────────────────────────────
 
 const MODULE_SUGGESTED_QUESTIONS = {
-  idlehunter:   ["How much am I wasting on zombie servers?", "Which servers should I consolidate first?", "What's my projected savings this month?"],
+  powerprune:   ["How much am I wasting on zombie servers?", "Which servers should I consolidate first?", "What's my projected savings this month?"],
   coolsense:   ["Is my WUE reading dangerous?", "Which cooling unit is most inefficient?", "What does this leak alert mean?"],
   gridsync:  ["When is the next clean grid window?", "Which jobs should I defer right now?", "How much CO2 have I saved this session?"],
   thermos: ["Is this hotspot dangerous?", "Which rack needs attention most urgently?", "What caused this temperature spike?"],
@@ -45,7 +45,7 @@ const MODULE_SUGGESTED_QUESTIONS = {
 // rather than fetching inline during prompt construction.
 async function fetchModuleData(activeModule) {
   switch (activeModule) {
-    case 'idlehunter': {
+    case 'powerprune': {
       const d = await getServerCluster();
       return { zombie_count: d.servers.filter(s => s.state === 'zombie').length, total_servers: d.servers.length, avg_cpu: (d.servers.reduce((a, b) => a + b.cpu_util, 0) / d.servers.length).toFixed(1) };
     }
@@ -129,7 +129,7 @@ function App() {
       case 'onboarding': return <Onboarding onComplete={handleOnboardingComplete} />;
       case 'plan': return <DeploymentPlan onNavigateDashboard={() => setActiveTab('overview')} onReconfigure={handleReconfigure} />;
       case 'hardware-guide': return <HardwareGuide />;
-      case 'idlehunter': return <IdleHunter />;
+      case 'powerprune': return <PowerPrune />;
       case 'coolsense': return <CoolSense />;
       case 'gridsync': return <GridSync />;
       case 'thermos': return <ThermOS />;

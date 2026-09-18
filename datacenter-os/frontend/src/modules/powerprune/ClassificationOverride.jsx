@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { setWorkloadClassification } from '../../services/idlehunterApi';
+import { setWorkloadClassification } from '../../services/powerpruneApi';
 
 // MUST HAVE #3 step 2: the operator-facing classification override --
-// PATCH /idlehunter/workloads/:id/classification, the one production path
+// PATCH /powerprune/workloads/:id/classification, the one production path
 // that writes into the shared classification store every module (this
 // one's own consolidation filter, GridSync's job scheduler,
 // NetPulse's reroute-safety check) reads through.

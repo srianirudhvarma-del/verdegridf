@@ -1,6 +1,6 @@
 export const SETUP_INSTRUCTIONS = {
   "Dell PowerEdge (iDRAC)": {
-    module: "IDLEhunter",
+    module: "PowerPrune",
     estimated_time: "15 minutes",
     difficulty: "Easy",
     prerequisites: [
@@ -29,21 +29,21 @@ export const SETUP_INSTRUCTIONS = {
         step: 3,
         title: "Add server to GreenCore config",
         detail:
-          "In your greencore-config.yaml, add this server under idlehunter.hosts",
-        command: `idlehunter:
+          "In your greencore-config.yaml, add this server under powerprune.hosts",
+        command: `powerprune:
   adapter: ipmi_redfish
   hosts:
     - ip: 192.168.1.10
       username: greencore_monitor
       password: YOUR_PASSWORD`,
         verify:
-          "GreenCore dashboard → IDLEhunter → server appears in cluster grid with LIVE badge",
+          "GreenCore dashboard → PowerPrune → server appears in cluster grid with LIVE badge",
       },
     ],
   },
 
   "HPE ProLiant (iLO)": {
-    module: "IDLEhunter",
+    module: "PowerPrune",
     estimated_time: "15 minutes",
     difficulty: "Easy",
     prerequisites: [
@@ -72,21 +72,21 @@ export const SETUP_INSTRUCTIONS = {
       {
         step: 3,
         title: "Add to GreenCore config",
-        detail: "Update greencore-config.yaml under idlehunter.hosts:",
-        command: `idlehunter:
+        detail: "Update greencore-config.yaml under powerprune.hosts:",
+        command: `powerprune:
   adapter: hpe_ilo
   hosts:
     - ip: 192.168.1.11
       username: greencore_ro
       password: YOUR_PASSWORD`,
         verify:
-          "IDLEhunter module shows the server with power and CPU data",
+          "PowerPrune module shows the server with power and CPU data",
       },
     ],
   },
 
   "Supermicro (IPMI)": {
-    module: "IDLEhunter",
+    module: "PowerPrune",
     estimated_time: "10 minutes",
     difficulty: "Easy",
     prerequisites: [
@@ -108,20 +108,20 @@ ipmitool -I lanplus -H [IPMI-IP] -U admin -P PASSWORD chassis status`,
         step: 2,
         title: "Add to GreenCore config",
         detail: "Update greencore-config.yaml:",
-        command: `idlehunter:
+        command: `powerprune:
   adapter: ipmi_generic
   hosts:
     - ip: 192.168.1.12
       username: admin
       password: YOUR_PASSWORD
       ipmi_version: 2.0`,
-        verify: "IDLEhunter shows sensor data for this server",
+        verify: "PowerPrune shows sensor data for this server",
       },
     ],
   },
 
   "Whitebox / Custom built": {
-    module: "IDLEhunter + ThermOS",
+    module: "PowerPrune + ThermOS",
     estimated_time: "20 minutes",
     difficulty: "Easy",
     prerequisites: [
@@ -160,19 +160,19 @@ WantedBy=multi-user.target`,
         step: 3,
         title: "Add to GreenCore config",
         detail: "Update greencore-config.yaml:",
-        command: `idlehunter:
+        command: `powerprune:
   adapter: psutil_local
   hosts:
     - ip: 192.168.1.20
       port: 5000
       node_id: custom-server-1`,
-        verify: "IDLEhunter shows this host with live CPU and memory metrics",
+        verify: "PowerPrune shows this host with live CPU and memory metrics",
       },
     ],
   },
 
   "Raspberry Pi (psutil agent)": {
-    module: "IDLEhunter + ThermOS",
+    module: "PowerPrune + ThermOS",
     estimated_time: "20 minutes",
     difficulty: "Easy",
     prerequisites: [
