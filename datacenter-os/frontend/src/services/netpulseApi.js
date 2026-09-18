@@ -1,13 +1,13 @@
 import { apiGet, apiPost } from './api';
 
 export function getNetworkTraffic() {
-  return apiGet('/lightspeed/network');
+  return apiGet('/netpulse/network');
 }
 
 export function optimizeNetwork() {
-  return apiPost('/lightspeed/optimize');
+  return apiPost('/netpulse/optimize');
 }
 
 export function injectTrafficSpike() {
-  return apiPost('/lightspeed/inject-spike');
+  return apiPost('/netpulse/inject-spike');
 }

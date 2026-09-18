@@ -9,10 +9,10 @@ import IdleHunter from './modules/idlehunter';
 import WaterWatch from './modules/waterwatch';
 import CarbonClock from './modules/carbonclock';
 import ThermalTrace from './modules/thermaltrace';
-import LightSpeed from './modules/lightspeed';
+import NetPulse from './modules/netpulse';
 import { getServerCluster } from './services/idlehunterApi';
 import { getWaterFlows } from './services/waterwatchApi';
-import { getNetworkTraffic } from './services/lightspeedApi';
+import { getNetworkTraffic } from './services/netpulseApi';
 import { getThermalSnapshot } from './services/thermaltraceApi';
 import './index.css';
 
@@ -35,7 +35,7 @@ const MODULE_SUGGESTED_QUESTIONS = {
   waterwatch:   ["Is my WUE reading dangerous?", "Which cooling unit is most inefficient?", "What does this leak alert mean?"],
   carbonclock:  ["When is the next clean grid window?", "Which jobs should I defer right now?", "How much CO2 have I saved this session?"],
   thermaltrace: ["Is this hotspot dangerous?", "Which rack needs attention most urgently?", "What caused this temperature spike?"],
-  lightspeed:   ["Which link is about to become a bottleneck?", "Should I reroute this traffic manually?", "What does 87% utilization mean for latency?"],
+  netpulse:   ["Which link is about to become a bottleneck?", "Should I reroute this traffic manually?", "What does 87% utilization mean for latency?"],
   overview:     ["What are my biggest savings opportunities?", "Which module should I focus on first?", "How is my facility performing overall?"],
 };
 
@@ -58,7 +58,7 @@ async function fetchModuleData(activeModule) {
       const flat = d.grid.flat();
       return { max_inlet_temp: Math.max(...flat.map(c => c.inlet_temp)).toFixed(1), avg_inlet_temp: (flat.reduce((a, c) => a + c.inlet_temp, 0) / flat.length).toFixed(1), hotspots: flat.filter(c => c.inlet_temp > 32).length };
     }
-    case 'lightspeed': {
+    case 'netpulse': {
       const d = await getNetworkTraffic();
       return { max_utilization: Math.max(...d.links.map(l => l.utilization_pct)).toFixed(1), bottleneck_links: d.links.filter(l => l.utilization_pct > 80).length, total_links: d.links.length };
     }
@@ -133,7 +133,7 @@ function App() {
       case 'waterwatch': return <WaterWatch />;
       case 'carbonclock': return <CarbonClock />;
       case 'thermaltrace': return <ThermalTrace />;
-      case 'lightspeed': return <LightSpeed isDeferralActive={isDeferralActive} />;
+      case 'netpulse': return <NetPulse isDeferralActive={isDeferralActive} />;
       case 'overview':
       default:
         return (

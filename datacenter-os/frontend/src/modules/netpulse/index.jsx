@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import * as d3 from 'd3';
-import { getNetworkTraffic, injectTrafficSpike } from '../../services/lightspeedApi';
+import { getNetworkTraffic, injectTrafficSpike } from '../../services/netpulseApi';
 import { useLiveResource } from '../../hooks/useLiveResource';
 import ModuleHeader from '../../components/shared/ModuleHeader';
 import MetricCard from '../../components/shared/MetricCard';
 import AlertBadge from '../../components/shared/AlertBadge';
 import { Activity, Zap, Clock } from 'lucide-react';
 
-export default function LightSpeed({ isDeferralActive }) {
+export default function NetPulse({ isDeferralActive }) {
   const fetcher = useCallback(() => getNetworkTraffic(), []);
   const [data, refresh] = useLiveResource(fetcher, 4000);
   const svgRef = useRef(null);
@@ -109,9 +109,9 @@ export default function LightSpeed({ isDeferralActive }) {
     <div className="animate-in fade-in duration-500 pb-10">
       <div className="flex justify-between items-start mb-10">
         <ModuleHeader 
-          title="LightSpeed" 
+          title="NetPulse" 
           subtitle="Network map and traffic management"
-          moduleName="LightSpeed"
+          moduleName="NetPulse"
         />
         <button
           onClick={() => injectTrafficSpike().then(refresh).catch((err) => console.error('inject spike failed:', err))}

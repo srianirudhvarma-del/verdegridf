@@ -53,8 +53,8 @@ function getIdleHunterStatus(profile) {
   return { status: 'needs_setup', label: 'Requires Agent Install — 30 min setup', note: 'Install lightweight GreenCore agent on management host.' };
 }
 
-// Determine LightSpeed status based on switch vendors
-function getLightSpeedStatus(profile) {
+// Determine NetPulse status based on switch vendors
+function getNetPulseStatus(profile) {
   const switches = profile.switch_vendors || [];
   const managedVendors = ['Cisco Catalyst / Nexus', 'Arista', 'Juniper', 'HPE / Aruba'];
   const hasManaged = switches.some(v => managedVendors.includes(v));
@@ -210,16 +210,16 @@ export function generateDeploymentPlan(profile) {
 
   // --- Module statuses ---
   const idleHunterStatus = getIdleHunterStatus(profile);
-  const lightSpeedStatus = getLightSpeedStatus(profile);
+  const netPulseStatus = getNetPulseStatus(profile);
 
   const modulesActiveNow = ['CarbonClock'];
   if (idleHunterStatus.status === 'active_now') modulesActiveNow.push('IDLEhunter');
-  if (lightSpeedStatus.status === 'active_now') modulesActiveNow.push('LightSpeed');
+  if (netPulseStatus.status === 'active_now') modulesActiveNow.push('NetPulse');
 
   const modulesNeedHardware = [];
   if (idleHunterStatus.status !== 'active_now') modulesNeedHardware.push('IDLEhunter');
   modulesNeedHardware.push('ThermalTrace', 'WaterWatch');
-  if (lightSpeedStatus.status !== 'active_now') modulesNeedHardware.push('LightSpeed');
+  if (netPulseStatus.status !== 'active_now') modulesNeedHardware.push('NetPulse');
 
   // --- ROI ---
   const idleSavingsPerYear = serverCount * 0.15 * 200 * 24 * 30 * 8 / 1000 * 12;
@@ -247,7 +247,7 @@ export function generateDeploymentPlan(profile) {
     module_statuses: {
       CarbonClock: { status: 'active_now', label: 'Active Now — No Hardware Required', note: 'Uses ElectricityMaps API only.' },
       IDLEhunter: { status: idleHunterStatus.status, label: idleHunterStatus.label, note: idleHunterStatus.note },
-      LightSpeed: { status: lightSpeedStatus.status, label: lightSpeedStatus.label, note: lightSpeedStatus.note },
+      NetPulse: { status: netPulseStatus.status, label: netPulseStatus.label, note: netPulseStatus.note },
       ThermalTrace: { status: 'phase1_hardware', label: 'Unlocks in Phase 1', note: 'Requires temperature sensors.' },
       WaterWatch: { status: 'phase1_hardware', label: 'Unlocks in Phase 1', note: 'Requires flow sensor.' },
     },
@@ -311,7 +311,7 @@ export function generateDeploymentPlan(profile) {
     roadmap: [
       {
         title: 'Week 1–2: Install sensors, activate modules',
-        description: 'Mount temperature & flow sensors. Connect to GreenCore agent. CarbonClock, IDLEhunter, and LightSpeed go live immediately.',
+        description: 'Mount temperature & flow sensors. Connect to GreenCore agent. CarbonClock, IDLEhunter, and NetPulse go live immediately.',
         when: 'Weeks 1–2'
       },
       {

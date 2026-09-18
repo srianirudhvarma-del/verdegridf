@@ -17,8 +17,8 @@ const MODULE_RELEVANCE = {
   "Reduce electricity costs": ["IDLEhunter", "CarbonClock"],
   "Prevent cooling failures / downtime": ["ThermalTrace", "WaterWatch"],
   "Carbon reporting / ESG compliance": ["CarbonClock"],
-  "Improve visibility into what's happening": ["IDLEhunter", "ThermalTrace", "WaterWatch", "LightSpeed"],
-  "Automate manual monitoring tasks": ["IDLEhunter", "LightSpeed"],
+  "Improve visibility into what's happening": ["IDLEhunter", "ThermalTrace", "WaterWatch", "NetPulse"],
+  "Automate manual monitoring tasks": ["IDLEhunter", "NetPulse"],
   "Meet regulatory requirements": ["CarbonClock", "WaterWatch"],
 };
 
@@ -49,7 +49,7 @@ const Navigation = ({ active, onNavigate, onReconfigure }) => {
         { id: 'waterwatch', label: 'WaterWatch', icon: Droplet, recKey: 'WaterWatch' },
         { id: 'carbonclock', label: 'CarbonClock', icon: Clock, recKey: 'CarbonClock' },
         { id: 'thermaltrace', label: 'ThermalTrace', icon: Thermometer, recKey: 'ThermalTrace' },
-        { id: 'lightspeed', label: 'LightSpeed', icon: Activity, recKey: 'LightSpeed' },
+        { id: 'netpulse', label: 'NetPulse', icon: Activity, recKey: 'NetPulse' },
     ];
 
     const bottomLinks = [

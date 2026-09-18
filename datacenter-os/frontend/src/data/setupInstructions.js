@@ -213,7 +213,7 @@ sudo reboot`,
   },
 
   "ESP32 (network + thermal node)": {
-    module: "LightSpeed + ThermalTrace",
+    module: "NetPulse + ThermalTrace",
     estimated_time: "30 minutes",
     difficulty: "Medium",
     prerequisites: [
@@ -325,7 +325,7 @@ GPIO.cleanup()
   },
 
   "Cisco switch (SNMP)": {
-    module: "LightSpeed",
+    module: "NetPulse",
     estimated_time: "10 minutes",
     difficulty: "Easy",
     prerequisites: [
@@ -353,14 +353,14 @@ snmpwalk -v2c -c greencore_ro [SWITCH-IP] 1.3.6.1.2.1.2.2
         step: 2,
         title: "Add switch to GreenCore config",
         detail: "Update your greencore-config.yaml:",
-        command: `lightspeed:
+        command: `netpulse:
   adapter: snmp_switch
   hosts:
     - ip: 192.168.1.1
       community: greencore_ro
       version: 2c`,
         verify:
-          "GreenCore LightSpeed module shows LIVE badge and real interface traffic",
+          "GreenCore NetPulse module shows LIVE badge and real interface traffic",
       },
     ],
   },

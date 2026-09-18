@@ -4,7 +4,7 @@ import { networkTrafficApi } from '../../data/mock/networkTraffic';
 import MetricCard from '../../components/shared/MetricCard';
 import AlertBadge from '../../components/shared/AlertBadge';
 
-const LightSpeedDashboard = () => {
+const NetPulseDashboard = () => {
     const [networkData, setNetworkData] = useState(null);
     const [bottlenecks, setBottlenecks] = useState([]);
     const [suggestedReroutes, setSuggestedReroutes] = useState([]);
@@ -154,7 +154,7 @@ const LightSpeedDashboard = () => {
         <div className="p-8 bg-black min-h-screen text-white font-sans overflow-auto h-full">
             <header className="mb-8 flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-yellow-400 mb-2">LightSpeed</h1>
+                    <h1 className="text-3xl font-black tracking-tight text-yellow-400 mb-2">NetPulse</h1>
                     <p className="text-gray-400">Inter-rack fiber network latency and utilization optimization.</p>
                 </div>
                 <button 
@@ -279,4 +279,4 @@ const LightSpeedDashboard = () => {
     );
 };
 
-export default LightSpeedDashboard;
+export default NetPulseDashboard;

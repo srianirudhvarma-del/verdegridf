@@ -23,7 +23,7 @@ function DiffBadge({ level }) {
 
 const MODULE_COLORS = {
   IDLEhunter: '#f0b429', WaterWatch: '#00E5FF', ThermalTrace: '#ef4444',
-  LightSpeed: '#8B5CF6', CarbonClock: '#10b981', PowerWatch: '#f97316',
+  NetPulse: '#8B5CF6', CarbonClock: '#10b981', PowerWatch: '#f97316',
 };
 
 function ModuleBadge({ module }) {

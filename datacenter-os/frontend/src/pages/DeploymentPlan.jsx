@@ -11,7 +11,7 @@ const MODULE_ICONS = {
   IDLEhunter: Terminal,
   WaterWatch: Droplet,
   ThermalTrace: Thermometer,
-  LightSpeed: Activity,
+  NetPulse: Activity,
   PowerWatch: LayoutDashboard,
 };
 

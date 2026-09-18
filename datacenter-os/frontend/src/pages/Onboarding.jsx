@@ -23,7 +23,7 @@ const SUGGESTED_QUESTIONS = [
   ["What rack count fits my electricity bill?", "Does facility size affect which modules I need?", "What's a typical bill for a 50-rack facility?"],
   ["What if I have mixed server vendors?", "Do I need IPMI cards for older servers?", "Which server type gives the most monitoring data?"],
   ["What if my CRAC units aren't networked?", "Is BACnet required for WaterWatch to work?", "Can I still monitor cooling without smart units?"],
-  ["How do I check if my switches support SNMP?", "What's the difference between SNMP and gNMI?", "Can I use LightSpeed with unmanaged switches?"],
+  ["How do I check if my switches support SNMP?", "What's the difference between SNMP and gNMI?", "Can I use NetPulse with unmanaged switches?"],
   ["Which goal gives fastest ROI?", "What budget do you recommend for my setup?", "Should I go recommendations-only or automated?"],
 ];
 

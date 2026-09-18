@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getServerCluster } from '../../services/idlehunterApi';
 import { getWaterFlows } from '../../services/waterwatchApi';
-import { getNetworkTraffic } from '../../services/lightspeedApi';
+import { getNetworkTraffic } from '../../services/netpulseApi';
 import { getThermalSnapshot } from '../../services/thermaltraceApi';
 import { useLiveResource } from '../../hooks/useLiveResource';
 import ModuleHeader from '../../components/shared/ModuleHeader';
@@ -12,8 +12,8 @@ const MODULE_RELEVANCE = {
   "Reduce electricity costs": ["idlehunter", "carbonclock"],
   "Prevent cooling failures / downtime": ["thermaltrace", "waterwatch"],
   "Carbon reporting / ESG compliance": ["carbonclock"],
-  "Improve visibility into what's happening": ["idlehunter", "thermaltrace", "waterwatch", "lightspeed"],
-  "Automate manual monitoring tasks": ["idlehunter", "lightspeed"],
+  "Improve visibility into what's happening": ["idlehunter", "thermaltrace", "waterwatch", "netpulse"],
+  "Automate manual monitoring tasks": ["idlehunter", "netpulse"],
   "Meet regulatory requirements": ["carbonclock", "waterwatch"],
 };
 
@@ -112,8 +112,8 @@ function ModuleCards({ onNavigate, zombieCount, energySaved, wue, leaks, globalC
       ),
     },
     {
-      id: 'lightspeed',
-      label: '05. LightSpeed',
+      id: 'netpulse',
+      label: '05. NetPulse',
       color: 'text-accent-violet',
       content: (
         <div className="space-y-4">
