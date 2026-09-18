@@ -1,10 +1,10 @@
-ThermalTrace Deep Research & Architecture Optimization
+ThermOS Deep Research & Architecture Optimization
 
-**ThermalTrace**
+**ThermOS**
 
 **Deep Research ****&**** Architecture Optimization**
 
-*A thermal-management module of the GreenCore Intelligent Datacenter Efficiency Platform*
+*A thermal-management module of the VerdeGrid Intelligent Datacenter Efficiency Platform*
 
 Prepared for: Team AGASTA, Vellore Institute of Technology
 
@@ -12,9 +12,9 @@ Scope: Evidence-based technical review of thermal architecture, competitive posi
 
 # **Executive Summary**
 
-ThermalTrace is currently a browser-deployable predictive-cooling module that displays an 8x8 rack-level thermal heatmap, tracks inlet/outlet temperature delta, flags abnormal thermal gradients, and forecasts hotspot formation roughly 15-20 minutes ahead using an LSTM model trained on hybrid real-sensor and simulated telemetry. It sits alongside four sibling modules (IdleHunter for compute, CarbonClock for grid carbon, WaterWatch for water/leak detection, LightSpeed for network congestion) inside one correlated dashboard called GreenCore.
+ThermOS is currently a browser-deployable predictive-cooling module that displays an 8x8 rack-level thermal heatmap, tracks inlet/outlet temperature delta, flags abnormal thermal gradients, and forecasts hotspot formation roughly 15-20 minutes ahead using an LSTM model trained on hybrid real-sensor and simulated telemetry. It sits alongside four sibling modules (PowerPrune for compute, GridSync for grid carbon, CoolSense for water/leak detection, NetPulse for network congestion) inside one correlated dashboard called VerdeGrid.
 
-This report validates GreenCore's founding strategy - integrating several reasonably simple, coordinated methods rather than building one extremely deep module - against the published engineering literature, compares ThermalTrace to the architectures of major vendors (Schneider Electric, Vertiv, Google, Microsoft, Dell, HPE, NVIDIA), identifies the system's real technical limitations, evaluates a candidate pool of improvements on a cost/complexity-per-benefit basis, and proposes a final V2 architecture sized for low-to-mid-range data center operators rather than hyperscalers.
+This report validates VerdeGrid's founding strategy - integrating several reasonably simple, coordinated methods rather than building one extremely deep module - against the published engineering literature, compares ThermOS to the architectures of major vendors (Schneider Electric, Vertiv, Google, Microsoft, Dell, HPE, NVIDIA), identifies the system's real technical limitations, evaluates a candidate pool of improvements on a cost/complexity-per-benefit basis, and proposes a final V2 architecture sized for low-to-mid-range data center operators rather than hyperscalers.
 
 **Headline findings:**
 
@@ -24,23 +24,23 @@ This report validates GreenCore's founding strategy - integrating several reason
 
 - Full CFD is the wrong tool for a live, low-cost product. CFD is accurate but requires expert setup and hours-to-days of compute per scenario for even a small server room, which rules it out for real-time control. It remains valuable as a one-time design-validation step, not as a running service.
 
-- ThermalTrace's biggest real gaps are not modeling sophistication - they are missing airflow and power/workload signals, no automated control loop, no uncertainty quantification, and a single fixed model that will not generalize across sites without recalibration.
+- ThermOS's biggest real gaps are not modeling sophistication - they are missing airflow and power/workload signals, no automated control loop, no uncertainty quantification, and a single fixed model that will not generalize across sites without recalibration.
 
-- The right competitive story for this market is not "more advanced AI than Schneider or Vertiv." Enterprise DCIM costs $27-33K+/year for a 100-rack site plus $50-200K+ upfront licensing and 3-6 month deployments - priced for facilities that can amortize that against tens of megawatts. ThermalTrace's advantage is coordinating the right signals cheaply, in software, without that infrastructure.
+- The right competitive story for this market is not "more advanced AI than Schneider or Vertiv." Enterprise DCIM costs $27-33K+/year for a 100-rack site plus $50-200K+ upfront licensing and 3-6 month deployments - priced for facilities that can amortize that against tens of megawatts. ThermOS's advantage is coordinating the right signals cheaply, in software, without that infrastructure.
 
-- Naming names strengthens the pitch if done precisely, and weakens it if overstated. Google/DeepMind, Microsoft's ThermoCast, Meta's physics simulator, and Schneider's EcoStruxure are all real, verifiable, and each documents a different piece of the ideal architecture (see Section 2.2) - but none of them is "basically what our LSTM does." Google's published system optimizes cooling-action outcomes at thousands-of-sensors scale with a safety-verification layer; ThermoCast is a 2011 result at university-facility scale; Meta's 20% fan-energy / 4% water savings come from a full physics simulator plus offline RL, not a forecasting model alone. ThermalTrace should cite these as proof the underlying ideas work, not as equivalence claims.
+- Naming names strengthens the pitch if done precisely, and weakens it if overstated. Google/DeepMind, Microsoft's ThermoCast, Meta's physics simulator, and Schneider's EcoStruxure are all real, verifiable, and each documents a different piece of the ideal architecture (see Section 2.2) - but none of them is "basically what our LSTM does." Google's published system optimizes cooling-action outcomes at thousands-of-sensors scale with a safety-verification layer; ThermoCast is a 2011 result at university-facility scale; Meta's 20% fan-energy / 4% water savings come from a full physics simulator plus offline RL, not a forecasting model alone. ThermOS should cite these as proof the underlying ideas work, not as equivalence claims.
 
 # **1. Validating the Core Strategy: Coordinated Integration vs. Deep Specialization**
 
 ## **1.1 The question**
 
-GreenCore's working hypothesis is that thermal management should combine temperature, airflow, IT load, power, ambient conditions, prediction, anomaly detection, and cooling control into one coordinated system, rather than investing all engineering effort into one extremely sophisticated prediction model. This is examined on its merits below rather than assumed correct.
+VerdeGrid's working hypothesis is that thermal management should combine temperature, airflow, IT load, power, ambient conditions, prediction, anomaly detection, and cooling control into one coordinated system, rather than investing all engineering effort into one extremely sophisticated prediction model. This is examined on its merits below rather than assumed correct.
 
 ## **1.2 What the terminology actually is**
 
 The request lists several candidate terms. Based on the literature reviewed:
 
-- Cross-layer optimization is the most precise term for coordinating cooling actuation with IT/workload decisions - it is the exact phrase used for frameworks that jointly control server power states and cooling setpoints (e.g., the DeepEE cross-layer framework), and it captures what ThermalTrace's roadmap is reaching for when it says thermal should not be isolated from compute and power.
+- Cross-layer optimization is the most precise term for coordinating cooling actuation with IT/workload decisions - it is the exact phrase used for frameworks that jointly control server power states and cooling setpoints (e.g., the DeepEE cross-layer framework), and it captures what ThermOS's roadmap is reaching for when it says thermal should not be isolated from compute and power.
 
 - Hierarchical control is the correct term for decomposing decisions across time or spatial scale - e.g., a fast, local loop (fan/valve response to a rack) nested under a slower, facility-level loop (chiller or setpoint scheduling). Recent HPC cooling-plant research explicitly uses a three-layer hierarchical decomposition for this reason.
 
@@ -50,9 +50,9 @@ The request lists several candidate terms. Based on the literature reviewed:
 
 - Modular architecture describes the software/organizational pattern (five independent-but-integrated modules), not the optimization strategy itself. It is necessary scaffolding, not the reason the strategy works.
 
-- Horizontal integration is a supply-chain/business-strategy term (owning multiple stages at the same level of a value chain) and is not standard usage in thermal or controls engineering. It should be retired from GreenCore's technical vocabulary even though it is intuitive shorthand.
+- Horizontal integration is a supply-chain/business-strategy term (owning multiple stages at the same level of a value chain) and is not standard usage in thermal or controls engineering. It should be retired from VerdeGrid's technical vocabulary even though it is intuitive shorthand.
 
-Recommended framing: GreenCore/ThermalTrace practices cross-layer, hierarchical co-optimization, delivered through a modular architecture. That sentence is defensible to a technical judge; "horizontal integration" is not.
+Recommended framing: VerdeGrid/ThermOS practices cross-layer, hierarchical co-optimization, delivered through a modular architecture. That sentence is defensible to a technical judge; "horizontal integration" is not.
 
 ## **1.3 Deep optimization of one module vs. coordinated optimization across modules**
 
@@ -72,15 +72,15 @@ For low-to-mid-range operators, coordinated integration of simpler modules is th
 
 - Where the savings actually live. As above, most of the quantified energy and reliability wins in the literature come from closing the loop across layers, not from a marginally better single-variable forecast. A operator with one deep thermal model and no link to cooling actuation or workload placement structurally cannot realize those savings.
 
-- Deployment risk. Hyperscale-grade single-module sophistication (CFD, full digital twins, RL-based autonomous control) requires specialist staff, long deployment windows, and large training datasets that a mid-market operator does not have. A coordinated set of simpler, well-integrated modules degrades gracefully and can be deployed by a small team in weeks, matching the "low cost, hackathon-phase, then physical integration" roadmap already described in GreenCore's own materials.
+- Deployment risk. Hyperscale-grade single-module sophistication (CFD, full digital twins, RL-based autonomous control) requires specialist staff, long deployment windows, and large training datasets that a mid-market operator does not have. A coordinated set of simpler, well-integrated modules degrades gracefully and can be deployed by a small team in weeks, matching the "low cost, hackathon-phase, then physical integration" roadmap already described in VerdeGrid's own materials.
 
 **Conclusion: the instinct is correct, and it should be pursued deliberately as cross-layer, hierarchical co-optimization - not diluted into five loosely-related dashboards, and not abandoned in favor of one heroic model.**
 
-# **2. Ideal vs. Big Brands vs. ThermalTrace**
+# **2. Ideal vs. Big Brands vs. ThermOS**
 
-"Ideal" below means the best technically demonstrated approach in research and hyperscale/HPC practice, regardless of cost. "Big Brands" reflects what Schneider Electric, Vertiv, Google, Microsoft, Dell, HPE and NVIDIA actually ship or operate today, based on technical documentation, vendor engineering material, and peer-reviewed studies of their systems - vendor performance claims are flagged as such rather than treated as established fact. "Our System" reflects ThermalTrace as described in the current GreenCore deck.
+"Ideal" below means the best technically demonstrated approach in research and hyperscale/HPC practice, regardless of cost. "Big Brands" reflects what Schneider Electric, Vertiv, Google, Microsoft, Dell, HPE and NVIDIA actually ship or operate today, based on technical documentation, vendor engineering material, and peer-reviewed studies of their systems - vendor performance claims are flagged as such rather than treated as established fact. "Our System" reflects ThermOS as described in the current VerdeGrid deck.
 
-| **Parameter** | **Ideal** | **Big Brands (today)** | **ThermalTrace (today)** |
+| **Parameter** | **Ideal** | **Big Brands (today)** | **ThermOS (today)** |
 | --- | --- | --- | --- |
 | Sensors | Dense per-rack inlet/outlet arrays + airflow + power + vibration, calibrated to ASHRAE TC 9.9 (6 sensors/rack: top/mid/bottom, front/back) | Rack-level inlet/outlet sensors on most modern racks; airflow and power increasingly instrumented, especially in liquid-cooled/AI racks | 8x8 heatmap + inlet/outlet delta; resolution and sensor count not independently confirmed beyond hybrid sensor+simulation description |
 | Temperature monitoring | Continuous, sub-0.5C accuracy at every inlet | Continuous DCIM-integrated monitoring across the hall | Real-time heatmap and delta tracking present |
@@ -91,16 +91,16 @@ For low-to-mid-range operators, coordinated integration of simpler modules is th
 | ML/AI | Physics-informed ML with online adaptation | Present at hyperscale (Google/DeepMind chiller RL); limited at enterprise DCIM tier | LSTM present; no physics constraints, no online retraining described |
 | Physics/CFD | Used for design validation, not real-time control (too slow for online use) | Used heavily at design/retrofit stage (Schneider EcoStruxure IT Design CFD, Vertiv, Ansys-based studies) | Not used - reasonable, since real-time CFD is infeasible at any budget tier |
 | Digital twin | Physics+data twin with live calibration | Schneider/Vertiv/Sunbird all offer 3D digital-twin visualization tied to DCIM | Simulation layer exists for development, not a live calibrated twin |
-| IT/workload awareness | Thermal model conditioned on real-time utilization and job placement | Emerging in AI-era liquid-cooled racks; still siloed in most enterprise DCIM | Exists elsewhere in GreenCore (IdleHunter) but not wired into ThermalTrace's model |
-| Power awareness | Per-rack/per-server power feeding the thermal model | Increasingly standard via rack PDUs | Not integrated into ThermalTrace specifically |
+| IT/workload awareness | Thermal model conditioned on real-time utilization and job placement | Emerging in AI-era liquid-cooled racks; still siloed in most enterprise DCIM | Exists elsewhere in VerdeGrid (PowerPrune) but not wired into ThermOS's model |
+| Power awareness | Per-rack/per-server power feeding the thermal model | Increasingly standard via rack PDUs | Not integrated into ThermOS specifically |
 | Cooling optimization | Closed-loop MPC/RL tied to safety constraints | Present at hyperscale (Google chiller RL: 9-13% live savings); vendor DCIM mostly advisory | Not present - prediction only, no actuation |
 | Fan/pump optimization | Continuous variable-speed optimization under MPC | Variable-speed drives standard; optimization varies by vendor/site | Not present |
 | Adaptive setpoints | Dynamic, load- and ambient-aware setpoints within ASHRAE envelope | Common in modern BMS/DCIM integrations | Not present |
 | Cooling control | Autonomous, constrained, human-overridable | Mostly human-in-the-loop; autonomous control rare and closely supervised (Google) | Manual - roadmap Phase 3 item, not yet built |
 | Liquid cooling | Direct-to-chip/immersion for high-density racks, air for the rest | Rapidly expanding for AI/GPU racks (Schneider, Vertiv reference designs with NVIDIA) | Not applicable - target racks are lower density |
-| Economization/free cooling | Maximized whenever climate allows, integrated into control logic | Standard in modern facility design | Not addressed by ThermalTrace (facility design decision, not software) |
-| Anomaly detection | Per-asset learned baselines across many failure modes | Present in leading DCIM/BMS add-ons (e.g., cooling-anomaly-detection products) | Z-score anomaly detection present (shared with WaterWatch pattern) |
-| Predictive maintenance | RUL modeling per asset (fans, pumps, chillers) | Growing category (vibration/current signature monitoring) | Not present in ThermalTrace |
+| Economization/free cooling | Maximized whenever climate allows, integrated into control logic | Standard in modern facility design | Not addressed by ThermOS (facility design decision, not software) |
+| Anomaly detection | Per-asset learned baselines across many failure modes | Present in leading DCIM/BMS add-ons (e.g., cooling-anomaly-detection products) | Z-score anomaly detection present (shared with CoolSense pattern) |
+| Predictive maintenance | RUL modeling per asset (fans, pumps, chillers) | Growing category (vibration/current signature monitoring) | Not present in ThermOS |
 | Fault tolerance | Redundant sensing, graceful degradation, self-diagnosis | Built into hyperscale/enterprise designs (redundant CRAC/CRAH, N+1) | Not addressed - single hybrid data path described |
 | Uncertainty handling | Confidence intervals / calibrated probability on every prediction | Rare even at hyperscale; an active research gap | Not present - point predictions only |
 | Real-time operation | Sub-second to minute-scale control loops | Minute-scale typical | WebSocket live dashboard - real-time visualization confirmed; control loop not yet real-time since no actuation exists |
@@ -110,11 +110,11 @@ For low-to-mid-range operators, coordinated integration of simpler modules is th
 | Cost | $50K-$200K+ upfront plus ~$27-33/cabinet/month and up | Same enterprise bracket; colocation-tenant DCIM often skipped for this reason | Low - explicit design goal, phased roadmap avoids large upfront spend |
 | Scalability | Scales to hyperscale with dedicated engineering teams | Proven at hyperscale/enterprise scale | Designed for low-to-mid range; scaling path to physical integration is Phase 2/3, not yet proven |
 
-*Table 1. Ideal vs. major-vendor practice vs. ThermalTrace, by capability. Vendor cells reflect a mix of stated engineering capability and, where noted, unverified vendor performance claims.*
+*Table 1. Ideal vs. major-vendor practice vs. ThermOS, by capability. Vendor cells reflect a mix of stated engineering capability and, where noted, unverified vendor performance claims.*
 
 ## **2.1 Reading the table**
 
-**Where ThermalTrace is genuinely behind:**
+**Where ThermOS is genuinely behind:**
 
 - No airflow sensing - the single biggest gap, because temperature alone cannot distinguish an overloaded rack from a recirculation/bypass problem.
 
@@ -122,15 +122,15 @@ For low-to-mid-range operators, coordinated integration of simpler modules is th
 
 - No uncertainty quantification - a 15-minute point forecast with no confidence band is indistinguishable, to an operator, from a guess when it's wrong.
 
-- No power/workload conditioning inside the thermal model itself, even though GreenCore already collects this data via IdleHunter.
+- No power/workload conditioning inside the thermal model itself, even though VerdeGrid already collects this data via PowerPrune.
 
-**Where ThermalTrace is competitive:**
+**Where ThermOS is competitive:**
 
 - Real-time visualization, hybrid sensor+simulation deployment, and a genuinely predictive (not purely reactive) posture already put it ahead of the median small/mid-size facility, which typically has no DCIM at all or a spreadsheet-based one.
 
 - Anomaly detection via statistical methods (z-score) is a legitimate, well-precedented technique, not a toy - it's the same class of method commercial cooling-anomaly products use.
 
-**Where ThermalTrace should not try to compete with hyperscale:**
+**Where ThermOS should not try to compete with hyperscale:**
 
 - Real-time CFD or a fully calibrated physics digital twin: infeasible at any budget for this segment, and arguably not even useful in real time even for the vendors who use it - it is a design-time tool everywhere it appears.
 
@@ -148,10 +148,10 @@ For low-to-mid-range operators, coordinated integration of simpler modules is th
 
 | **Company** | **What is actually documented** | **Best use in a pitch / what to avoid claiming** |
 | --- | --- | --- |
-| Google / DeepMind | Thousands of existing sensors feed deep neural networks that predict the outcome of candidate cooling actions (chiller/cooling-tower/fan settings), pick an efficient one, and pass it through a local safety-verification layer before execution. Started as recommendations to human operators, later moved toward more autonomous control. The original 2016 result (up to 40% cooling-energy reduction) was a company blog claim, not peer-reviewed; DeepMind's own later peer-reviewed live-deployment paper (with Trane Technologies, on real commercial buildings) reports a more modest 9-13% energy savings. | Best evidence that production-scale autonomous control with a safety layer is real and has been done. Do not say "our LSTM is basically Google's AI" - Google's published system optimizes cooling energy/PUE via action-outcome prediction, it is not simply a hotspot-forecasting LSTM, and it runs on production-scale sensor counts ThermalTrace does not have. |
+| Google / DeepMind | Thousands of existing sensors feed deep neural networks that predict the outcome of candidate cooling actions (chiller/cooling-tower/fan settings), pick an efficient one, and pass it through a local safety-verification layer before execution. Started as recommendations to human operators, later moved toward more autonomous control. The original 2016 result (up to 40% cooling-energy reduction) was a company blog claim, not peer-reviewed; DeepMind's own later peer-reviewed live-deployment paper (with Trane Technologies, on real commercial buildings) reports a more modest 9-13% energy savings. | Best evidence that production-scale autonomous control with a safety layer is real and has been done. Do not say "our LSTM is basically Google's AI" - Google's published system optimizes cooling energy/PUE via action-outcome prediction, it is not simply a hotspot-forecasting LSTM, and it runs on production-scale sensor counts ThermOS does not have. |
 | Microsoft (ThermoCast, MSR) | A 2011 cyber-physical forecasting model that fits physical thermal-balance equations to sensor data (a lighter alternative to full CFD) and forecasts temperature/thermal alarms. Tested on real traces from a production data center and reported predicting thermal alarms 4.2 minutes ahead of time, outperforming a purely data-driven ML baseline. | The best available reference for "has thermal prediction actually been validated on real data, and does the physics-plus-data approach beat pure ML?" Note it is older research (2011) validated at a university-scale production facility, not a claim about Microsoft's current Azure-scale operations. |
 | Meta | A first-principles physics-based building/thermal simulator (built with Modelica) that takes facility geometry, construction materials, HVAC configuration, component efficiencies, and weather as inputs, and solves thermal-balance equations per room/row. Used to train an offline reinforcement-learning controller safely inside simulation before any live deployment. Reported results at a pilot region: ~20% reduction in supply fan energy and ~4% reduction in water usage, across varying weather conditions. | Strongest publicly documented example of "physics simulator solves the out-of-distribution problem" - i.e., a model that can still estimate a reasonable answer for conditions it has never directly measured. Good evidence that simulator-trained control is safer than training directly on a live facility. |
-| Schneider Electric (EcoStruxure / IT Advisor) | A commercial DCIM platform integrating power, cooling, environmental, and asset telemetry, offering monitoring, predictive analytics, and a digital-twin/CFD modeling environment (EcoStruxure IT Design CFD) for planning - not real-time control. Increasingly paired with reference liquid-cooling designs for AI/GPU racks. | Evidence that thermal monitoring plus analytics is an established, well-funded commercial category (not something GreenCore is inventing), and that even vendors with CFD capability treat it as a design-time tool, consistent with Section 3's conclusion that real-time CFD is impractical everywhere, not just at ThermalTrace's budget. |
+| Schneider Electric (EcoStruxure / IT Advisor) | A commercial DCIM platform integrating power, cooling, environmental, and asset telemetry, offering monitoring, predictive analytics, and a digital-twin/CFD modeling environment (EcoStruxure IT Design CFD) for planning - not real-time control. Increasingly paired with reference liquid-cooling designs for AI/GPU racks. | Evidence that thermal monitoring plus analytics is an established, well-funded commercial category (not something VerdeGrid is inventing), and that even vendors with CFD capability treat it as a design-time tool, consistent with Section 3's conclusion that real-time CFD is impractical everywhere, not just at ThermOS's budget. |
 
 *Table 1b. Company-specific evidence, to use instead of a single generic **"**Big Brands**"** claim when a judge asks **"**who already does this?**"*
 
@@ -167,7 +167,7 @@ Each limitation is stated as Problem -> Cause -> Consequence -> Severity -> Poss
 | --- | --- | --- | --- | --- |
 | Accuracy degrades beyond ~15-20 min horizon | LSTM forecasting error compounds with horizon length; published DC temperature-prediction studies show reliable performance mainly at short horizons (minutes), with accuracy dropping as horizon extends | Longer lead time (useful for scheduling/maintenance) is not currently achievable without added error | Medium | Multi-horizon output with explicit accuracy decay curve shown to the operator; don't oversell horizon beyond what's validated |
 | No uncertainty on the forecast | Point-estimate LSTM output only; no confidence interval or ensemble | Operators cannot tell a confident 15-min-ahead alert from a shaky one - erodes trust after false alarms | High | Add a lightweight ensemble or quantile/probabilistic output (even a simple ensemble of 3-5 models is enough to bound uncertainty cheaply) |
-| Sudden/unseen workload changes (e.g., a burst job) are poorly forecast | Model trained on historical patterns; sudden step-changes in IT load are out-of-distribution for a time-series model with no load input | Missed or late hotspot warnings exactly when they matter most (load spikes) | High | Feed IT load/utilization directly into the model (already collected by IdleHunter) rather than relying on temperature history alone; two-segment models that separate load-driven and ambient-driven dynamics have shown ~27% accuracy gains over single-segment LSTM |
+| Sudden/unseen workload changes (e.g., a burst job) are poorly forecast | Model trained on historical patterns; sudden step-changes in IT load are out-of-distribution for a time-series model with no load input | Missed or late hotspot warnings exactly when they matter most (load spikes) | High | Feed IT load/utilization directly into the model (already collected by PowerPrune) rather than relying on temperature history alone; two-segment models that separate load-driven and ambient-driven dynamics have shown ~27% accuracy gains over single-segment LSTM |
 | Generalization across different facilities/layouts is unproven | A single model trained on one hybrid sensor+simulation environment; rack layout, containment, and climate vary by site | A model that performs well in the demo environment may need retraining or recalibration per deployment | Medium-High | Keep a physics-lite core (basic thermal resistance/heat-balance relationships) that transfers by construction, and let only a thin ML correction layer be site-specific and quickly recalibrated |
 
 ## **3.2 Sensing**
@@ -176,7 +176,7 @@ Each limitation is stated as Problem -> Cause -> Consequence -> Severity -> Poss
 | --- | --- | --- | --- | --- |
 | No airflow monitoring | Temperature-only sensing | Cannot distinguish "too much heat" from "cooling not reaching the rack" (recirculation/bypass) - same symptom, different fix | High | Add a small number of low-cost differential-pressure or single-point anemometer sensors per aisle/row rather than a dense CFD-grade grid |
 | Sensor count/placement not yet standards-aligned | 8x8 heatmap grid may not map to ASHRAE's per-rack (top/mid/bottom, front/back) guidance | Localized hotspots between grid points can be missed, and results are hard to benchmark against ASHRAE-based compliance | Medium | Align physical sensor placement (where hardware exists) to ASHRAE TC 9.9 practice at inlet height, even if the display stays a simplified heatmap |
-| No power/load telemetry inside ThermalTrace | Power and utilization live in IdleHunter, not cross-wired into the thermal model | Thermal model reacts to a lagging symptom (temperature) instead of a leading cause (load/power) | High | Internal data-pipeline change only - route IdleHunter's utilization/power stream into ThermalTrace's feature set; no new hardware required |
+| No power/load telemetry inside ThermOS | Power and utilization live in PowerPrune, not cross-wired into the thermal model | Thermal model reacts to a lagging symptom (temperature) instead of a leading cause (load/power) | High | Internal data-pipeline change only - route PowerPrune's utilization/power stream into ThermOS's feature set; no new hardware required |
 
 ## **3.3 Modeling**
 
@@ -192,9 +192,9 @@ Each limitation is stated as Problem -> Cause -> Consequence -> Severity -> Poss
 
 Is simply predicting temperature sufficient? No. The functions that matter, in order, are:
 
-- Prediction - forecasting a future temperature or hotspot probability (ThermalTrace does this today).
+- Prediction - forecasting a future temperature or hotspot probability (ThermOS does this today).
 
-- Detection - flagging that a current or predicted state is abnormal (ThermalTrace's gradient/anomaly detection does this today).
+- Detection - flagging that a current or predicted state is abnormal (ThermOS's gradient/anomaly detection does this today).
 
 - Diagnosis - determining why (recirculation, undersized cooling, a failed fan, a load spike) - not present today.
 
@@ -217,7 +217,7 @@ The following candidates were assembled from the request's own list and the rese
 
 - Power telemetry (rack/PDU level)
 
-- Server utilization/workload telemetry (cross-wired from IdleHunter)
+- Server utilization/workload telemetry (cross-wired from PowerPrune)
 
 - Ambient/weather data ingestion
 
@@ -249,7 +249,7 @@ The following candidates were assembled from the request's own list and the rese
 
 - Fan/pump speed optimization
 
-- Workload-aware cooling (cross-layer with IdleHunter)
+- Workload-aware cooling (cross-layer with PowerPrune)
 
 - Power-aware cooling
 
@@ -273,8 +273,8 @@ Rated on practical efficiency + reliability gained per dollar and per unit of co
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | ASHRAE-aligned sensor placement | M | H | H | L | L | L | L | H | MUST HAVE |
 | Airflow sensing (basic) | H | H | H | L | M | L | L | H | MUST HAVE |
-| Power telemetry (reuse IdleHunter) | H | H | M | None new | L | None new | L | H | MUST HAVE |
-| Workload telemetry (reuse IdleHunter) | H | H | M | None new | L | None new | L | H | MUST HAVE |
+| Power telemetry (reuse PowerPrune) | H | H | M | None new | L | None new | L | H | MUST HAVE |
+| Workload telemetry (reuse PowerPrune) | H | H | M | None new | L | None new | L | H | MUST HAVE |
 | Hybrid physics + ML model | H | H | H | L | M | L | M | H | MUST HAVE |
 | Spatial interpolation (Kriging) for the heatmap | L | M | L | L (fewer sensors needed) | L | L | L | H | MUST HAVE |
 | Anomaly detection (extend) | M | M | H | L | L | L | L | H | MUST HAVE |
@@ -304,23 +304,23 @@ The architecture below captures most of the benefit of an advanced thermal-manag
 
 | **Layer** | **Inputs** | **Outputs** | **Recommended method** | **Hardware** | **Compute** | **Why it****'****s worth it** |
 | --- | --- | --- | --- | --- | --- | --- |
-| Sensors | Rack inlet/outlet temp, basic airflow/pressure, power (PDU), IT utilization, ambient temp/humidity | Raw time-series streams | ASHRAE-aligned placement + a small number of low-cost airflow proxies; reuse existing IdleHunter power/utilization feed | Existing temp sensors + a handful of added pressure/anemometer points + PDU taps | None (edge collection only) | Closes the two biggest real gaps (airflow, power/load) for a small hardware add-on, not a redesign |
+| Sensors | Rack inlet/outlet temp, basic airflow/pressure, power (PDU), IT utilization, ambient temp/humidity | Raw time-series streams | ASHRAE-aligned placement + a small number of low-cost airflow proxies; reuse existing PowerPrune power/utilization feed | Existing temp sensors + a handful of added pressure/anemometer points + PDU taps | None (edge collection only) | Closes the two biggest real gaps (airflow, power/load) for a small hardware add-on, not a redesign |
 | Data Fusion | All sensor streams, timestamps, site metadata | Aligned, cleaned, gap-filled feature set per rack/zone | Simple time-alignment + outlier rejection (no ML needed here) | None beyond sensors | Low (stream processing) | Garbage-in/garbage-out protection is cheap and prevents downstream model errors |
 | Thermal State | Fused features | Per-zone thermal state estimate (current temperature field, load-adjusted) | Physics-lite heat-balance/RC model as the backbone, with spatial interpolation (e.g., Kriging) to populate the full grid from a smaller number of real sensors | None additional | Low | Physically grounded state estimate that will not hallucinate outside training data, unlike a pure black-box model; interpolation keeps the visual heatmap dense without needing a sensor at every cell |
 | Prediction | Thermal state + short history + workload/power signal | 15-60 min hotspot probability with confidence band | Hybrid physics + lightweight spatiotemporal ML correction (ConvLSTM in place of plain LSTM, since the grid is a map, not a flat feature vector) with a small ensemble for uncertainty | None additional | Low-Medium (small model, not GPU-class) | Captures the accuracy gains hybrid, spatially-aware models show over plain LSTM while staying cheap to run; uncertainty band restores operator trust |
-| Optimization | Predicted state + constraints (ASHRAE envelope, equipment limits) | Recommended setpoint/action (or job-deferral suggestion, coordinated with CarbonClock/IdleHunter) | Rule-based or lightweight MPC over a small action space (not RL) | None additional | Low-Medium | MPC-style optimization over a few actuators is proven to cut cooling energy meaningfully (14-23%+ in published studies) without RL's data/safety burden |
+| Optimization | Predicted state + constraints (ASHRAE envelope, equipment limits) | Recommended setpoint/action (or job-deferral suggestion, coordinated with GridSync/PowerPrune) | Rule-based or lightweight MPC over a small action space (not RL) | None additional | Low-Medium | MPC-style optimization over a few actuators is proven to cut cooling energy meaningfully (14-23%+ in published studies) without RL's data/safety burden |
 | Control | Recommended action | Executed or operator-approved actuation (fan speed, setpoint, job defer) | Supervised control (human-approve initially, autonomous later once trust is earned) | Actuator interface to CRAC/CRAH or BMS (Phase 2/3 hardware integration) | None additional | This is where the literature says the real savings and incident-prevention live - prediction without this step is cosmetic |
-| Feedback | Outcome of executed actions vs. prediction | Model recalibration signal, savings-meter updates | Periodic fine-tuning of the ML correction layer; log actions for audit | None additional | Low (batch, not real-time) | Keeps the model honest per site and feeds GreenCore's existing Live Savings Meter with real, not simulated, results |
+| Feedback | Outcome of executed actions vs. prediction | Model recalibration signal, savings-meter updates | Periodic fine-tuning of the ML correction layer; log actions for audit | None additional | Low (batch, not real-time) | Keeps the model honest per site and feeds VerdeGrid's existing Live Savings Meter with real, not simulated, results |
 
 ## **6.1 Physics + Data + Control, not primarily a prediction model**
 
-Yes - ThermalTrace should be repositioned as a Physics + Data + Control system rather than a prediction model with a dashboard attached. The physics-lite core provides a floor of correctness and generalization that pure ML cannot; the data layer (ML correction, anomaly detection) captures what physics alone misses; and the control layer is what converts any of this into money saved or incidents avoided. Removing any one of the three either breaks (physics alone: too rigid, misses real anomalies; data alone: brittle, ungrounded, and unexplainable; control alone: nothing to control intelligently) or leaves value on the table (prediction with no control captures none of the literature's quantified savings).
+Yes - ThermOS should be repositioned as a Physics + Data + Control system rather than a prediction model with a dashboard attached. The physics-lite core provides a floor of correctness and generalization that pure ML cannot; the data layer (ML correction, anomaly detection) captures what physics alone misses; and the control layer is what converts any of this into money saved or incidents avoided. Removing any one of the three either breaks (physics alone: too rigid, misses real anomalies; data alone: brittle, ungrounded, and unexplainable; control alone: nothing to control intelligently) or leaves value on the table (prediction with no control captures none of the literature's quantified savings).
 
 # **7. Metrics That Should Actually Be Optimized**
 
 PUE alone should not be the target. It has well-documented blind spots: it worsens when IT load and utilization drop (rewarding waste rather than efficiency), ignores IT-side performance and workload usefulness, is sensitive to climate and to measurement boundary choices, and provides no reliability signal at all. Global average PUE has been roughly flat (about 1.55-1.59) for several years, suggesting that chasing PUE further has diminishing returns for most facilities - including this market segment.
 
-Recommended metric set for ThermalTrace/GreenCore, in priority order for a low-to-mid operator:
+Recommended metric set for ThermOS/VerdeGrid, in priority order for a low-to-mid operator:
 
 - Thermal safety margin and violation count (time spent outside ASHRAE recommended/allowable envelope) - a leading reliability indicator, not just an efficiency one.
 
@@ -334,19 +334,19 @@ Recommended metric set for ThermalTrace/GreenCore, in priority order for a low-t
 
 - PUE, reported alongside the above, not instead of them - useful for external benchmarking and trend-tracking within one facility, poor as a sole optimization target.
 
-- WUE/CUE, where the facility uses water cooling or reports carbon - relevant given GreenCore already tracks water (WaterWatch) and carbon (CarbonClock).
+- WUE/CUE, where the facility uses water cooling or reports carbon - relevant given VerdeGrid already tracks water (CoolSense) and carbon (GridSync).
 
-- kWh saved, cost recovered, CO2 avoided - GreenCore's existing Live Savings Meter framing, which should be fed by the metrics above rather than by PUE alone.
+- kWh saved, cost recovered, CO2 avoided - VerdeGrid's existing Live Savings Meter framing, which should be fed by the metrics above rather than by PUE alone.
 
-# **8. ThermalTrace V2 - Final Decision**
+# **8. ThermOS V2 - Final Decision**
 
 ## **KEEP**
 
 | **What** | **Why** | **Problem solved** | **Expected benefit** | **Cost/complexity** | **Priority** |
 | --- | --- | --- | --- | --- | --- |
 | 8x8 real-time heatmap + inlet/outlet delta tracking | Already a legitimate, standards-adjacent visualization that beats spreadsheet/no-monitoring baseline for this segment | Basic visibility gap | Retains the core UX asset judges and users already respond to | Low (sunk) | Keep as-is |
-| LSTM-based hotspot prediction, 15-20 min | Consistent with published DC temperature-prediction accuracy at short horizons | Reactive-only cooling | Maintains the predictive positioning that differentiates GreenCore from monitoring-only tools | Low (sunk) | Keep, upgrade per FIX below |
-| Z-score anomaly/gradient detection | A legitimate, well-precedented statistical method, consistent across ThermalTrace and WaterWatch | Undetected abnormal drift | Cheap, explainable anomaly flagging | Low (sunk) | Keep |
+| LSTM-based hotspot prediction, 15-20 min | Consistent with published DC temperature-prediction accuracy at short horizons | Reactive-only cooling | Maintains the predictive positioning that differentiates VerdeGrid from monitoring-only tools | Low (sunk) | Keep, upgrade per FIX below |
+| Z-score anomaly/gradient detection | A legitimate, well-precedented statistical method, consistent across ThermOS and CoolSense | Undetected abnormal drift | Cheap, explainable anomaly flagging | Low (sunk) | Keep |
 | Hybrid real-sensor + simulation deployment model | Enables low-cost, no-install demo/early deployment matching the target market's budget reality | High upfront deployment cost/complexity | Preserves the phased, low-risk rollout path | Low | Keep |
 
 ## **FIX**
@@ -354,7 +354,7 @@ Recommended metric set for ThermalTrace/GreenCore, in priority order for a low-t
 | **What** | **Why** | **Problem solved** | **Expected benefit** | **Cost/complexity** | **Priority** |
 | --- | --- | --- | --- | --- | --- |
 | Add uncertainty bands to predictions | Point estimates erode trust after any false alarm; nearly every serious deployment example in the literature treats this as a gap worth closing | Operator distrust of alerts | Higher perceived and actual reliability at near-zero added hardware cost | Low-Medium (software only) | MUST HAVE |
-| Wire IT load/power telemetry (from IdleHunter) into the thermal model | Temperature-only models react to a lagging symptom; load-aware models have shown double-digit accuracy improvements in published comparisons | Poor prediction under sudden workload changes | Materially better forecasts, no new hardware | Low (integration only) | MUST HAVE |
+| Wire IT load/power telemetry (from PowerPrune) into the thermal model | Temperature-only models react to a lagging symptom; load-aware models have shown double-digit accuracy improvements in published comparisons | Poor prediction under sudden workload changes | Materially better forecasts, no new hardware | Low (integration only) | MUST HAVE |
 | Move from pure ML to hybrid physics+ML core | Pure ML risks physically implausible predictions off-distribution and needs more data for the same accuracy | Fragile generalization across sites | More robust, more data-efficient, more explainable predictions | Medium | MUST HAVE |
 | Upgrade plain LSTM to ConvLSTM; state clearly that the heatmap uses spatial interpolation | A flat LSTM discards the spatial structure an 8x8 grid was built to show; leaving sensor-vs-interpolated-cell ambiguous invites an easy challenge from a judge | Model ignores neighbor-to-neighbor heat spread; hardware claims read as overstated | Better spatial accuracy at no new hardware cost; a cleaner, more defensible technical story | Low-Medium (software only) | SHOULD HAVE |
 
@@ -385,15 +385,15 @@ Recommended metric set for ThermalTrace/GreenCore, in priority order for a low-t
 
 | **What** | **Why** | **Problem solved** | **Expected benefit** | **Cost/complexity** | **Priority** |
 | --- | --- | --- | --- | --- | --- |
-| Liquid-cooling telemetry support | Only relevant once/if target customers adopt higher-density racks | N/A - not yet needed | Keeps ThermalTrace ready without spending now on a non-need | N/A | Future |
-| Economizer/free-cooling control integration | A facility HVAC-design decision more than a software feature; valuable but outside ThermalTrace's current scope | N/A - facility-dependent | Preserves focus; revisit if GreenCore adds a facility-design advisory service | N/A | Future |
+| Liquid-cooling telemetry support | Only relevant once/if target customers adopt higher-density racks | N/A - not yet needed | Keeps ThermOS ready without spending now on a non-need | N/A | Future |
+| Economizer/free-cooling control integration | A facility HVAC-design decision more than a software feature; valuable but outside ThermOS's current scope | N/A - facility-dependent | Preserves focus; revisit if VerdeGrid adds a facility-design advisory service | N/A | Future |
 | Autonomous (non-supervised) control | Should only be attempted after a track record of safe, supervised MPC-driven action exists | N/A - sequencing decision | De-risks the eventual move to autonomy by earning it with data first | N/A | Future, after MPC track record |
 
 # **9. Final Architecture and Strategic Conclusion**
 
 ## **9.1 Recommended pipeline**
 
-Sensing (temp + airflow + power/load + ambient, ASHRAE-aligned placement)  ->  State Estimation (physics-lite heat-balance model, fused with sensor data)  ->  Prediction (hybrid physics+ML, multi-horizon, with uncertainty bands)  ->  Optimization (rule-based / lightweight MPC over setpoints, fan speed, and job-placement suggestions coordinated with IdleHunter and CarbonClock)  ->  Control (supervised actuation, human-approved initially)  ->  Feedback (recalibration + Live Savings Meter).
+Sensing (temp + airflow + power/load + ambient, ASHRAE-aligned placement)  ->  State Estimation (physics-lite heat-balance model, fused with sensor data)  ->  Prediction (hybrid physics+ML, multi-horizon, with uncertainty bands)  ->  Optimization (rule-based / lightweight MPC over setpoints, fan speed, and job-placement suggestions coordinated with PowerPrune and GridSync)  ->  Control (supervised actuation, human-approved initially)  ->  Feedback (recalibration + Live Savings Meter).
 
 ## **9.2 The smartest architecture for limited money, hardware, and compute**
 

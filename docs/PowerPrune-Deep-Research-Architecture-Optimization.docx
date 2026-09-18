@@ -1,8 +1,8 @@
-**IdleHunter**
+**PowerPrune**
 
 ***Deep Research ******&****** Architecture Optimization***
 
-*A compute-optimization module of the GreenCore Intelligent Datacenter Efficiency Platform*
+*A compute-optimization module of the VerdeGrid Intelligent Datacenter Efficiency Platform*
 
 Prepared for: Team AGASTA, Vellore Institute of Technology
 
@@ -10,7 +10,7 @@ Scope: Evidence-based technical review of architecture, competitive positioning,
 
 # **Executive Summary**
 
-IdleHunter is GreenCore's compute-efficiency module. As currently pitched, it monitors server utilization, flags servers running below a fixed 15% threshold, recommends workload consolidation, uses VM migration to physically consolidate load, and powers down or parks genuinely idle servers while tracking the resulting energy, cost, and CO₂ savings. This report validates that concept against the published virtualization, cloud-scheduling, and hyperscale-operations literature, compares it to what Schneider Electric, Vertiv, Dell, HPE, VMware/Broadcom, Microsoft, Google, and AWS actually ship, diagnoses the concept's real technical weaknesses, and proposes a buildable V2 architecture sized for a low-to-mid-range operator rather than a hyperscaler.
+PowerPrune is VerdeGrid's compute-efficiency module. As currently pitched, it monitors server utilization, flags servers running below a fixed 15% threshold, recommends workload consolidation, uses VM migration to physically consolidate load, and powers down or parks genuinely idle servers while tracking the resulting energy, cost, and CO₂ savings. This report validates that concept against the published virtualization, cloud-scheduling, and hyperscale-operations literature, compares it to what Schneider Electric, Vertiv, Dell, HPE, VMware/Broadcom, Microsoft, Google, and AWS actually ship, diagnoses the concept's real technical weaknesses, and proposes a buildable V2 architecture sized for a low-to-mid-range operator rather than a hyperscaler.
 
 ### **Headline findings**
 
@@ -20,17 +20,17 @@ IdleHunter is GreenCore's compute-efficiency module. As currently pitched, it mo
 
 - Migration is not free. Live migration has a measurable, non-trivial energy and downtime cost — governed chiefly by VM memory size, network bandwidth, and the guest's memory "dirty rate" — that must be weighed against the savings a migration is meant to produce, or a naive consolidation policy can spend more energy shuffling VMs than it saves. Some studies report VM downtime ranging from tens of milliseconds to several seconds depending on workload.
 
-- An idle server still costs roughly half its peak power just being switched on. Idle-server surveys report a widely-cited figure of 11 million tonnes of unnecessary CO₂ and $19 billion in wasted spend annually from idle servers, and modern rack servers commonly idle at 300–500W versus 700–900W at load — this is IdleHunter's core value proposition and it is well evidenced.
+- An idle server still costs roughly half its peak power just being switched on. Idle-server surveys report a widely-cited figure of 11 million tonnes of unnecessary CO₂ and $19 billion in wasted spend annually from idle servers, and modern rack servers commonly idle at 300–500W versus 700–900W at load — this is PowerPrune's core value proposition and it is well evidenced.
 
-- Enterprise tooling (VMware DRS/DPM, Microsoft VMM Power Optimization) already implements exactly this pattern — utilization-based consolidation, live migration, then power-state control via Wake-on-LAN/iLO/IPMI — and is reported to save up to roughly 40% on the electricity cost of the consolidated hosts. This validates IdleHunter's core mechanism; GreenCore's job is to make an affordable, opinionated version of it, not to reinvent it.
+- Enterprise tooling (VMware DRS/DPM, Microsoft VMM Power Optimization) already implements exactly this pattern — utilization-based consolidation, live migration, then power-state control via Wake-on-LAN/iLO/IPMI — and is reported to save up to roughly 40% on the electricity cost of the consolidated hosts. This validates PowerPrune's core mechanism; VerdeGrid's job is to make an affordable, opinionated version of it, not to reinvent it.
 
-- The biggest realistic gap is not "more AI" — it is safety rails: SLA/latency protection, redundancy-aware placement, wake-up latency handling, and graceful behaviour when a host fails mid-consolidation. These are exactly where the literature and enterprise practice put their engineering effort, and where a hackathon-stage IdleHunter is currently thin.
+- The biggest realistic gap is not "more AI" — it is safety rails: SLA/latency protection, redundancy-aware placement, wake-up latency handling, and graceful behaviour when a host fails mid-consolidation. These are exactly where the literature and enterprise practice put their engineering effort, and where a hackathon-stage PowerPrune is currently thin.
 
-# **1. Ideal vs. Big Brands vs. IdleHunter**
+# **1. Ideal vs. Big Brands vs. PowerPrune**
 
-"Ideal" reflects the most rigorous approach demonstrated in the peer-reviewed cloud-computing and systems literature, regardless of cost. "Big Brands" reflects what Schneider Electric, Vertiv, Dell, HPE, VMware/Broadcom, Microsoft, Google, and AWS document or ship today for compute-efficiency management — vendor performance claims are flagged as such. "IdleHunter (today)" reflects the module as described in GreenCore's current deck.
+"Ideal" reflects the most rigorous approach demonstrated in the peer-reviewed cloud-computing and systems literature, regardless of cost. "Big Brands" reflects what Schneider Electric, Vertiv, Dell, HPE, VMware/Broadcom, Microsoft, Google, and AWS document or ship today for compute-efficiency management — vendor performance claims are flagged as such. "PowerPrune (today)" reflects the module as described in VerdeGrid's current deck.
 
-| **Parameter** | **Ideal** | **Big Brands (today)** | **IdleHunter (today)** |
+| **Parameter** | **Ideal** | **Big Brands (today)** | **PowerPrune (today)** |
 | --- | --- | --- | --- |
 | Utilization monitoring | Continuous, multi-resource, sub-minute sampling per host/VM | Standard via DCIM/hypervisor telemetry (vCenter, System Center); hyperscalers use proprietary per-second telemetry (Google Borg/Autopilot, AWS internal fleet manager) | Utilization monitoring present; resolution/sampling cadence and whether it is CPU-only is not specified |
 | CPU/memory/storage/network awareness | All four dimensions modeled jointly as a multi-dimensional bin-packing problem | VMware DRS/DPM primarily model CPU + memory demand (with a configurable idle-memory weighting); network/storage awareness varies by add-on | CPU utilization only, per the stated "~15% utilization" criterion — memory, disk I/O and network are not mentioned |
@@ -40,7 +40,7 @@ IdleHunter is GreenCore's compute-efficiency module. As currently pitched, it mo
 | Live migration | Cost-aware migration that weighs energy/downtime cost of the move against consolidation benefit | VMware vMotion; Hyper-V Live Migration; hyperscalers use custom live-migration/checkpoint-restore at scale | Present ("uses VM migration to consolidate workloads"); no stated migration cost model |
 | Server power states | Full ACPI state awareness (sleep, hibernate, various P/C-states) plus workload-aware DVFS | VMware DPM standby via WOL/iLO/IPMI; DVFS common at OS/hypervisor level | "Powers down or places...into low-power states" — mechanism and states not specified |
 | Server shutdown/wake-up | Predictive pre-wake before demand arrives, redundant wake paths | DPM defaults are asymmetric — quick to power on, conservative about powering off — specifically to avoid capacity risk | Not addressed — no wake-up latency or pre-emptive wake logic described |
-| Thermal interaction | Consolidation decisions conditioned on rack/aisle thermal headroom (cross-wired with a thermal module) | Emerging in AI-era racks; largely siloed in enterprise DCIM today | Not present — no link to ThermalTrace described |
+| Thermal interaction | Consolidation decisions conditioned on rack/aisle thermal headroom (cross-wired with a thermal module) | Emerging in AI-era racks; largely siloed in enterprise DCIM today | Not present — no link to ThermOS described |
 | SLA/QoS awareness | Hard constraints preventing consolidation of latency-sensitive or SLA-bound workloads | Google Borg / AWS have explicit priority tiers; VMware DRS uses reservations/limits/shares | Not present — no SLA-protection mechanism described |
 | Redundancy requirements | N+1/N+2 aware placement so consolidation never removes fault tolerance | Standard in enterprise VM placement (anti-affinity rules, HA admission control) | Not addressed |
 | Failure handling | Automatic re-placement and rollback if a host fails mid-migration or post-consolidation | VMware HA + DRS work together; hyperscalers have automated fleet-level self-healing | Not addressed |
@@ -55,17 +55,17 @@ IdleHunter is GreenCore's compute-efficiency module. As currently pitched, it mo
 | Cost | Low if implemented as software over existing APIs | VMware DRS/DPM require vSphere Enterprise Plus licensing (thousands of dollars/host/year); enterprise DCIM overlays add $27–33+/cabinet/month | Explicit low-cost design goal, consistent with target market |
 | Achievable energy savings | Consolidation from ~10–18% average utilization to ~50%+ documented repeatedly | VMware DPM: up to ~40% electricity-cost reduction reported (vendor claim); peer-reviewed CloudSim studies report 53–77% energy reduction vs. non-power-aware baselines, with ~5.4% SLA violation in one benchmark | Not yet quantified — no reported savings figure for the current design |
 
-*Table 1. Ideal vs. major-vendor practice vs. IdleHunter, by capability. Vendor cells reflect documented engineering capability and, where noted, vendor-reported performance figures rather than independently verified results.*
+*Table 1. Ideal vs. major-vendor practice vs. PowerPrune, by capability. Vendor cells reflect documented engineering capability and, where noted, vendor-reported performance figures rather than independently verified results.*
 
 ## **1.1 Reading the table**
 
-**Where IdleHunter is genuinely behind: **single-resource (CPU-only), static-threshold detection; no SLA/workload classification; no redundancy-aware placement; no migration-cost accounting; no thermal or power-state sophistication beyond "power down." These are not exotic gaps — they are the exact set of problems the VM-consolidation literature spent the 2010s solving, and enterprise tools already ship default answers to most of them.
+**Where PowerPrune is genuinely behind: **single-resource (CPU-only), static-threshold detection; no SLA/workload classification; no redundancy-aware placement; no migration-cost accounting; no thermal or power-state sophistication beyond "power down." These are not exotic gaps — they are the exact set of problems the VM-consolidation literature spent the 2010s solving, and enterprise tools already ship default answers to most of them.
 
-**Where IdleHunter is competitive: **the low-hardware, low-cost, software-only design point is correct for this market. Most low-to-mid operators do not have vSphere Enterprise Plus or a DCIM overlay at all; a lightweight utilization-and-consolidation tool that talks to existing hypervisor/BMC APIs beats "nothing" decisively, and beats a manual/spreadsheet-driven process that most of this segment currently runs.
+**Where PowerPrune is competitive: **the low-hardware, low-cost, software-only design point is correct for this market. Most low-to-mid operators do not have vSphere Enterprise Plus or a DCIM overlay at all; a lightweight utilization-and-consolidation tool that talks to existing hypervisor/BMC APIs beats "nothing" decisively, and beats a manual/spreadsheet-driven process that most of this segment currently runs.
 
-**Where IdleHunter should not try to compete with hyperscale: **Google Borg/Autopilot-class fleet schedulers, custom checkpoint-restore live migration, and ML-based load forecasting at fleet scale all require engineering teams and data volumes this segment does not have. Copying them would import complexity without importing the conditions (huge homogeneous fleets, dedicated SRE teams) that make them work.
+**Where PowerPrune should not try to compete with hyperscale: **Google Borg/Autopilot-class fleet schedulers, custom checkpoint-restore live migration, and ML-based load forecasting at fleet scale all require engineering teams and data volumes this segment does not have. Copying them would import complexity without importing the conditions (huge homogeneous fleets, dedicated SRE teams) that make them work.
 
-**Where simplicity is an actual advantage: **VMware's own documented design choice — DPM is deliberately asymmetric, quick to add capacity back but slow/cautious to remove it — shows that even the market leader treats aggressive consolidation as a risk to be actively guarded against, not a feature to maximize. A simpler, more conservative IdleHunter that under-consolidates slightly is not a compromise; it is the same judgment call VMware already made.
+**Where simplicity is an actual advantage: **VMware's own documented design choice — DPM is deliberately asymmetric, quick to add capacity back but slow/cautious to remove it — shows that even the market leader treats aggressive consolidation as a risk to be actively guarded against, not a feature to maximize. A simpler, more conservative PowerPrune that under-consolidates slightly is not a compromise; it is the same judgment call VMware already made.
 
 ## **1.2 What major vendors actually document**
 
@@ -75,9 +75,9 @@ IdleHunter is GreenCore's compute-efficiency module. As currently pitched, it mo
 
 **Google (Borg/Autopilot) and AWS: **operate proprietary, continuously-rebalancing cluster schedulers, at a scale (hundreds of thousands to millions of machines) and with engineering investment (dedicated scheduling research teams, custom kernel/hypervisor work) that has no equivalent at the low-to-mid operator tier; their published techniques (priority classes, bin-packing, predictive autoscaling) validate the general approach but are not directly transplantable.
 
-**Schneider Electric / Vertiv: **primarily document DCIM-level visibility (power, thermal, capacity) rather than compute/VM-level consolidation logic — compute optimization in their stack is typically delegated to the hypervisor/orchestration layer (VMware, Kubernetes) rather than owned by the facility DCIM product itself, reinforcing that IdleHunter's job (the compute-orchestration layer) is a distinct, valid product niche rather than a duplicate of facility DCIM.
+**Schneider Electric / Vertiv: **primarily document DCIM-level visibility (power, thermal, capacity) rather than compute/VM-level consolidation logic — compute optimization in their stack is typically delegated to the hypervisor/orchestration layer (VMware, Kubernetes) rather than owned by the facility DCIM product itself, reinforcing that PowerPrune's job (the compute-orchestration layer) is a distinct, valid product niche rather than a duplicate of facility DCIM.
 
-# **2. Limitations in the Current IdleHunter Concept**
+# **2. Limitations in the Current PowerPrune Concept**
 
 Limitations are separated into Critical (must fix before this is a credible engineering pitch), Important (materially improves outcomes), Nice-to-have (marginal, defensible to defer), and Unnecessary-for-target (real gaps vs. hyperscale that should be explicitly declined, not apologized for).
 
@@ -87,17 +87,17 @@ Limitations are separated into Critical (must fix before this is a credible engi
 | No multi-resource (CPU+memory+disk+network) view | A CPU-idle server can be memory- or I/O-bound; consolidating purely on CPU risks creating a new bottleneck on the destination host, addressed in the literature via multi-dimensional bin-packing (CPU, memory, disk, network as separate bin dimensions) | Critical |
 | No migration-cost model before triggering a move | Live migration has a real, non-trivial energy and downtime cost driven by VM memory size, network bandwidth, and memory dirty rate; migrating without weighing this cost can spend more energy than the consolidation saves for small or short-lived gains | Critical |
 | No SLA / workload-criticality classification | Without knowing which VMs are latency-sensitive vs. deferrable, a consolidation pass can silently violate an SLA; published dynamic-consolidation benchmarks still report measurable SLA violation rates (~5.4% in one CloudSim study) even with reasonably sophisticated policies, underscoring that this needs explicit design attention, not an afterthought | Critical |
-| No redundancy-awareness in consolidation | Consolidating workloads onto fewer hosts can silently remove the N+1 headroom an operator relies on for failover; enterprise tools handle this via anti-affinity/admission-control rules that IdleHunter does not yet describe | Critical |
-| No defined shutdown dwell-time or wake-up latency handling | Powering a host down and back up has a real time cost (BMC wake sequence, OS boot, hypervisor rejoin); VMware's own DPM is deliberately slow to power hosts down and quick to power them back up specifically to manage this risk — IdleHunter has not yet stated an equivalent policy | Important |
+| No redundancy-awareness in consolidation | Consolidating workloads onto fewer hosts can silently remove the N+1 headroom an operator relies on for failover; enterprise tools handle this via anti-affinity/admission-control rules that PowerPrune does not yet describe | Critical |
+| No defined shutdown dwell-time or wake-up latency handling | Powering a host down and back up has a real time cost (BMC wake sequence, OS boot, hypervisor rejoin); VMware's own DPM is deliberately slow to power hosts down and quick to power them back up specifically to manage this risk — PowerPrune has not yet stated an equivalent policy | Important |
 | No behaviour defined for unexpected workload spikes | A reactive, threshold-only design can be caught flat-footed by a sudden spike if it has already powered down capacity; predictive/adaptive approaches in the literature exist precisely to pre-empt this, though they add complexity | Important |
 | No defined failure-during-consolidation handling | If a target host fails mid-migration or shortly after consolidation, the system needs a defined rollback/re-placement behaviour; this is standard practice in HA-integrated schedulers (e.g., VMware HA working alongside DRS) but unaddressed in the current concept | Important |
-| No thermal cross-wiring | Consolidating workloads raises power density and heat in the surviving hosts/racks; without a link to a thermal module, IdleHunter could create a hotspot it cannot see, which is a genuine cross-module coordination gap for GreenCore as a whole | Important |
-| VM-only scope, no container awareness | Container orchestration (Kubernetes) is increasingly viewed as the more practical consolidation unit for many modern workloads because containers avoid the slower, heavier boot/migration path of full VMs; ignoring this narrows IdleHunter's applicability for containerized shops | Nice-to-have |
+| No thermal cross-wiring | Consolidating workloads raises power density and heat in the surviving hosts/racks; without a link to a thermal module, PowerPrune could create a hotspot it cannot see, which is a genuine cross-module coordination gap for VerdeGrid as a whole | Important |
+| VM-only scope, no container awareness | Container orchestration (Kubernetes) is increasingly viewed as the more practical consolidation unit for many modern workloads because containers avoid the slower, heavier boot/migration path of full VMs; ignoring this narrows PowerPrune's applicability for containerized shops | Nice-to-have |
 | No predictive load forecasting | Adds real value (pre-emptive consolidation/wake, fewer thrashing events) but requires historical data and model maintenance most low-to-mid operators cannot yet supply meaningfully; threshold + hysteresis captures most of the benefit far more cheaply | Nice-to-have |
 | Full ACPI P-state / DVFS-level power tuning | Real, and used at OS/hypervisor level in the literature, but this level of granularity duplicates what the hypervisor and modern CPUs already do automatically, and is not where the bulk of documented consolidation savings come from | Unnecessary for target |
 | Fleet-scale custom scheduler (Borg/Autopilot-class) | Requires engineering investment and homogeneous fleet scale that does not exist for a single low-to-mid operator; the same underlying idea (bin-packing + priority classes) is achievable far more simply at this scale | Unnecessary for target |
 
-*Table 2. Limitations of the current IdleHunter concept, classified by urgency for this target market.*
+*Table 2. Limitations of the current PowerPrune concept, classified by urgency for this target market.*
 
 ## **2.1 Answering the specific investigative questions**
 
@@ -123,11 +123,11 @@ Limitations are separated into Critical (must fix before this is a credible engi
 
 **How should unexpected workload spikes be handled? **A rule-based fast-path (immediate wake of standby capacity when load crosses a high-water mark) is sufficient and is what enterprise DPM already does reactively; true prediction is a Should-have, not a Must-have, for this market.
 
-**What happens if a host fails during consolidation? **The system must detect the failed migration/host and fail over to HA-style re-placement rather than leaving VMs stranded; this is a solved pattern in enterprise tooling (HA + DRS operating together) and should be replicated at whatever scale IdleHunter targets.
+**What happens if a host fails during consolidation? **The system must detect the failed migration/host and fail over to HA-style re-placement rather than leaving VMs stranded; this is a solved pattern in enterprise tooling (HA + DRS operating together) and should be replicated at whatever scale PowerPrune targets.
 
-**How should thermal conditions influence consolidation? **Consolidation increases power density on the surviving hosts; IdleHunter should receive a thermal-headroom signal from GreenCore's thermal module before finalizing a consolidation plan, and should avoid concentrating load in a rack/zone already flagged as thermally constrained.
+**How should thermal conditions influence consolidation? **Consolidation increases power density on the surviving hosts; PowerPrune should receive a thermal-headroom signal from VerdeGrid's thermal module before finalizing a consolidation plan, and should avoid concentrating load in a rack/zone already flagged as thermally constrained.
 
-**What data must IdleHunter receive from other GreenCore modules? **Thermal headroom per rack/zone (from the thermal module), and ideally grid carbon-intensity signals (from the carbon-scheduling module) so that consolidation timing and carbon-aware job deferral can be coordinated rather than fighting each other.
+**What data must PowerPrune receive from other VerdeGrid modules? **Thermal headroom per rack/zone (from the thermal module), and ideally grid carbon-intensity signals (from the carbon-scheduling module) so that consolidation timing and carbon-aware job deferral can be coordinated rather than fighting each other.
 
 # **3. Minimum Viable Intelligent Architecture**
 
@@ -139,10 +139,10 @@ The pipeline below captures most of the practical benefit of enterprise-grade co
 | Utilization / Workload State | Raw telemetry | Per-host multi-resource utilization state; per-VM workload tag (latency-sensitive / deferrable / unknown-default-protected) | Rolling window statistics (mean, variance) over recent history | None additional | Low (simple aggregation) |
 | Prediction | Utilization state + short history | Near-term (minutes-ahead) over/under-load likelihood; adaptive threshold per host | Statistical/heuristic (Median-Absolute-Deviation-style adaptive threshold), NOT machine learning — the literature shows adaptive statistical thresholds already outperform static thresholds without needing an ML model | None additional | Low |
 | Consolidation Optimization | Predicted state + workload tags + redundancy/thermal constraints | A target VM-to-host mapping (a multi-dimensional bin-packing solution) plus a migration-cost estimate per candidate move | Rule-based / bin-packing heuristic (e.g., Modified Best-Fit-Decreasing) over CPU+memory+disk+network jointly, with SLA and redundancy as hard constraints — NOT reinforcement learning at this stage | None additional | Low-Medium (heuristic optimization, not real-time control-theory) |
-| VM/Server Control | Recommended migration/power-state plan | Executed (or operator-approved) VM migration and host power-state change | Supervised at first (human-approved), automatic once trust is earned, mirroring GreenCore's phased rollout logic elsewhere | Uses existing hypervisor migration (vMotion-equivalent) and BMC wake/sleep — no new hardware | None additional (actuation only) |
+| VM/Server Control | Recommended migration/power-state plan | Executed (or operator-approved) VM migration and host power-state change | Supervised at first (human-approved), automatic once trust is earned, mirroring VerdeGrid's phased rollout logic elsewhere | Uses existing hypervisor migration (vMotion-equivalent) and BMC wake/sleep — no new hardware | None additional (actuation only) |
 | Feedback | Outcome of executed actions vs. prediction | Savings-meter update (kWh, cost, CO₂), threshold recalibration signal | Periodic recalibration of the adaptive threshold; audit log of every action | None additional | Low (batch, not real-time) |
 
-*Table 3. The minimum viable IdleHunter architecture, layer by layer.*
+*Table 3. The minimum viable PowerPrune architecture, layer by layer.*
 
 ## **3.1 Automation-level determination**
 
@@ -154,7 +154,7 @@ The pipeline below captures most of the practical benefit of enterprise-grade co
 
 - Automatically execute: VM migration and host power-down/wake — supervised (human-approved) initially for any action touching a workload not explicitly tagged deferrable; automatic execution for already-validated, low-risk classes of action (e.g., waking a standby host when load crosses a high-water mark) from day one, since the downside of an unnecessary wake is trivial compared to the downside of an unnecessary migration.
 
-*Do not reach for AI/ML where thresholding, heuristics, and bin-packing already solve the problem. The literature**'**s adaptive-threshold and bin-packing techniques are conventional statistics and combinatorial optimization, not machine learning, and they already outperform static thresholds. Reserve any future ML investment for genuine load forecasting once IdleHunter has enough of its own historical data to train on — not for the initial launch.*
+*Do not reach for AI/ML where thresholding, heuristics, and bin-packing already solve the problem. The literature**'**s adaptive-threshold and bin-packing techniques are conventional statistics and combinatorial optimization, not machine learning, and they already outperform static thresholds. Reserve any future ML investment for genuine load forecasting once PowerPrune has enough of its own historical data to train on — not for the initial launch.*
 
 # **4. Final Changes**
 
@@ -162,10 +162,10 @@ The pipeline below captures most of the practical benefit of enterprise-grade co
 
 | **What** | **Why** | **Problem solved** | **Expected benefit** | **Cost/complexity** | **Priority** |
 | --- | --- | --- | --- | --- | --- |
-| Core concept: monitor → threshold-flag → consolidate → power down → track savings | This is exactly the mechanism VMware DRS/DPM and Microsoft VMM Power Optimization already ship and industry sources report up to ~40% electricity-cost reduction from it — the core idea is validated, not novel, and that is fine | Wasted energy from underused, always-on servers | Retains a proven, defensible mechanism as GreenCore's compute-efficiency backbone | Low (sunk) | Keep as-is |
+| Core concept: monitor → threshold-flag → consolidate → power down → track savings | This is exactly the mechanism VMware DRS/DPM and Microsoft VMM Power Optimization already ship and industry sources report up to ~40% electricity-cost reduction from it — the core idea is validated, not novel, and that is fine | Wasted energy from underused, always-on servers | Retains a proven, defensible mechanism as VerdeGrid's compute-efficiency backbone | Low (sunk) | Keep as-is |
 | 15% utilization as a starting/default flag | Matches the widely-cited "traditional data centers run at 10–15% utilization" baseline used across vendor and academic sources, so it is a reasonable, explainable starting point for judges and early operators | Need for a simple, explainable initial signal | Gives an easy-to-communicate default while the adaptive layer (see FIX) does the real work underneath | Low (sunk) | Keep, upgrade per FIX below |
 | Live-migration-based consolidation | Consistent with every enterprise tool reviewed (vMotion, Hyper-V Live Migration) and the two decades of academic VM-consolidation literature | Need to physically move load off underused hosts before they can be powered down | Maintains a standards-aligned, well-understood mechanism | Low (uses existing hypervisor capability) | Keep, add cost-awareness per FIX |
-| Energy/cost/CO2 savings tracking | Directly feeds GreenCore's cross-module Live Savings Meter and gives operators/judges a concrete ROI number | Lack of visibility into whether consolidation is actually paying off | Concrete, auditable proof of value | Low | Keep |
+| Energy/cost/CO2 savings tracking | Directly feeds VerdeGrid's cross-module Live Savings Meter and gives operators/judges a concrete ROI number | Lack of visibility into whether consolidation is actually paying off | Concrete, auditable proof of value | Low | Keep |
 
 ## **FIX**
 
@@ -181,7 +181,7 @@ The pipeline below captures most of the practical benefit of enterprise-grade co
 | **What** | **Why** | **Problem solved** | **Expected benefit** | **Cost/complexity** | **Priority** |
 | --- | --- | --- | --- | --- | --- |
 | Asymmetric dwell-time policy (slow to power down, fast to wake) | Matches VMware DPM's own documented default philosophy, adopted because the cost of powering down too early is worse than the cost of a slightly delayed shutdown | Risk of prematurely losing needed capacity | Removes the most common cause of a consolidation tool causing a real incident | Low (parameter/policy only) | MUST HAVE |
-| Thermal-headroom input from GreenCore's thermal module | Consolidation raises power density on surviving hosts; without this signal IdleHunter can create a hotspot it cannot see | Cross-module blind spot between compute and thermal management | Prevents IdleHunter from being the cause of a ThermalTrace-flagged incident; showcases the cross-module coordination that is GreenCore's actual differentiator | Low (integration only, data already collected elsewhere in GreenCore) | SHOULD HAVE |
+| Thermal-headroom input from VerdeGrid's thermal module | Consolidation raises power density on surviving hosts; without this signal PowerPrune can create a hotspot it cannot see | Cross-module blind spot between compute and thermal management | Prevents PowerPrune from being the cause of a ThermOS-flagged incident; showcases the cross-module coordination that is VerdeGrid's actual differentiator | Low (integration only, data already collected elsewhere in VerdeGrid) | SHOULD HAVE |
 | Basic failure-during-consolidation handling (detect + re-place) | Standard practice in HA-integrated schedulers; without it a failed host mid-migration can strand VMs | Undefined behaviour on host failure during an active consolidation | Avoids a demo-breaking or production-breaking edge case | Medium (needs integration with hypervisor HA events) | SHOULD HAVE |
 | Container/Kubernetes awareness alongside VM awareness | Containers are increasingly viewed as the more practical consolidation unit for many modern workloads because they avoid the heavier VM boot/migration path | Narrower applicability for containerized operators | Broadens the addressable target market without changing the core algorithm | Medium (new telemetry source, same optimization core) | SHOULD HAVE |
 
@@ -198,7 +198,7 @@ The pipeline below captures most of the practical benefit of enterprise-grade co
 | **What** | **Why** | **Problem solved** | **Expected benefit** | **Cost/complexity** | **Priority** |
 | --- | --- | --- | --- | --- | --- |
 | Predictive (ML-based) workload spike forecasting | Genuinely valuable once enough historical telemetry exists to train a model responsibly; premature before that | N/A — sequencing decision | De-risks the eventual move to prediction by first proving the rule-based system works | N/A now | Future, after 6–12 months of telemetry |
-| DVFS / P-state-level power tuning inside IdleHunter | Modern hypervisors and CPUs already do much of this automatically; duplicating it inside IdleHunter is not where the literature shows the bulk of consolidation savings coming from | N/A — not the priority lever | Keeps engineering focus on consolidation, which is proven to matter more | N/A | Future, low priority |
+| DVFS / P-state-level power tuning inside PowerPrune | Modern hypervisors and CPUs already do much of this automatically; duplicating it inside PowerPrune is not where the literature shows the bulk of consolidation savings coming from | N/A — not the priority lever | Keeps engineering focus on consolidation, which is proven to matter more | N/A | Future, low priority |
 
 # **5. Final Architecture and Strategic Conclusion**
 
@@ -220,7 +220,7 @@ Given real budget, hardware, and compute constraints, the smartest achievable ar
 
 ## **5.4 Validating the competitive-advantage statement**
 
-The proposed statement — "Affordable intelligent compute consolidation that captures most practical idle-energy savings without requiring enterprise-level orchestration complexity" — is validated by this research, with one refinement. The evidence supports the claim that most of the documented savings (up to ~40% electricity-cost reduction reported for enterprise DPM-class tools; 53–77% simulated energy reduction from academic consolidation algorithms) come from the same simple utilization→consolidate→power-down mechanism IdleHunter already proposes, not from hyperscale-only sophistication. The refinement: the phrase "most practical idle-energy savings" is only true if IdleHunter also adopts the safety rails (adaptive thresholds, multi-resource visibility, SLA/redundancy constraints, migration-cost awareness) identified as Critical in Section 2 — a CPU-only, static-threshold version of the same mechanism would capture meaningfully less of the achievable savings and carry real SLA risk. With those fixes, the statement holds.
+The proposed statement — "Affordable intelligent compute consolidation that captures most practical idle-energy savings without requiring enterprise-level orchestration complexity" — is validated by this research, with one refinement. The evidence supports the claim that most of the documented savings (up to ~40% electricity-cost reduction reported for enterprise DPM-class tools; 53–77% simulated energy reduction from academic consolidation algorithms) come from the same simple utilization→consolidate→power-down mechanism PowerPrune already proposes, not from hyperscale-only sophistication. The refinement: the phrase "most practical idle-energy savings" is only true if PowerPrune also adopts the safety rails (adaptive thresholds, multi-resource visibility, SLA/redundancy constraints, migration-cost awareness) identified as Critical in Section 2 — a CPU-only, static-threshold version of the same mechanism would capture meaningfully less of the achievable savings and carry real SLA risk. With those fixes, the statement holds.
 
 # **6. Priority-Ranked Engineering Roadmap**
 
@@ -232,10 +232,10 @@ The proposed statement — "Affordable intelligent compute consolidation that ca
 | 4 | Redundancy-aware placement constraints | MUST HAVE | Protects reliability while consolidating |
 | 5 | Asymmetric dwell-time / wake policy | MUST HAVE | Prevents the most common real-world incident class |
 | 6 | Failure-during-consolidation handling | SHOULD HAVE | Closes a defined edge case before scaling deployment |
-| 7 | Thermal-headroom cross-wiring with ThermalTrace | SHOULD HAVE | Demonstrates GreenCore's cross-module differentiator |
+| 7 | Thermal-headroom cross-wiring with ThermOS | SHOULD HAVE | Demonstrates VerdeGrid's cross-module differentiator |
 | 8 | Container/Kubernetes telemetry support | SHOULD HAVE | Broadens addressable market |
 | 9 | ML-based load-spike forecasting | FUTURE | Valuable once sufficient historical telemetry exists |
-| 10 | DVFS/P-state tuning inside IdleHunter | FUTURE | Lower priority; hypervisor/CPU already handle much of this |
+| 10 | DVFS/P-state tuning inside PowerPrune | FUTURE | Lower priority; hypervisor/CPU already handle much of this |
 
 # **7. Evidence Table**
 
@@ -255,7 +255,7 @@ The proposed statement — "Affordable intelligent compute consolidation that ca
 
 # **8. Questions Judges Are Likely to Ask**
 
-**"****Isn****'****t this just VMware DRS/DPM? What****'****s novel here?****"**** **Conceptually, no — the mechanism (monitor, consolidate, power down) is the same proven mechanism VMware ships, and we say so directly. The novelty is making it affordable and accessible to operators who cannot justify vSphere Enterprise Plus licensing, and integrating it with GreenCore's thermal and carbon signals so consolidation decisions are made with facility-wide context that no single-purpose tool provides.
+**"****Isn****'****t this just VMware DRS/DPM? What****'****s novel here?****"**** **Conceptually, no — the mechanism (monitor, consolidate, power down) is the same proven mechanism VMware ships, and we say so directly. The novelty is making it affordable and accessible to operators who cannot justify vSphere Enterprise Plus licensing, and integrating it with VerdeGrid's thermal and carbon signals so consolidation decisions are made with facility-wide context that no single-purpose tool provides.
 
 **"****Why 15% and not some other number?****"**** **It matches the widely-cited industry baseline for underutilized data centers, but it is only the starting default — the actual detection logic is an adaptive, multi-resource threshold that adjusts per host based on recent load history and variance, exactly as the peer-reviewed literature recommends over static thresholds.
 
