@@ -1,12 +1,12 @@
 """
-coolsense/cooling.py -- SHOULD HAVE #16: cross-wiring with ThermalTrace
+coolsense/cooling.py -- SHOULD HAVE #16: cross-wiring with ThermOS
 for a combined cooling-performance estimate.
 
 coolingPerformance(rack, t) = flow(rack, t) * specificHeatConstant *
                                (T_return(rack, t) - T_supply(rack, t))
 
-Pulls T_return/T_supply from ThermalTrace's existing per-rack temperature
-feed (thermaltrace/sensors.py's ThermalTelemetry) rather than adding new
+Pulls T_return/T_supply from ThermOS's existing per-rack temperature
+feed (thermos/sensors.py's ThermalTelemetry) rather than adding new
 sensors.
 """
 

@@ -2,9 +2,9 @@
 coolsense/sensors.py
 
 MUST HAVE #10 -- differential-pressure sensing. Imports PressureReading
-from thermaltrace/sensors.py rather than redefining it -- per the
+from thermos/sensors.py rather than redefining it -- per the
 methodology, it's "one differential-pressure sensor type, two consumers,"
-and ThermalTrace (Phase 2) built it first since it needed it before this
+and ThermOS (Phase 2) built it first since it needed it before this
 package existed.
 
 MUST HAVE #11 -- facility/zone-level humidity sensing.
@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pydantic import BaseModel
 
 from shared.telemetry_sim import TelemetryAdapter, TelemetrySimulator
-from thermaltrace.sensors import AMBIENT_ABSOLUTE_KPA, PressureReading
+from thermos.sensors import AMBIENT_ABSOLUTE_KPA, PressureReading
 
 __all__ = ["PressureReading", "HumidityReading", "CoolSenseTelemetry"]
 

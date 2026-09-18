@@ -1,5 +1,5 @@
 """
-thermaltrace/model.py
+thermos/model.py
 
 MUST HAVE #20 -- hybrid physics + ML core (replaces the pure trend-stub
 prediction). Physics-lite RC thermal model ships alone first (needs zero

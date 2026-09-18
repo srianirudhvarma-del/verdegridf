@@ -11,7 +11,7 @@ from idlehunter.power import HostState
 from idlehunter.threshold import RESOURCES, classify_host
 from shared.classification import classification_store
 from shared.orchestrator import HOST_ACTIVE_WATTS, HOST_IDLE_WATTS
-from thermaltrace.spatial import GridCellReading, interpolate_grid
+from thermos.spatial import GridCellReading, interpolate_grid
 from coolsense.anomaly import MaintenanceWindow
 from coolsense.baseline import compute_baseline, z_score
 
@@ -359,9 +359,9 @@ async def run_carbon_job(job_id: str):
     return {"id": job_id, "status": "running", "message": f"Job {job_id} started immediately"}
 
 
-# ===================== ThermalTrace Routes =====================
+# ===================== ThermOS Routes =====================
 
-@router.get("/thermaltrace/snapshot", response_model=ThermalSnapshot)
+@router.get("/thermos/snapshot", response_model=ThermalSnapshot)
 async def get_thermal_snapshot():
     """
     Real per-rack temperature readings (5 sensors) filled out to a full
@@ -390,13 +390,13 @@ async def get_thermal_snapshot():
     return ThermalSnapshot(grid=grid)
 
 
-@router.get("/thermaltrace/actions")
+@router.get("/thermos/actions")
 async def get_pending_actions():
     """MUST HAVE #22: the supervised approval queue."""
     return [r.model_dump() for r in state.action_recommendation_queue.pending()]
 
 
-@router.post("/thermaltrace/actions/{action_id}/approve")
+@router.post("/thermos/actions/{action_id}/approve")
 async def approve_action(action_id: str, request: ActionDecisionRequest):
     try:
         rec = state.action_recommendation_queue.approve(action_id)
@@ -405,7 +405,7 @@ async def approve_action(action_id: str, request: ActionDecisionRequest):
     return rec.model_dump()
 
 
-@router.post("/thermaltrace/actions/{action_id}/reject")
+@router.post("/thermos/actions/{action_id}/reject")
 async def reject_action(action_id: str, request: ActionDecisionRequest):
     try:
         rec = state.action_recommendation_queue.reject(action_id)
@@ -414,7 +414,7 @@ async def reject_action(action_id: str, request: ActionDecisionRequest):
     return rec.model_dump()
 
 
-@router.post("/thermaltrace/predict", response_model=ThermalPredictionResponse)
+@router.post("/thermos/predict", response_model=ThermalPredictionResponse)
 async def predict_thermal_hotspots(request: ThermalPredictionRequest):
     """Unchanged client-driven simple-trend prediction (not a mock -- operates on whatever real snapshots the client sends)."""
     if not request.snapshots or len(request.snapshots) < 2:
@@ -498,7 +498,7 @@ async def optimize_network():
 
 # ===================== ML Bridge Endpoints =====================
 
-@router.post("/ml/thermaltrace/predict", response_model=ThermalPredictionResponse)
+@router.post("/ml/thermos/predict", response_model=ThermalPredictionResponse)
 async def ml_predict_thermal(request: ThermalPredictionRequest):
     """
     TODO: No LSTM model exists yet in this codebase. When one is built,
@@ -520,7 +520,7 @@ async def api_status():
         "version": "2.0.0",
         "modules": {
             "idlehunter": "live", "coolsense": "live", "gridsync": "live",
-            "thermaltrace": "live (ML bridge stub pending)", "netpulse": "live",
+            "thermos": "live (ML bridge stub pending)", "netpulse": "live",
             "noisemesh": "excluded",
         },
         "timestamp": _now_iso(),

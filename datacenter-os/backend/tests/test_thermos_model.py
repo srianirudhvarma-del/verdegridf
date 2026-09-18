@@ -1,6 +1,6 @@
 import pytest
 
-from thermaltrace.model import (
+from thermos.model import (
     MIN_RESIDUAL_TRAINING_SAMPLES,
     IdleHunterRackReading,
     RCThermalModel,

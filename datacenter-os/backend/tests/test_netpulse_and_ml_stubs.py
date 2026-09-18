@@ -43,12 +43,12 @@ def test_optimize_network(client):
     assert isinstance(body["adjustedLinks"], list)
 
 
-def test_ml_thermaltrace_predict_is_a_labeled_stub(client):
+def test_ml_thermos_predict_is_a_labeled_stub(client):
     """This endpoint is a known stub pending a real LSTM model — it should
     always return an empty, zero-confidence prediction rather than pretending
     to have real output."""
     resp = client.post(
-        "/api/ml/thermaltrace/predict",
+        "/api/ml/thermos/predict",
         json={"snapshots": [make_snapshot(), make_snapshot()]},
     )
     assert resp.status_code == 200

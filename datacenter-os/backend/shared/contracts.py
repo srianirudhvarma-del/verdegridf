@@ -19,7 +19,7 @@ ThermalStatus = Literal["ok", "constrained", "critical"]
 Topic = Literal[
     "idlehunter.capacity.updated",
     "idlehunter.workload.classified",
-    "thermaltrace.headroom.updated",
+    "thermos.headroom.updated",
     "gridsync.job.scheduled",
     "netpulse.flow.classified",
     # Section 2's Topic list is the minimal starting set ("even if backed by
@@ -34,7 +34,7 @@ TOPICS: frozenset[str] = frozenset(
     {
         "idlehunter.capacity.updated",
         "idlehunter.workload.classified",
-        "thermaltrace.headroom.updated",
+        "thermos.headroom.updated",
         "gridsync.job.scheduled",
         "netpulse.flow.classified",
         "gridsync.prewake.requested",
@@ -91,7 +91,7 @@ class ThermalHeadroom(BaseModel):
     """
     shared/contracts/thermal.ts -> ThermalHeadroom
 
-    Published by ThermalTrace, consumed by IdleHunter (avoid consolidating
+    Published by ThermOS, consumed by IdleHunter (avoid consolidating
     into constrained racks).
     """
 

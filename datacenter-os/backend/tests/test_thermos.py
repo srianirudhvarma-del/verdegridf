@@ -8,7 +8,7 @@ def test_get_thermal_snapshot_returns_an_8x8_grid(client):
     honestly flagged real vs interpolated -- not a flat list of 64 fake
     cells.
     """
-    resp = client.get("/api/thermaltrace/snapshot")
+    resp = client.get("/api/thermos/snapshot")
     assert resp.status_code == 200
     body = resp.json()
     grid = body["grid"]
@@ -25,7 +25,7 @@ class TestActionApprovalQueue:
     """MUST HAVE #22, exposed via the API for the first time in Phase 9."""
 
     def test_pending_actions_are_seeded_and_real(self, client):
-        resp = client.get("/api/thermaltrace/actions")
+        resp = client.get("/api/thermos/actions")
         assert resp.status_code == 200
         actions = resp.json()
         assert len(actions) >= 1
@@ -33,48 +33,48 @@ class TestActionApprovalQueue:
             assert action["status"] == "pending"
 
     def test_approve_transitions_a_real_action_to_approved(self, client):
-        actions = client.get("/api/thermaltrace/actions").json()
+        actions = client.get("/api/thermos/actions").json()
         target = actions[0]["id"]
 
-        resp = client.post(f"/api/thermaltrace/actions/{target}/approve", json={"operatorId": "op1"})
+        resp = client.post(f"/api/thermos/actions/{target}/approve", json={"operatorId": "op1"})
         assert resp.status_code == 200
         assert resp.json()["status"] == "approved"
 
         # No longer in the pending list.
-        remaining_ids = {a["id"] for a in client.get("/api/thermaltrace/actions").json()}
+        remaining_ids = {a["id"] for a in client.get("/api/thermos/actions").json()}
         assert target not in remaining_ids
 
     def test_approve_unknown_action_returns_400(self, client):
-        resp = client.post("/api/thermaltrace/actions/does-not-exist/approve", json={})
+        resp = client.post("/api/thermos/actions/does-not-exist/approve", json={})
         assert resp.status_code == 400
 
 
 class TestPredictValidation:
     def test_rejects_zero_snapshots(self, client):
-        resp = client.post("/api/thermaltrace/predict", json={"snapshots": []})
+        resp = client.post("/api/thermos/predict", json={"snapshots": []})
         assert resp.status_code == 400
         assert "At least 2 snapshots" in resp.json()["detail"]
 
     def test_rejects_single_snapshot(self, client):
-        resp = client.post("/api/thermaltrace/predict", json={"snapshots": [make_snapshot()]})
+        resp = client.post("/api/thermos/predict", json={"snapshots": [make_snapshot()]})
         assert resp.status_code == 400
         assert "At least 2 snapshots" in resp.json()["detail"]
 
     def test_rejects_more_than_200_snapshots(self, client):
         snapshots = [make_snapshot() for _ in range(201)]
-        resp = client.post("/api/thermaltrace/predict", json={"snapshots": snapshots})
+        resp = client.post("/api/thermos/predict", json={"snapshots": snapshots})
         assert resp.status_code == 400
         assert "Too many snapshots" in resp.json()["detail"]
 
     def test_accepts_exactly_200_snapshots(self, client):
         snapshots = [make_snapshot() for _ in range(200)]
-        resp = client.post("/api/thermaltrace/predict", json={"snapshots": snapshots})
+        resp = client.post("/api/thermos/predict", json={"snapshots": snapshots})
         assert resp.status_code == 200
 
     def test_rejects_empty_cell_grid(self, client):
         """Regression test: an empty first snapshot used to silently return
         an empty prediction with confidence 0.5 instead of a clear error."""
-        resp = client.post("/api/thermaltrace/predict", json={"snapshots": [[], []]})
+        resp = client.post("/api/thermos/predict", json={"snapshots": [[], []]})
         assert resp.status_code == 400
         assert "at least one cell" in resp.json()["detail"]
 
@@ -83,7 +83,7 @@ class TestPredictLogic:
     def test_flat_trend_produces_stable_prediction_near_last_value(self, client):
         # Two identical snapshots -> zero slope -> prediction == last value.
         snap = make_snapshot(inlet_base=25.0, outlet_base=30.0, num_cells=2)
-        resp = client.post("/api/thermaltrace/predict", json={"snapshots": [snap, snap]})
+        resp = client.post("/api/thermos/predict", json={"snapshots": [snap, snap]})
         assert resp.status_code == 200
         body = resp.json()
 
@@ -95,7 +95,7 @@ class TestPredictLogic:
         # Sharp upward trend should push predicted inlet above the 35C hotspot threshold.
         snap_a = make_snapshot(inlet_base=30.0, outlet_base=32.0, num_cells=1)
         snap_b = make_snapshot(inlet_base=40.0, outlet_base=42.0, num_cells=1)
-        resp = client.post("/api/thermaltrace/predict", json={"snapshots": [snap_a, snap_b]})
+        resp = client.post("/api/thermos/predict", json={"snapshots": [snap_a, snap_b]})
         assert resp.status_code == 200
         body = resp.json()
         assert len(body["hotspots"]) == 1
@@ -104,7 +104,7 @@ class TestPredictLogic:
     def test_confidence_is_between_0_and_1(self, client):
         snap_a = make_snapshot(num_cells=3)
         snap_b = make_snapshot(inlet_base=26.0, outlet_base=31.0, num_cells=3)
-        resp = client.post("/api/thermaltrace/predict", json={"snapshots": [snap_a, snap_b]})
+        resp = client.post("/api/thermos/predict", json={"snapshots": [snap_a, snap_b]})
         assert resp.status_code == 200
         assert 0.0 <= resp.json()["confidence"] <= 1.0
 
@@ -113,7 +113,7 @@ class TestPredictLogic:
         # length should simply be skipped rather than raising an IndexError.
         snap_a = make_snapshot(num_cells=4)
         snap_b = make_snapshot(num_cells=2)
-        resp = client.post("/api/thermaltrace/predict", json={"snapshots": [snap_a, snap_b]})
+        resp = client.post("/api/thermos/predict", json={"snapshots": [snap_a, snap_b]})
         assert resp.status_code == 200
         # Only the first 2 positions have >= 2 readings, so only 2 predicted cells.
         assert len(resp.json()["predicted_grid"]) == 2

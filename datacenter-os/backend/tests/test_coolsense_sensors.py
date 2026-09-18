@@ -1,13 +1,13 @@
 import pytest
 
-from thermaltrace.sensors import PressureReading as ThermalTracePressureReading
+from thermos.sensors import PressureReading as ThermOSPressureReading
 from coolsense.sensors import AMBIENT_ABSOLUTE_KPA, HumidityReading, PressureReading, CoolSenseTelemetry
 
 
-def test_coolsense_reuses_the_thermaltrace_pressure_reading_class():
+def test_coolsense_reuses_the_thermos_pressure_reading_class():
     """One differential-pressure sensor type, two consumers -- not a
     parallel redefinition."""
-    assert PressureReading is ThermalTracePressureReading
+    assert PressureReading is ThermOSPressureReading
 
 
 def test_registered_loop_polls_flow_rate_and_differential_pressure():

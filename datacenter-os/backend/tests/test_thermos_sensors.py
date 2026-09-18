@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from thermaltrace.sensors import (
+from thermos.sensors import (
     AMBIENT_ABSOLUTE_KPA,
     DEFAULT_AIRFLOW_CALIBRATION_CONSTANT,
     PressureReading,

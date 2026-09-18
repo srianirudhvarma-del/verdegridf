@@ -1,18 +1,18 @@
 """
-thermaltrace/zoning.py -- SHOULD HAVE #24: thermal zoning and adaptive
+thermos/zoning.py -- SHOULD HAVE #24: thermal zoning and adaptive
 setpoints.
 
 Cluster racks into zones based on measured airflow/thermal coupling
 (correlation of temperature deltas between racks); allow a per-zone
 setpoint rather than one facility-wide setpoint, feeding into the same
-ActionRecommendation queue (thermaltrace/control.py, MUST HAVE #22).
+ActionRecommendation queue (thermos/control.py, MUST HAVE #22).
 """
 
 import math
 import statistics
 from dataclasses import dataclass
 
-from thermaltrace.control import ActionRecommendation
+from thermos.control import ActionRecommendation
 
 DEFAULT_CORRELATION_THRESHOLD = 0.7
 DEFAULT_FACILITY_SETPOINT_CELSIUS = 22.0

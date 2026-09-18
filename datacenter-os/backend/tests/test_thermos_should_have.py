@@ -1,8 +1,8 @@
 import pytest
 
-from thermaltrace.maintenance import check_maintenance_due
-from thermaltrace.spatial import GridCellReading, SpatialResidualCorrector, interpolate_grid
-from thermaltrace.zoning import (
+from thermos.maintenance import check_maintenance_due
+from thermos.spatial import GridCellReading, SpatialResidualCorrector, interpolate_grid
+from thermos.zoning import (
     ZoneSetpointRegistry,
     build_setpoint_recommendation,
     cluster_racks_into_zones,

@@ -29,7 +29,7 @@ def test_subscriber_only_receives_events_for_its_topic():
     capacity_events = []
     headroom_events = []
     bus.subscribe("idlehunter.capacity.updated", capacity_events.append)
-    bus.subscribe("thermaltrace.headroom.updated", headroom_events.append)
+    bus.subscribe("thermos.headroom.updated", headroom_events.append)
 
     bus.publish("idlehunter.capacity.updated", "capacity-payload")
 

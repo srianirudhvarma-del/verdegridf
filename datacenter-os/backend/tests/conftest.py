@@ -21,7 +21,7 @@ def make_cell(row, col, inlet, outlet):
 
 
 def make_snapshot(inlet_base=25.0, outlet_base=30.0, num_cells=4):
-    """Build one 1D 'snapshot' (flat list of ThermalCell dicts) for /thermaltrace/predict."""
+    """Build one 1D 'snapshot' (flat list of ThermalCell dicts) for /thermos/predict."""
     return [
         make_cell(i, 0, inlet_base + i, outlet_base + i)
         for i in range(num_cells)

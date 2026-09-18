@@ -1,5 +1,5 @@
 """
-thermaltrace/spatial.py -- SHOULD HAVE #23: grid-shaped spatial modeling +
+thermos/spatial.py -- SHOULD HAVE #23: grid-shaped spatial modeling +
 explicit sensor-vs-interpolated flagging.
 
 SCOPE NOTE: the methodology calls for real ConvLSTM2D layers learning

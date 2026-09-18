@@ -1,6 +1,6 @@
 import pytest
 
-from thermaltrace.control import ActionRecommendation, ActionRecommendationQueue
+from thermos.control import ActionRecommendation, ActionRecommendationQueue
 
 
 def make_rec(rec_id, action_type="adjust_setpoint", rack_id="rack-1"):

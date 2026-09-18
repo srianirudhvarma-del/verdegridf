@@ -1,5 +1,5 @@
 """
-thermaltrace/control.py -- MUST HAVE #22: supervised (human-approved)
+thermos/control.py -- MUST HAVE #22: supervised (human-approved)
 closed-loop control.
 
 Every ActionRecommendation requires explicit operator approval before

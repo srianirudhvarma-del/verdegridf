@@ -14,7 +14,7 @@ and tested, but has nothing real to tick over until routes.py/main.py
 actually create jobs and hosts").
 
 A small, fixed topology -- 5 racks x 4 hosts, one CoolSense loop and one
-ThermalTrace sensor per rack, an 8-link NetPulse fabric -- is registered
+ThermOS sensor per rack, an 8-link NetPulse fabric -- is registered
 once at import time (module-level singletons, same pattern as
 shared.eventbus.event_bus / shared.classification.classification_store).
 """
@@ -30,8 +30,8 @@ from netpulse.telemetry import NetPulseTelemetry
 from shared.classification import classification_store
 from shared.contracts import WorkloadTag
 from shared.scheduler_driver import scheduler_registry
-from thermaltrace.control import ActionRecommendationQueue
-from thermaltrace.sensors import ThermalTelemetry
+from thermos.control import ActionRecommendationQueue
+from thermos.sensors import ThermalTelemetry
 from coolsense.anomaly import MaintenanceModeRegistry
 from coolsense.sensors import CoolSenseTelemetry
 
@@ -77,8 +77,8 @@ for _rack, _hosts in HOST_IDS_BY_RACK.items():
         scheduler_registry.register_dwell_state_machine(machine)
 
 # ---------------------------------------------------------------------------
-# ThermalTrace -- one real sensor per rack, spread across the 8x8 grid;
-# thermaltrace/spatial.py's interpolate_grid() fills the rest.
+# ThermOS -- one real sensor per rack, spread across the 8x8 grid;
+# thermos/spatial.py's interpolate_grid() fills the rest.
 # ---------------------------------------------------------------------------
 
 thermal_telemetry = ThermalTelemetry()
@@ -92,10 +92,10 @@ action_recommendation_queue = ActionRecommendationQueue()
 
 # Two demo recommendations so the approval queue (MUST HAVE #22) isn't
 # empty on first load. In a full system these would come from
-# thermaltrace/zoning.py's build_setpoint_recommendation() reacting to a
+# thermos/zoning.py's build_setpoint_recommendation() reacting to a
 # real zoning/cooling-performance signal; seeded directly here since that
 # full zoning pipeline isn't wired into a live trigger yet.
-from thermaltrace.control import ActionRecommendation as _ActionRecommendation
+from thermos.control import ActionRecommendation as _ActionRecommendation
 
 action_recommendation_queue.submit(
     _ActionRecommendation(
@@ -111,7 +111,7 @@ action_recommendation_queue.submit(
 )
 
 # ---------------------------------------------------------------------------
-# CoolSense -- one loop per rack (same id, so the ThermalTrace
+# CoolSense -- one loop per rack (same id, so the ThermOS
 # cooling-performance cross-wire can key off it directly), plus one
 # facility-level humidity zone.
 # ---------------------------------------------------------------------------

@@ -24,14 +24,14 @@ from shared.orchestrator import (
     schedule_job_with_real_capacity,
     tag_flow_with_real_classification,
 )
-from thermaltrace.sensors import ThermalTelemetry
+from thermos.sensors import ThermalTelemetry
 from coolsense.sensors import CoolSenseTelemetry
 
 NOW = datetime(2026, 8, 25, 0, 0, 0, tzinfo=timezone.utc)
 
 
 # ---------------------------------------------------------------------------
-# Dependency 1: IdleHunter -> ThermalTrace (load/power telemetry)
+# Dependency 1: IdleHunter -> ThermOS (load/power telemetry)
 # ---------------------------------------------------------------------------
 
 
@@ -77,7 +77,7 @@ def test_build_rack_feature_vector_reflects_a_change_in_real_telemetry():
 
 
 # ---------------------------------------------------------------------------
-# Dependency 2: ThermalTrace -> IdleHunter (thermal headroom)
+# Dependency 2: ThermOS -> IdleHunter (thermal headroom)
 # ---------------------------------------------------------------------------
 
 
@@ -108,7 +108,7 @@ def test_headroom_status_is_constrained_near_the_ceiling():
 
 def test_filter_targets_excludes_hosts_on_a_real_constrained_rack():
     """Real end-to-end call: idlehunter.consolidation.filter_targets_by_thermal_headroom
-    is invoked with a get_headroom backed by real ThermalTrace telemetry, and
+    is invoked with a get_headroom backed by real ThermOS telemetry, and
     a genuinely hot rack's host is actually excluded."""
     thermal_telemetry = ThermalTelemetry()
     thermal_telemetry.register_rack("rack-hot", seed=1)
@@ -303,7 +303,7 @@ def test_bucket_rack_load_raises_for_a_rack_with_no_registered_hosts():
 
 
 # ---------------------------------------------------------------------------
-# Dependency 6: ThermalTrace -> CoolSense (cooling-performance estimate)
+# Dependency 6: ThermOS -> CoolSense (cooling-performance estimate)
 # ---------------------------------------------------------------------------
 
 

@@ -91,7 +91,7 @@ def test_topics_cover_the_five_methodology_topics():
     assert {
         "idlehunter.capacity.updated",
         "idlehunter.workload.classified",
-        "thermaltrace.headroom.updated",
+        "thermos.headroom.updated",
         "gridsync.job.scheduled",
         "netpulse.flow.classified",
     }.issubset(TOPICS)

@@ -30,8 +30,8 @@ from netpulse.routing import IpToVmLookup, auto_tag_latency_sensitivity
 from shared.classification import WorkloadClassificationStore, classification_store
 from shared.contracts import CapacityForecast, ThermalHeadroom, WorkloadTag
 from shared.eventbus import EventBus, event_bus
-from thermaltrace.model import IdleHunterRackReading, ThermalFeatureVector, build_feature_vector
-from thermaltrace.sensors import ThermalTelemetry
+from thermos.model import IdleHunterRackReading, ThermalFeatureVector, build_feature_vector
+from thermos.sensors import ThermalTelemetry
 from coolsense.baseline import LoadBucket, bucket_utilization
 from coolsense.cooling import cooling_performance
 from coolsense.sensors import CoolSenseTelemetry
@@ -41,7 +41,7 @@ from coolsense.sensors import CoolSenseTelemetry
 HOST_IDLE_WATTS = 120.0
 HOST_ACTIVE_WATTS = 280.0
 
-# ThermalTrace doesn't (yet) expose a documented ASHRAE-envelope ceiling
+# ThermOS doesn't (yet) expose a documented ASHRAE-envelope ceiling
 # per rack; this is a facility-wide placeholder default, tunable per site.
 DEFAULT_THERMAL_CEILING_CELSIUS = 35.0
 DEFAULT_CONSTRAINED_HEADROOM_CELSIUS = 5.0
@@ -56,7 +56,7 @@ def _now_iso() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Dependency 1: IdleHunter -> ThermalTrace (load/power telemetry)
+# Dependency 1: IdleHunter -> ThermOS (load/power telemetry)
 # ---------------------------------------------------------------------------
 
 
@@ -72,7 +72,7 @@ def build_rack_feature_vector(
     Aggregates this rack's hosts' *real* current IdleHunter telemetry (mean
     cpu utilization, total power draw estimated from it) into a single
     rack-level IdleHunterRackReading, then calls
-    thermaltrace.model.build_feature_vector -- the actual MUST HAVE #19
+    thermos.model.build_feature_vector -- the actual MUST HAVE #19
     join, fed by real upstream data instead of a caller-supplied list.
     """
     if not host_ids:
@@ -99,7 +99,7 @@ def build_rack_feature_vector(
 
 
 # ---------------------------------------------------------------------------
-# Dependency 2: ThermalTrace -> IdleHunter (thermal headroom)
+# Dependency 2: ThermOS -> IdleHunter (thermal headroom)
 # ---------------------------------------------------------------------------
 
 
@@ -111,7 +111,7 @@ def compute_thermal_headroom(
     constrained_headroom_celsius: float = DEFAULT_CONSTRAINED_HEADROOM_CELSIUS,
     timestamp: Optional[str] = None,
 ) -> ThermalHeadroom:
-    """Derives a real ThermalHeadroom from this rack's actual current ThermalTrace temperature reading."""
+    """Derives a real ThermalHeadroom from this rack's actual current ThermOS temperature reading."""
     current_temp = thermal_telemetry.current(rack_id)["temperature"]
     headroom_celsius = ceiling_celsius - current_temp
 
@@ -136,7 +136,7 @@ def filter_consolidation_targets_by_real_headroom(
 ) -> list[str]:
     """
     Calls idlehunter.consolidation.filter_targets_by_thermal_headroom with
-    a get_headroom callback backed by real ThermalTrace telemetry --
+    a get_headroom callback backed by real ThermOS telemetry --
     compute_thermal_headroom() above -- instead of a caller-supplied stub.
     """
     return filter_targets_by_thermal_headroom(
@@ -295,7 +295,7 @@ def bucket_rack_load(
 
 
 # ---------------------------------------------------------------------------
-# Dependency 6: ThermalTrace -> CoolSense (cooling-performance estimate)
+# Dependency 6: ThermOS -> CoolSense (cooling-performance estimate)
 # ---------------------------------------------------------------------------
 
 # coolsense/sensors.py's flow_rate metric, like api/routes.py's original
@@ -312,7 +312,7 @@ def compute_rack_cooling_performance(
 ) -> float:
     """
     Pulls real flow from CoolSense's own telemetry and real T_return from
-    ThermalTrace's telemetry (rack_id must be a loop registered in both),
+    ThermOS's telemetry (rack_id must be a loop registered in both),
     then calls coolsense.cooling.cooling_performance() with both real
     readings -- SHOULD HAVE #16's cross-wire, not two caller-supplied
     floats.

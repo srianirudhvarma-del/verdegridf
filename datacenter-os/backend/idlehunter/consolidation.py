@@ -4,7 +4,7 @@ idlehunter/consolidation.py
 MUST HAVE #2 -- migration-cost check before triggering a move.
 MUST HAVE #3 -- workload classification hard filter on the candidate list.
 MUST HAVE #4 -- redundancy-aware placement (minRedundancy + anti-affinity).
-SHOULD HAVE #7 -- thermal-headroom cross-wiring with ThermalTrace.
+SHOULD HAVE #7 -- thermal-headroom cross-wiring with ThermOS.
 """
 
 import re

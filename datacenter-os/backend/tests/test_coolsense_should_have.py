@@ -87,7 +87,7 @@ def test_check_sensor_fault_returns_none_for_a_healthy_sensor():
 
 
 # ---------------------------------------------------------------------------
-# SHOULD HAVE #16 -- ThermalTrace cross-wire for cooling performance
+# SHOULD HAVE #16 -- ThermOS cross-wire for cooling performance
 # ---------------------------------------------------------------------------
 
 

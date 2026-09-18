@@ -1,5 +1,5 @@
 """
-thermaltrace/maintenance.py -- SHOULD HAVE #25: predictive maintenance for
+thermos/maintenance.py -- SHOULD HAVE #25: predictive maintenance for
 cooling equipment.
 
 track fan/pump runHours and (if available) current-draw signature over time
