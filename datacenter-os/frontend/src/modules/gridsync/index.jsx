@@ -168,7 +168,7 @@ export default function GridSync() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <MetricCard
-          title={() => (
+          title={(
             <div className="flex justify-between items-center w-full">
               <span>GRID INTENSITY</span>
               <span className={`text-[8px] animate-pulse font-mono tracking-widest border px-1 rounded ${isSpike ? 'text-red-400 border-red-400/30' : 'text-green-400 border-green-400/30'}`}>
