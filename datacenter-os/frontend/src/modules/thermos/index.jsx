@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { getThermalSnapshot } from '../../services/thermaltraceApi';
+import { getThermalSnapshot } from '../../services/thermosApi';
 import { useLiveResource } from '../../hooks/useLiveResource';
 import ModuleHeader from '../../components/shared/ModuleHeader';
 import MetricCard from '../../components/shared/MetricCard';
@@ -7,7 +7,7 @@ import AlertBadge from '../../components/shared/AlertBadge';
 import ActionApprovalQueue from './ActionApprovalQueue';
 import { Activity } from 'lucide-react';
 
-export default function ThermalTrace() {
+export default function ThermOS() {
   const fetcher = useCallback(() => getThermalSnapshot(), []);
   const [snapshot] = useLiveResource(fetcher, 5000);
   const data = snapshot; // { grid, is_live }
@@ -49,9 +49,9 @@ export default function ThermalTrace() {
     <div className="animate-in fade-in duration-500">
       <div className="flex justify-between items-start mb-10">
         <ModuleHeader 
-          title="ThermalTrace" 
+          title="ThermOS" 
           subtitle="Real-time thermal topology — marginal heat-mitigation vector"
-          moduleName="ThermalTrace"
+          moduleName="ThermOS"
         />
         <div className="flex items-center space-x-6">
           <div className="text-right hidden sm:block">

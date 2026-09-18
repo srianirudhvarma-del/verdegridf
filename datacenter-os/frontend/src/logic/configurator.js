@@ -88,12 +88,12 @@ function buildPhase1Hardware(profile, monthlyBill, serverCount, budgetValue) {
       unit_cost: sensors.temperature_basic.cost,
       total_cost: qty_temp * sensors.temperature_basic.cost,
       where_to_buy: sensors.temperature_basic.where,
-      what_it_unlocks: 'ThermalTrace (basic)',
+      what_it_unlocks: 'ThermOS (basic)',
       why_this_first: 'Cheapest way to detect hotspots before they cause downtime.'
     };
     items.push(tempItem);
     totalCost += tempItem.total_cost;
-    modulesUnlocked.push('ThermalTrace');
+    modulesUnlocked.push('ThermOS');
 
     const flowItem = {
       name: sensors.flow_basic.name,
@@ -119,7 +119,7 @@ function buildPhase1Hardware(profile, monthlyBill, serverCount, budgetValue) {
       unit_cost: sensors.temperature_basic.cost,
       total_cost: qty_temp * sensors.temperature_basic.cost,
       where_to_buy: sensors.temperature_basic.where,
-      what_it_unlocks: 'ThermalTrace (improved)',
+      what_it_unlocks: 'ThermOS (improved)',
       why_this_first: 'Cover more zones with affordable sensors.'
     };
     items.push(tempItem);
@@ -132,12 +132,12 @@ function buildPhase1Hardware(profile, monthlyBill, serverCount, budgetValue) {
       unit_cost: sensors.temperature_rack.cost,
       total_cost: rackSensorQty * sensors.temperature_rack.cost,
       where_to_buy: sensors.temperature_rack.where,
-      what_it_unlocks: 'ThermalTrace (full rack monitoring with humidity)',
+      what_it_unlocks: 'ThermOS (full rack monitoring with humidity)',
       why_this_first: 'Professional rack sensors for your 3 busiest racks.'
     };
     items.push(rackItem);
     totalCost += rackItem.total_cost;
-    modulesUnlocked.push('ThermalTrace');
+    modulesUnlocked.push('ThermOS');
 
     const flowItem = {
       name: sensors.flow_industrial.name,
@@ -165,12 +165,12 @@ function buildPhase1Hardware(profile, monthlyBill, serverCount, budgetValue) {
       unit_cost: sensors.temperature_rack.cost,
       total_cost: sensibleRackCount * sensors.temperature_rack.cost,
       where_to_buy: sensors.temperature_rack.where,
-      what_it_unlocks: 'ThermalTrace (full rack mesh)',
+      what_it_unlocks: 'ThermOS (full rack mesh)',
       why_this_first: 'Full rack sensor mesh — complete thermal visibility across your facility.'
     };
     items.push(rackItem);
     totalCost += rackItem.total_cost;
-    modulesUnlocked.push('ThermalTrace');
+    modulesUnlocked.push('ThermOS');
 
     const leakItem = {
       name: sensors.leak_detection.name,
@@ -218,7 +218,7 @@ export function generateDeploymentPlan(profile) {
 
   const modulesNeedHardware = [];
   if (idleHunterStatus.status !== 'active_now') modulesNeedHardware.push('IDLEhunter');
-  modulesNeedHardware.push('ThermalTrace', 'CoolSense');
+  modulesNeedHardware.push('ThermOS', 'CoolSense');
   if (netPulseStatus.status !== 'active_now') modulesNeedHardware.push('NetPulse');
 
   // --- ROI ---
@@ -248,7 +248,7 @@ export function generateDeploymentPlan(profile) {
       GridSync: { status: 'active_now', label: 'Active Now — No Hardware Required', note: 'Uses ElectricityMaps API only.' },
       IDLEhunter: { status: idleHunterStatus.status, label: idleHunterStatus.label, note: idleHunterStatus.note },
       NetPulse: { status: netPulseStatus.status, label: netPulseStatus.label, note: netPulseStatus.note },
-      ThermalTrace: { status: 'phase1_hardware', label: 'Unlocks in Phase 1', note: 'Requires temperature sensors.' },
+      ThermOS: { status: 'phase1_hardware', label: 'Unlocks in Phase 1', note: 'Requires temperature sensors.' },
       CoolSense: { status: 'phase1_hardware', label: 'Unlocks in Phase 1', note: 'Requires flow sensor.' },
     },
     summary: {

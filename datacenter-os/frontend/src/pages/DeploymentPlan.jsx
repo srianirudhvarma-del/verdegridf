@@ -10,7 +10,7 @@ const MODULE_ICONS = {
   GridSync: Leaf,
   IDLEhunter: Terminal,
   CoolSense: Droplet,
-  ThermalTrace: Thermometer,
+  ThermOS: Thermometer,
   NetPulse: Activity,
   PowerWatch: LayoutDashboard,
 };

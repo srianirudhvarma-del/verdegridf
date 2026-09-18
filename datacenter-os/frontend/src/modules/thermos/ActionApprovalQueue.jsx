@@ -1,10 +1,10 @@
 import React, { useCallback } from 'react';
-import { getPendingActions, approveAction, rejectAction } from '../../services/thermaltraceApi';
+import { getPendingActions, approveAction, rejectAction } from '../../services/thermosApi';
 import { useLiveResource } from '../../hooks/useLiveResource';
 
 // MUST HAVE #22: supervised (human-approved) closed-loop control. Every
 // ActionRecommendation requires explicit approval here, every time --
-// there's no auto-execute toggle in this UI on purpose (thermaltrace/control.py's
+// there's no auto-execute toggle in this UI on purpose (thermos/control.py's
 // trust ladder can only be enabled by an explicit backend call, never
 // silently, and this pass doesn't add that control surface).
 export default function ActionApprovalQueue() {

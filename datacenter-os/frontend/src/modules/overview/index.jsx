@@ -3,16 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getServerCluster } from '../../services/idlehunterApi';
 import { getWaterFlows } from '../../services/coolsenseApi';
 import { getNetworkTraffic } from '../../services/netpulseApi';
-import { getThermalSnapshot } from '../../services/thermaltraceApi';
+import { getThermalSnapshot } from '../../services/thermosApi';
 import { useLiveResource } from '../../hooks/useLiveResource';
 import ModuleHeader from '../../components/shared/ModuleHeader';
 import { Bot, AlertTriangle } from 'lucide-react';
 
 const MODULE_RELEVANCE = {
   "Reduce electricity costs": ["idlehunter", "gridsync"],
-  "Prevent cooling failures / downtime": ["thermaltrace", "coolsense"],
+  "Prevent cooling failures / downtime": ["thermos", "coolsense"],
   "Carbon reporting / ESG compliance": ["gridsync"],
-  "Improve visibility into what's happening": ["idlehunter", "thermaltrace", "coolsense", "netpulse"],
+  "Improve visibility into what's happening": ["idlehunter", "thermos", "coolsense", "netpulse"],
   "Automate manual monitoring tasks": ["idlehunter", "netpulse"],
   "Meet regulatory requirements": ["gridsync", "coolsense"],
 };
@@ -95,8 +95,8 @@ function ModuleCards({ onNavigate, zombieCount, energySaved, wue, leaks, globalC
       ),
     },
     {
-      id: 'thermaltrace',
-      label: '04. ThermalTrace',
+      id: 'thermos',
+      label: '04. ThermOS',
       color: 'text-accent-red',
       content: (
         <div className="space-y-4">

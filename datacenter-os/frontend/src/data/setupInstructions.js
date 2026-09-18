@@ -121,7 +121,7 @@ ipmitool -I lanplus -H [IPMI-IP] -U admin -P PASSWORD chassis status`,
   },
 
   "Whitebox / Custom built": {
-    module: "IDLEhunter + ThermalTrace",
+    module: "IDLEhunter + ThermOS",
     estimated_time: "20 minutes",
     difficulty: "Easy",
     prerequisites: [
@@ -172,7 +172,7 @@ WantedBy=multi-user.target`,
   },
 
   "Raspberry Pi (psutil agent)": {
-    module: "IDLEhunter + ThermalTrace",
+    module: "IDLEhunter + ThermOS",
     estimated_time: "20 minutes",
     difficulty: "Easy",
     prerequisites: [
@@ -213,7 +213,7 @@ sudo reboot`,
   },
 
   "ESP32 (network + thermal node)": {
-    module: "NetPulse + ThermalTrace",
+    module: "NetPulse + ThermOS",
     estimated_time: "30 minutes",
     difficulty: "Medium",
     prerequisites: [
@@ -407,7 +407,7 @@ snmpwalk -v2c -c greencore_ro [SWITCH-IP] 1.3.6.1.2.1.2.2
   },
 
   "Liebert/Vertiv CRAC (Modbus)": {
-    module: "ThermalTrace + CoolSense",
+    module: "ThermOS + CoolSense",
     estimated_time: "30 minutes",
     difficulty: "Medium",
     prerequisites: [
@@ -437,7 +437,7 @@ c.close()
         title: "Add to GreenCore config",
         detail:
           "Update greencore-config.yaml with register map. Common Liebert registers: 0x0001=supply air temp, 0x0002=return air temp, 0x0003=cooling capacity %",
-        command: `thermaltrace:
+        command: `thermos:
   adapters:
     - type: liebert_modbus
       ip: 192.168.1.60
@@ -447,7 +447,7 @@ c.close()
         supply_temp: 1
         return_temp: 2
         cooling_pct: 3`,
-        verify: "ThermalTrace shows CRAC supply/return temperatures as LIVE",
+        verify: "ThermOS shows CRAC supply/return temperatures as LIVE",
       },
     ],
   },

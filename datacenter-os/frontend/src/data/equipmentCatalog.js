@@ -130,7 +130,7 @@ export const EQUIPMENT_CATALOG = {
       cost: 800,
       per: "per sensor",
       where: "Robu.in",
-      unlocks: ["thermaltrace_basic"],
+      unlocks: ["thermos_basic"],
       note: "Most affordable thermal monitoring"
     },
     temperature_rack: {
@@ -138,7 +138,7 @@ export const EQUIPMENT_CATALOG = {
       cost: 8500,
       per: "per rack",
       where: "Raritan India / RS Components",
-      unlocks: ["thermaltrace_full"],
+      unlocks: ["thermos_full"],
       note: "Professional rack-mount with humidity"
     },
     flow_basic: {

@@ -3,7 +3,7 @@ import { thermalSensorsApi } from '../../data/mock/thermalSensors';
 import MetricCard from '../../components/shared/MetricCard';
 import AlertBadge from '../../components/shared/AlertBadge';
 
-const ThermalTraceDashboard = () => {
+const ThermOSDashboard = () => {
     const [grid, setGrid] = useState([]);
     const [alerts, setAlerts] = useState([]);
     const [predictedMode, setPredictedMode] = useState(false);
@@ -111,7 +111,7 @@ Out: ${cell.outlet_celsius.toFixed(1)}°C
         <div className="p-8 bg-black min-h-screen text-white font-sans overflow-auto h-full">
             <header className="mb-8 flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-orange-400 mb-2">ThermalTrace</h1>
+                    <h1 className="text-3xl font-black tracking-tight text-orange-400 mb-2">ThermOS</h1>
                     <p className="text-gray-400">Real-time hot/cold aisle monitoring and hotspot detection.</p>
                 </div>
                 <div className="flex items-center gap-4 bg-gray-900 border border-gray-700 p-3 rounded-lg">
@@ -229,10 +229,10 @@ Out: ${cell.outlet_celsius.toFixed(1)}°C
 
             {/* Backend Route Reference */}
             <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 text-xs text-gray-500">
-                <code>GET /api/thermaltrace/snapshot</code> — Backend route for fetching latest thermal grid data
+                <code>GET /api/thermos/snapshot</code> — Backend route for fetching latest thermal grid data
             </div>
         </div>
     );
 };
 
-export default ThermalTraceDashboard;
+export default ThermOSDashboard;

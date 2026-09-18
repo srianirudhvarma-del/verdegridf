@@ -8,12 +8,12 @@ import Overview from './modules/overview';
 import IdleHunter from './modules/idlehunter';
 import CoolSense from './modules/coolsense';
 import GridSync from './modules/gridsync';
-import ThermalTrace from './modules/thermaltrace';
+import ThermOS from './modules/thermos';
 import NetPulse from './modules/netpulse';
 import { getServerCluster } from './services/idlehunterApi';
 import { getWaterFlows } from './services/coolsenseApi';
 import { getNetworkTraffic } from './services/netpulseApi';
-import { getThermalSnapshot } from './services/thermaltraceApi';
+import { getThermalSnapshot } from './services/thermosApi';
 import './index.css';
 
 // ─── Facility profile helper ──────────────────────────────────────────────
@@ -34,7 +34,7 @@ const MODULE_SUGGESTED_QUESTIONS = {
   idlehunter:   ["How much am I wasting on zombie servers?", "Which servers should I consolidate first?", "What's my projected savings this month?"],
   coolsense:   ["Is my WUE reading dangerous?", "Which cooling unit is most inefficient?", "What does this leak alert mean?"],
   gridsync:  ["When is the next clean grid window?", "Which jobs should I defer right now?", "How much CO2 have I saved this session?"],
-  thermaltrace: ["Is this hotspot dangerous?", "Which rack needs attention most urgently?", "What caused this temperature spike?"],
+  thermos: ["Is this hotspot dangerous?", "Which rack needs attention most urgently?", "What caused this temperature spike?"],
   netpulse:   ["Which link is about to become a bottleneck?", "Should I reroute this traffic manually?", "What does 87% utilization mean for latency?"],
   overview:     ["What are my biggest savings opportunities?", "Which module should I focus on first?", "How is my facility performing overall?"],
 };
@@ -53,7 +53,7 @@ async function fetchModuleData(activeModule) {
       const d = await getWaterFlows();
       return { wue: d.wue?.toFixed(2), total_flow: Math.round(d.totalFlow), anomalies: d.anomalies.length, unit_count: d.units?.length };
     }
-    case 'thermaltrace': {
+    case 'thermos': {
       const d = await getThermalSnapshot();
       const flat = d.grid.flat();
       return { max_inlet_temp: Math.max(...flat.map(c => c.inlet_temp)).toFixed(1), avg_inlet_temp: (flat.reduce((a, c) => a + c.inlet_temp, 0) / flat.length).toFixed(1), hotspots: flat.filter(c => c.inlet_temp > 32).length };
@@ -132,7 +132,7 @@ function App() {
       case 'idlehunter': return <IdleHunter />;
       case 'coolsense': return <CoolSense />;
       case 'gridsync': return <GridSync />;
-      case 'thermaltrace': return <ThermalTrace />;
+      case 'thermos': return <ThermOS />;
       case 'netpulse': return <NetPulse isDeferralActive={isDeferralActive} />;
       case 'overview':
       default:
