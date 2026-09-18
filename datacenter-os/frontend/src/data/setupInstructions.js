@@ -21,23 +21,23 @@ export const SETUP_INSTRUCTIONS = {
         step: 2,
         title: "Create read-only monitoring user",
         detail:
-          "In iDRAC → User Authentication → Add User. Username: greencore_monitor. Role: Read Only. This is safer than using admin credentials.",
+          "In iDRAC → User Authentication → Add User. Username: verdegrid_monitor. Role: Read Only. This is safer than using admin credentials.",
         command: null,
         verify: null,
       },
       {
         step: 3,
-        title: "Add server to GreenCore config",
+        title: "Add server to VerdeGrid config",
         detail:
-          "In your greencore-config.yaml, add this server under powerprune.hosts",
+          "In your verdegrid-config.yaml, add this server under powerprune.hosts",
         command: `powerprune:
   adapter: ipmi_redfish
   hosts:
     - ip: 192.168.1.10
-      username: greencore_monitor
+      username: verdegrid_monitor
       password: YOUR_PASSWORD`,
         verify:
-          "GreenCore dashboard → PowerPrune → server appears in cluster grid with LIVE badge",
+          "VerdeGrid dashboard → PowerPrune → server appears in cluster grid with LIVE badge",
       },
     ],
   },
@@ -65,19 +65,19 @@ export const SETUP_INSTRUCTIONS = {
         step: 2,
         title: "Create monitoring account",
         detail:
-          "In iLO: Administration → User Administration → Add User. Username: greencore_ro. Assign 'Read Only' role.",
+          "In iLO: Administration → User Administration → Add User. Username: verdegrid_ro. Assign 'Read Only' role.",
         command: null,
         verify: null,
       },
       {
         step: 3,
-        title: "Add to GreenCore config",
-        detail: "Update greencore-config.yaml under powerprune.hosts:",
+        title: "Add to VerdeGrid config",
+        detail: "Update verdegrid-config.yaml under powerprune.hosts:",
         command: `powerprune:
   adapter: hpe_ilo
   hosts:
     - ip: 192.168.1.11
-      username: greencore_ro
+      username: verdegrid_ro
       password: YOUR_PASSWORD`,
         verify:
           "PowerPrune module shows the server with power and CPU data",
@@ -106,8 +106,8 @@ ipmitool -I lanplus -H [IPMI-IP] -U admin -P PASSWORD chassis status`,
       },
       {
         step: 2,
-        title: "Add to GreenCore config",
-        detail: "Update greencore-config.yaml:",
+        title: "Add to VerdeGrid config",
+        detail: "Update verdegrid-config.yaml:",
         command: `powerprune:
   adapter: ipmi_generic
   hosts:
@@ -132,10 +132,10 @@ ipmitool -I lanplus -H [IPMI-IP] -U admin -P PASSWORD chassis status`,
     steps: [
       {
         step: 1,
-        title: "Install GreenCore psutil agent",
+        title: "Install VerdeGrid psutil agent",
         detail: "SSH into the server and run:",
-        command: `pip install greencore-agent psutil flask
-python -m greencore_agent --port 5000 --node-id custom-server-1`,
+        command: `pip install verdegrid-agent psutil flask
+python -m verdegrid_agent --port 5000 --node-id custom-server-1`,
         verify: "Visit http://[SERVER-IP]:5000/metrics — returns JSON with cpu_percent, ram_percent",
       },
       {
@@ -143,23 +143,23 @@ python -m greencore_agent --port 5000 --node-id custom-server-1`,
         title: "Register as a service (optional)",
         detail:
           "To keep the agent running after reboot, create a systemd service:",
-        command: `# /etc/systemd/system/greencore-agent.service
+        command: `# /etc/systemd/system/verdegrid-agent.service
 [Unit]
-Description=GreenCore Monitoring Agent
+Description=VerdeGrid Monitoring Agent
 After=network.target
 
 [Service]
-ExecStart=python -m greencore_agent --port 5000 --node-id custom-server-1
+ExecStart=python -m verdegrid_agent --port 5000 --node-id custom-server-1
 Restart=always
 
 [Install]
 WantedBy=multi-user.target`,
-        verify: "sudo systemctl status greencore-agent shows Active: running",
+        verify: "sudo systemctl status verdegrid-agent shows Active: running",
       },
       {
         step: 3,
-        title: "Add to GreenCore config",
-        detail: "Update greencore-config.yaml:",
+        title: "Add to VerdeGrid config",
+        detail: "Update verdegrid-config.yaml:",
         command: `powerprune:
   adapter: psutil_local
   hosts:
@@ -178,15 +178,15 @@ WantedBy=multi-user.target`,
     prerequisites: [
       "Raspberry Pi with Raspbian OS",
       "Python 3.8+ installed",
-      "Pi connected to same network as GreenCore dashboard",
+      "Pi connected to same network as VerdeGrid dashboard",
     ],
     steps: [
       {
         step: 1,
-        title: "Install GreenCore agent",
+        title: "Install VerdeGrid agent",
         detail: "SSH into your Raspberry Pi and run:",
         command: `pip install flask psutil RPi.GPIO
-pip install greencore-agent`,
+pip install verdegrid-agent`,
         verify: null,
       },
       {
@@ -194,7 +194,7 @@ pip install greencore-agent`,
         title: "Start the agent",
         detail:
           "Run the agent — it will automatically expose CPU, RAM, and temperature on port 5000:",
-        command: `python -m greencore_agent \n  --port 5000 \n  --node-id pi-rack-1`,
+        command: `python -m verdegrid_agent \n  --port 5000 \n  --node-id pi-rack-1`,
         verify:
           "Open http://[Pi-IP]:5000/metrics in browser — should show JSON with cpu_percent, ram_percent, temperature",
       },
@@ -243,7 +243,7 @@ esptool.py --chip esp32 write_flash -z 0x1000 esp32-firmware.bin`,
       },
       {
         step: 3,
-        title: "Flash GreenCore ESP32 firmware",
+        title: "Flash VerdeGrid ESP32 firmware",
         detail:
           "Copy this MicroPython script to ESP32 as main.py. Update WIFI_SSID, WIFI_PASS, and WS_HOST:",
         command: `import network, time, ujson
@@ -340,27 +340,27 @@ GPIO.cleanup()
         detail: "SSH into your switch and enter these commands in configuration mode:",
         command: `enable
 configure terminal
-snmp-server community greencore_ro RO
+snmp-server community verdegrid_ro RO
 snmp-server location "Server Room 1"
 snmp-server contact "ops@yourcompany.com"
 end
 write memory`,
-        verify: `# Test from GreenCore server:
-snmpwalk -v2c -c greencore_ro [SWITCH-IP] 1.3.6.1.2.1.2.2
+        verify: `# Test from VerdeGrid server:
+snmpwalk -v2c -c verdegrid_ro [SWITCH-IP] 1.3.6.1.2.1.2.2
 # Should list all interfaces`,
       },
       {
         step: 2,
-        title: "Add switch to GreenCore config",
-        detail: "Update your greencore-config.yaml:",
+        title: "Add switch to VerdeGrid config",
+        detail: "Update your verdegrid-config.yaml:",
         command: `netpulse:
   adapter: snmp_switch
   hosts:
     - ip: 192.168.1.1
-      community: greencore_ro
+      community: verdegrid_ro
       version: 2c`,
         verify:
-          "GreenCore NetPulse module shows LIVE badge and real interface traffic",
+          "VerdeGrid NetPulse module shows LIVE badge and real interface traffic",
       },
     ],
   },
@@ -388,20 +388,20 @@ snmpwalk -v2c -c greencore_ro [SWITCH-IP] 1.3.6.1.2.1.2.2
         step: 2,
         title: "Enable SNMP on the NMC",
         detail:
-          "In APC web interface: Configuration → Network → SNMPv1. Set Community Name: greencore_ro. Access: Read Only. Apply.",
+          "In APC web interface: Configuration → Network → SNMPv1. Set Community Name: verdegrid_ro. Access: Read Only. Apply.",
         command: null,
         verify: null,
       },
       {
         step: 3,
-        title: "Add to GreenCore config",
-        detail: "Update greencore-config.yaml:",
+        title: "Add to VerdeGrid config",
+        detail: "Update verdegrid-config.yaml:",
         command: `powerwatch:
   adapter: apc_snmp
   hosts:
     - ip: 192.168.1.50
-      community: greencore_ro`,
-        verify: "GreenCore shows UPS load %, battery %, and runtime remaining",
+      community: verdegrid_ro`,
+        verify: "VerdeGrid shows UPS load %, battery %, and runtime remaining",
       },
     ],
   },
@@ -421,7 +421,7 @@ snmpwalk -v2c -c greencore_ro [SWITCH-IP] 1.3.6.1.2.1.2.2
         title: "Verify Modbus TCP is enabled",
         detail:
           "On the Liebert iCOM controller: Main Menu → Communications → Modbus TCP. Ensure it shows Enabled and note the port (usually 502).",
-        command: `# Test Modbus TCP connectivity from GreenCore server:
+        command: `# Test Modbus TCP connectivity from VerdeGrid server:
 python3 -c "
 from pymodbus.client import ModbusTcpClient
 c = ModbusTcpClient('[LIEBERT-IP]', port=502)
@@ -434,9 +434,9 @@ c.close()
       },
       {
         step: 2,
-        title: "Add to GreenCore config",
+        title: "Add to VerdeGrid config",
         detail:
-          "Update greencore-config.yaml with register map. Common Liebert registers: 0x0001=supply air temp, 0x0002=return air temp, 0x0003=cooling capacity %",
+          "Update verdegrid-config.yaml with register map. Common Liebert registers: 0x0001=supply air temp, 0x0002=return air temp, 0x0003=cooling capacity %",
         command: `thermos:
   adapters:
     - type: liebert_modbus

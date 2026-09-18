@@ -267,7 +267,7 @@ export default function AIAgent({
         >
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <span className="text-xs font-mono font-bold text-green-400 uppercase tracking-widest">
-            GreenCore AI Advisor
+            VerdeGrid AI Advisor
           </span>
         </div>
         <ChatBody
@@ -306,7 +306,7 @@ export default function AIAgent({
             boxShadow: '0 0 0 0 rgba(240,180,41,0.6)',
             animation: 'aiPulseGlow 2.5s ease-in-out infinite',
           }}
-          title="GreenCore AI Assistant"
+          title="VerdeGrid AI Assistant"
         >
           <MessageSquare size={22} color="#000" />
         </button>
@@ -355,7 +355,7 @@ export default function AIAgent({
                 }}
               />
               <span style={{ fontSize: 11, fontFamily: 'monospace', color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>
-                GreenCore AI
+                VerdeGrid AI
               </span>
             </div>
             <button

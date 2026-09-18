@@ -2,7 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { useMetrics } from '../context/MetricsContext';
 
 /**
- * useGreenCoreEngine - The synchronized heartbeat of the GreenCore system
+ * useVerdeGridEngine - The synchronized heartbeat of the VerdeGrid system
  * 
  * Features:
  * - Global pulse that synchronizes all modules (5s interval)
@@ -10,7 +10,7 @@ import { useMetrics } from '../context/MetricsContext';
  * - Health checks and anomaly detection
  * - Real-time KPI updates via MetricsContext
  */
-export function useGreenCoreEngine() {
+export function useVerdeGridEngine() {
   const { updateMetrics, metrics } = useMetrics();
 
   // Global pulse that fires every 5 seconds
@@ -53,7 +53,7 @@ export function useGreenCoreEngine() {
 
       // Log health status every 30 seconds
       if (pulseCount % 6 === 0) {
-        console.log(`[GreenCore Pulse #${pulseCount}] Energy: ${totalEnergySaved.toFixed(1)}kWh | Water: ${totalWaterSaved.toFixed(0)}L | CO2: ${totalCO2Avoided.toFixed(2)}kg | Efficiency: ${efficiencyScore.toFixed(1)}%`);
+        console.log(`[VerdeGrid Pulse #${pulseCount}] Energy: ${totalEnergySaved.toFixed(1)}kWh | Water: ${totalWaterSaved.toFixed(0)}L | CO2: ${totalCO2Avoided.toFixed(2)}kg | Efficiency: ${efficiencyScore.toFixed(1)}%`);
       }
     };
 

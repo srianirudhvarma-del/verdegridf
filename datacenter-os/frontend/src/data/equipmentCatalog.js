@@ -26,7 +26,7 @@ export const EQUIPMENT_CATALOG = {
       adapter: "psutil_local",
       difficulty: "easy",
       cost_per_unit: 0,
-      note: "Install GreenCore lightweight agent — Python package, 5 min setup"
+      note: "Install VerdeGrid lightweight agent — Python package, 5 min setup"
     },
     "Cisco UCS": {
       protocol: "UCS Manager XML API",
@@ -77,7 +77,7 @@ export const EQUIPMENT_CATALOG = {
       adapter: "chiller_bacnet",
       difficulty: "hard",
       cost_per_unit: 0,
-      note: "Typically requires on-site BMS integration — contact GreenCore professional services"
+      note: "Typically requires on-site BMS integration — contact VerdeGrid professional services"
     },
     "Basic split AC units": {
       protocol: "No native protocol",

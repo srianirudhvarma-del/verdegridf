@@ -269,7 +269,7 @@ ${JSON.stringify(profile, null, 2)}`;
         <span className="text-sm font-bold text-yellow-400 uppercase tracking-widest">AI Deployment Summary</span>
       </div>
       <AIAgent
-        systemPrompt="You are GreenCore's intelligent deployment advisor. Be concise — 3 sentences maximum."
+        systemPrompt="You are VerdeGrid's intelligent deployment advisor. Be concise — 3 sentences maximum."
         context={profile}
         suggestedQuestions={[]}
         compact={false}
@@ -351,7 +351,7 @@ export default function Onboarding({ onComplete }) {
   };
 
   // Build AI system prompt
-  const wizardSystemPrompt = `You are GreenCore's intelligent deployment advisor. You are helping a datacenter operator configure their monitoring platform.
+  const wizardSystemPrompt = `You are VerdeGrid's intelligent deployment advisor. You are helping a datacenter operator configure their monitoring platform.
 
 Current wizard step: ${step + 1} of 5
 Step topic: ${STEP_TOPICS[step]}

@@ -48,9 +48,9 @@ function getPowerPruneStatus(profile) {
     return { status: 'active_now', label: 'Active Now — Uses Existing Hardware', note: 'Server management APIs built in.' };
   }
   if (onlyCiscoOrDontKnow) {
-    return { status: 'needs_setup', label: 'Requires Agent Install — 30 min setup', note: 'Install lightweight GreenCore agent on management host.' };
+    return { status: 'needs_setup', label: 'Requires Agent Install — 30 min setup', note: 'Install lightweight VerdeGrid agent on management host.' };
   }
-  return { status: 'needs_setup', label: 'Requires Agent Install — 30 min setup', note: 'Install lightweight GreenCore agent on management host.' };
+  return { status: 'needs_setup', label: 'Requires Agent Install — 30 min setup', note: 'Install lightweight VerdeGrid agent on management host.' };
 }
 
 // Determine NetPulse status based on switch vendors
@@ -240,7 +240,7 @@ export function generateDeploymentPlan(profile) {
   }
 
   // --- Architecture note ---
-  const archNote = `GreenCore runs as a lightweight agent inside your management network. Your credentials and telemetry stay on-premise. Only anonymized benchmarking data is optionally shared with the GreenCore cloud for cross-facility comparison. You control what leaves your network.`;
+  const archNote = `VerdeGrid runs as a lightweight agent inside your management network. Your credentials and telemetry stay on-premise. Only anonymized benchmarking data is optionally shared with the VerdeGrid cloud for cross-facility comparison. You control what leaves your network.`;
 
   return {
     facility_name: profile.facility_name || 'Your Facility',
@@ -311,7 +311,7 @@ export function generateDeploymentPlan(profile) {
     roadmap: [
       {
         title: 'Week 1–2: Install sensors, activate modules',
-        description: 'Mount temperature & flow sensors. Connect to GreenCore agent. GridSync, PowerPrune, and NetPulse go live immediately.',
+        description: 'Mount temperature & flow sensors. Connect to VerdeGrid agent. GridSync, PowerPrune, and NetPulse go live immediately.',
         when: 'Weeks 1–2'
       },
       {

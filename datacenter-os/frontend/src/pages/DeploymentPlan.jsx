@@ -208,7 +208,7 @@ export default function DeploymentPlan({ onNavigateDashboard, onReconfigure }) {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Map size={20} className="text-[#f0b429]" />
-            <h1 className="text-3xl font-bold text-white">Your GreenCore Deployment Plan</h1>
+            <h1 className="text-3xl font-bold text-white">Your VerdeGrid Deployment Plan</h1>
           </div>
           <p className="text-gray-400">{plan.facility_name}</p>
         </div>
@@ -262,7 +262,7 @@ export default function DeploymentPlan({ onNavigateDashboard, onReconfigure }) {
           <div className="rounded-2xl p-6 border border-[#1e2a45]" style={{ background: '#0f1629' }}>
             <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
               <CheckCircle2 size={16} className="text-[#f0b429]" />
-              How GreenCore deploys
+              How VerdeGrid deploys
             </h2>
             <p className="text-sm text-gray-400 leading-relaxed">{plan.architecture_note}</p>
           </div>

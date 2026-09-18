@@ -166,7 +166,7 @@ export default function HardwareGuide() {
   const [selectedDevice, setSelectedDevice] = useState(defaultDevice);
   const instruction = SETUP_INSTRUCTIONS[selectedDevice];
 
-  const hardwareSystemPrompt = instruction ? `You are GreenCore's hardware integration expert.
+  const hardwareSystemPrompt = instruction ? `You are VerdeGrid's hardware integration expert.
 You are helping a user set up their datacenter monitoring hardware.
 
 Currently viewing setup guide for: ${selectedDevice}

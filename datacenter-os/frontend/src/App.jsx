@@ -80,7 +80,7 @@ function useModuleDataSnapshot(activeModule) {
 }
 
 function getDashboardSystemPrompt(activeModule, facilityProfile, moduleData) {
-  return `You are GreenCore's datacenter intelligence assistant. You have full context of this facility's monitoring data.
+  return `You are VerdeGrid's datacenter intelligence assistant. You have full context of this facility's monitoring data.
 
 Facility: ${facilityProfile?.facility_name || 'Unknown'}
 Active module: ${activeModule}
