@@ -1,14 +1,14 @@
 from datetime import datetime, timedelta, timezone
 
-from carbonclock.grid import (
+from gridsync.grid import (
     CarbonForecastSimulator,
     DEFAULT_GREEN_THRESHOLD,
     DEFAULT_DIRTY_THRESHOLD,
     ForecastCache,
     HysteresisState,
 )
-from carbonclock.scheduler import rank_windows_by_carbon_and_price
-from carbonclock.grid import HourlyForecast
+from gridsync.scheduler import rank_windows_by_carbon_and_price
+from gridsync.grid import HourlyForecast
 
 NOW = datetime(2026, 8, 25, 0, 0, 0, tzinfo=timezone.utc)
 

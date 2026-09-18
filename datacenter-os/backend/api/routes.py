@@ -6,7 +6,7 @@ from typing import List, Optional
 import logging
 
 import api.state as state
-from carbonclock.scheduler import DEFAULT_DIRTY_THRESHOLD, DEFAULT_GREEN_THRESHOLD
+from gridsync.scheduler import DEFAULT_DIRTY_THRESHOLD, DEFAULT_GREEN_THRESHOLD
 from idlehunter.power import HostState
 from idlehunter.threshold import RESOURCES, classify_host
 from shared.classification import classification_store
@@ -284,9 +284,9 @@ async def get_maintenance_status(loop_id: str):
     return {"loopId": loop_id, "active": active}
 
 
-# ===================== CarbonClock Routes =====================
+# ===================== GridSync Routes =====================
 
-@router.get("/carbonclock/intensity", response_model=CarbonIntensitySnapshot)
+@router.get("/gridsync/intensity", response_model=CarbonIntensitySnapshot)
 async def get_carbon_intensity():
     """
     Real synthetic carbon-intensity series (Phase 0 Decision #1) run
@@ -318,18 +318,18 @@ async def get_carbon_intensity():
     )
 
 
-@router.get("/carbonclock/signal-info")
+@router.get("/gridsync/signal-info")
 async def get_signal_info():
     """MUST HAVE #8: documented average-vs-marginal justification, visible in an admin panel."""
     return state.signal_info.model_dump()
 
 
-@router.get("/carbonclock/jobs")
+@router.get("/gridsync/jobs")
 async def get_job_queue():
     return list(state.carbon_job_records.values())
 
 
-@router.post("/carbonclock/jobs/{job_id}/defer")
+@router.post("/gridsync/jobs/{job_id}/defer")
 async def defer_carbon_job(job_id: str, request: JobActionRequest):
     if job_id not in state.carbon_job_records:
         raise HTTPException(status_code=404, detail="unknown job")
@@ -340,12 +340,12 @@ async def defer_carbon_job(job_id: str, request: JobActionRequest):
     }
 
 
-@router.post("/carbonclock/jobs/{job_id}/run")
+@router.post("/gridsync/jobs/{job_id}/run")
 async def run_carbon_job(job_id: str):
     """
     Operator manually forces a job to run now: removes it from the real
     DeadlineQueue (MUST HAVE #7's queue, not a display-only copy) if it's
-    still pending, and publishes the same carbonclock.job.scheduled event
+    still pending, and publishes the same gridsync.job.scheduled event
     shared.orchestrator.JobExecutionTracker consumes.
     """
     if job_id not in state.carbon_job_records:
@@ -355,7 +355,7 @@ async def run_carbon_job(job_id: str):
 
     state.carbon_job_queue.remove(job_id)
     state.carbon_job_records[job_id]["status"] = "running"
-    event_bus.publish("carbonclock.job.scheduled", {"jobId": job_id, "windowStart": _now_iso(), "forceRun": False})
+    event_bus.publish("gridsync.job.scheduled", {"jobId": job_id, "windowStart": _now_iso(), "forceRun": False})
     return {"id": job_id, "status": "running", "message": f"Job {job_id} started immediately"}
 
 
@@ -519,7 +519,7 @@ async def api_status():
         "status": "operational",
         "version": "2.0.0",
         "modules": {
-            "idlehunter": "live", "coolsense": "live", "carbonclock": "live",
+            "idlehunter": "live", "coolsense": "live", "gridsync": "live",
             "thermaltrace": "live (ML bridge stub pending)", "netpulse": "live",
             "noisemesh": "excluded",
         },

@@ -44,10 +44,10 @@ def test_unsubscribe_stops_further_delivery():
     def handler(payload):
         received.append(payload)
 
-    bus.subscribe("carbonclock.job.scheduled", handler)
-    bus.publish("carbonclock.job.scheduled", "job-1")
-    bus.unsubscribe("carbonclock.job.scheduled", handler)
-    bus.publish("carbonclock.job.scheduled", "job-2")
+    bus.subscribe("gridsync.job.scheduled", handler)
+    bus.publish("gridsync.job.scheduled", "job-1")
+    bus.unsubscribe("gridsync.job.scheduled", handler)
+    bus.publish("gridsync.job.scheduled", "job-2")
 
     assert received == ["job-1"]
 

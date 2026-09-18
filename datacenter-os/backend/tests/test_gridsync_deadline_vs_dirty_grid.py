@@ -1,5 +1,5 @@
 """
-Integration acceptance test for the Section 10 CarbonClock checklist item:
+Integration acceptance test for the Section 10 GridSync checklist item:
 "A deferrable job force-runs at its deadline even if the grid is still
 dirty."
 
@@ -11,9 +11,9 @@ input, so that version could never actually distinguish "deadline
 overrides a real block" from "the deadline queue just doesn't know about
 carbon at all." It also surfaced a real gap: force_release_overdue's
 return value was never consumed by anything in production code --
-carbonclock.job.scheduled has been a defined topic since Phase 0 with no
+gridsync.job.scheduled has been a defined topic since Phase 0 with no
 publisher and no subscriber, the same "publish to nobody" pattern the
-Phase 8b audit found for carbonclock.prewake.requested.
+Phase 8b audit found for gridsync.prewake.requested.
 
 This version is one continuous scenario against the same job, the same
 pool, and the same dirty windows throughout: the real scheduler is
@@ -28,9 +28,9 @@ prior activity for that job on the tracker before the deadline.
 
 from datetime import datetime, timedelta, timezone
 
-from carbonclock.grid import HourlyForecast
-from carbonclock.jobs import DeadlineQueue, submit_job
-from carbonclock.scheduler import (
+from gridsync.grid import HourlyForecast
+from gridsync.jobs import DeadlineQueue, submit_job
+from gridsync.scheduler import (
     DEFAULT_DIRTY_THRESHOLD,
     SchedulingPool,
     rank_windows_by_intensity,
@@ -130,7 +130,7 @@ def test_deferrable_job_force_runs_at_deadline_even_when_the_grid_is_dirty_throu
     assert tracker.has_run(JOB_ID) is False  # scheduling attempts alone never mark it as run
 
     # 3. The real production force-run path: DeadlineQueue.force_run_overdue()
-    #    releases the same job and publishes carbonclock.job.scheduled on
+    #    releases the same job and publishes gridsync.job.scheduled on
     #    the same bus the tracker is listening on.
     released = queue.force_run_overdue(DEADLINE, bus=bus)
 

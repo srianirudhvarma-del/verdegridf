@@ -1,5 +1,5 @@
 """
-carbonclock/jobs.py
+gridsync/jobs.py
 
 MUST HAVE #6 -- workload classification, reusing the shared WorkloadTag
 contract exactly as IdleHunter does (shared/classification.py), keyed by
@@ -113,17 +113,17 @@ class DeadlineQueue:
         """
         The real production path for MUST HAVE #7: force-releases every
         job past its deadline (force_release_overdue above) and publishes
-        carbonclock.job.scheduled for each one, tagged forceRun=True.
+        gridsync.job.scheduled for each one, tagged forceRun=True.
 
-        carbonclock.job.scheduled has been a defined topic since Phase 0
+        gridsync.job.scheduled has been a defined topic since Phase 0
         but nothing ever published to it -- the same "publish to nobody"
-        gap the Phase 8b verification found for carbonclock.prewake.requested.
+        gap the Phase 8b verification found for gridsync.prewake.requested.
         shared.orchestrator.JobExecutionTracker is the real subscriber.
         """
         released = self.force_release_overdue(now)
         for job in released:
             bus.publish(
-                "carbonclock.job.scheduled",
+                "gridsync.job.scheduled",
                 {"jobId": job.jobId, "windowStart": now.isoformat(), "forceRun": True},
             )
         return released

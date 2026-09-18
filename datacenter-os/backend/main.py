@@ -19,7 +19,7 @@ from shared.scheduler_driver import tick
 
 logger = logging.getLogger(__name__)
 
-# Phase 8c: how often the periodic driver ticks (carbonclock deadline
+# Phase 8c: how often the periodic driver ticks (gridsync deadline
 # force-runs, idlehunter wake confirmations). Configurable; 5-10s is sane
 # for the 30-60s telemetry cadence this whole codebase otherwise assumes.
 SCHEDULER_TICK_INTERVAL_SECONDS = float(os.getenv("SCHEDULER_TICK_INTERVAL_SECONDS", "5"))

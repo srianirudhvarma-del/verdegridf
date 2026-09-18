@@ -2,8 +2,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from carbonclock.grid import HourlyForecast
-from carbonclock.scheduler import (
+from gridsync.grid import HourlyForecast
+from gridsync.scheduler import (
     DEFAULT_DIRTY_THRESHOLD,
     DEFAULT_FLOOR_CAP_PERCENT,
     DEFAULT_GREEN_THRESHOLD,
@@ -93,7 +93,7 @@ def test_requests_prewake_when_capacity_short_but_standby_and_lead_time_availabl
     pool = SchedulingPool(total_flexible_capacity=1000.0)
     bus = EventBus()
     received = []
-    bus.subscribe("carbonclock.prewake.requested", received.append)
+    bus.subscribe("gridsync.prewake.requested", received.append)
 
     decision = schedule_deferrable_job(
         "job-1",
@@ -139,7 +139,7 @@ def test_moves_to_next_window_when_no_prewake_is_viable():
 
 
 def test_proceed_false_when_no_window_before_deadline_has_capacity():
-    """This is the case carbonclock/jobs.py's DeadlineQueue backstops --
+    """This is the case gridsync/jobs.py's DeadlineQueue backstops --
     the job stays queued and force-runs at its deadline instead."""
     windows = rank_windows_by_intensity([make_window(0, 100.0)])
     pool = SchedulingPool(total_flexible_capacity=1000.0)

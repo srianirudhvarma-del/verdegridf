@@ -59,7 +59,7 @@ def test_store_shared_across_lookups_reflects_latest_state():
     store = WorkloadClassificationStore()
     idlehunter_view_before = store.classification_for("vm-5")
     store.set_tag(make_tag("vm-5", "deferrable", max_delay=45, source="inferred"))
-    carbonclock_view_after = store.classification_for("vm-5")
+    gridsync_view_after = store.classification_for("vm-5")
 
     assert idlehunter_view_before == "protected"
-    assert carbonclock_view_after == "deferrable"
+    assert gridsync_view_after == "deferrable"

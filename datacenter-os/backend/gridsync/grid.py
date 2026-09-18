@@ -1,5 +1,5 @@
 """
-carbonclock/grid.py
+gridsync/grid.py
 
 MUST HAVE #8 -- documented average-vs-marginal carbon-signal justification.
 Hardcoded as a config object, not a hidden default -- visible in an
@@ -7,7 +7,7 @@ admin/about panel (api/routes.py, when this module is wired up) and here in
 comments. `signalType` stays a config flag even though only "average" is
 implemented, so a future multi-provider item has a clean extension point.
 
-Also owns CarbonClock's carbon-intensity forecast source. api/routes.py
+Also owns GridSync's carbon-intensity forecast source. api/routes.py
 already has a real-time ElectricityMaps client; no real 48h *forecast* API
 access exists, so -- per Phase 0 Decision #1 -- a synthetic 48h hourly
 forecast is generated with the shared telemetry simulator, giving the
@@ -157,7 +157,7 @@ class ForecastCache:
 # SHOULD HAVE #11 -- hysteresis/smoothing on the carbon-state signal
 # ---------------------------------------------------------------------------
 
-# Mirrors carbonclock/scheduler.py's DEFAULT_GREEN_THRESHOLD/DIRTY_THRESHOLD.
+# Mirrors gridsync/scheduler.py's DEFAULT_GREEN_THRESHOLD/DIRTY_THRESHOLD.
 # Duplicated (not imported) to avoid a circular import -- scheduler.py
 # already imports HourlyForecast from this module.
 DEFAULT_GREEN_THRESHOLD = 150.0

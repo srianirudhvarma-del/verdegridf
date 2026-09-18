@@ -14,7 +14,7 @@ the wake start on the first tick that observes a host as WAKING, so the
 whole driver is driven by one clock (the `now` passed into tick()), never
 real wall-clock time read from inside a subscriber.
 
-Separately: carbonclock.jobs.DeadlineQueue.force_run_overdue() only does
+Separately: gridsync.jobs.DeadlineQueue.force_run_overdue() only does
 the right thing when something calls it at the right moment -- nothing in
 a running system called it on its own.
 
@@ -29,7 +29,7 @@ can drive.
 from datetime import datetime
 from typing import TypedDict
 
-from carbonclock.jobs import DeadlineQueue
+from gridsync.jobs import DeadlineQueue
 from idlehunter.power import DwellStateMachine, HostState
 from shared.eventbus import EventBus, event_bus
 
@@ -94,7 +94,7 @@ def tick(
     reading the wall clock itself, so a test can simulate many ticks
     across simulated hours in milliseconds of real test time.
 
-    1. CarbonClock deadlines: force_run_overdue(now) on every registered
+    1. GridSync deadlines: force_run_overdue(now) on every registered
        DeadlineQueue -- MUST HAVE #7's backstop, actually invoked over
        time instead of only when a caller happens to call it directly.
     2. IdleHunter wake completion: for every DwellStateMachine currently

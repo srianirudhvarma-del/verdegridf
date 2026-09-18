@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from carbonclock.grid import (
+from gridsync.grid import (
     DEFAULT_SIGNAL_INFO,
     IMPLEMENTED_SIGNAL_TYPES,
     SUPPORTED_SIGNAL_TYPES,

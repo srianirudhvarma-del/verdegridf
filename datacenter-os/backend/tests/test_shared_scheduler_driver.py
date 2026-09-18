@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from carbonclock.jobs import DeadlineQueue, submit_job
+from gridsync.jobs import DeadlineQueue, submit_job
 from idlehunter.power import DwellStateMachine, HostState
 from shared.classification import WorkloadClassificationStore
 from shared.contracts import WorkloadTag
@@ -28,11 +28,11 @@ def tag_job(store, job_id, max_delay):
 def test_registry_registers_and_unregisters_deadline_queues():
     registry = SchedulerRegistry()
     queue = DeadlineQueue()
-    registry.register_deadline_queue("carbonclock", queue)
-    assert registry.deadline_queues["carbonclock"] is queue
+    registry.register_deadline_queue("gridsync", queue)
+    assert registry.deadline_queues["gridsync"] is queue
 
-    registry.unregister_deadline_queue("carbonclock")
-    assert "carbonclock" not in registry.deadline_queues
+    registry.unregister_deadline_queue("gridsync")
+    assert "gridsync" not in registry.deadline_queues
 
 
 def test_registry_registers_dwell_state_machines_by_host_id():
@@ -55,7 +55,7 @@ def test_registry_unregister_also_clears_wake_started_at():
 
 
 # ---------------------------------------------------------------------------
-# tick() -- CarbonClock deadline side, through ticking alone
+# tick() -- GridSync deadline side, through ticking alone
 # ---------------------------------------------------------------------------
 
 
@@ -65,7 +65,7 @@ def test_tick_force_runs_an_overdue_job_through_ticking_alone_no_manual_trigger(
     tag_job(store, "job-1", max_delay=30)
     queue = DeadlineQueue()
     queue.add(submit_job("job-1", NOW, store=store))
-    registry.register_deadline_queue("carbonclock", queue)
+    registry.register_deadline_queue("gridsync", queue)
 
     bus = EventBus()
     tracker = JobExecutionTracker(bus=bus)
@@ -81,7 +81,7 @@ def test_tick_force_runs_an_overdue_job_through_ticking_alone_no_manual_trigger(
     # anywhere in this test -- only tick() was ever invoked.
     result_at_deadline = tick(NOW + timedelta(minutes=30), registry=registry, bus=bus)
 
-    assert result_at_deadline["forceRun"] == {"carbonclock": ["job-1"]}
+    assert result_at_deadline["forceRun"] == {"gridsync": ["job-1"]}
     assert tracker.has_run("job-1") is True
 
 
@@ -122,7 +122,7 @@ def test_tick_confirms_a_waking_host_through_ticking_alone_no_manual_trigger():
     subscriber = PrewakeSubscriber(registry.dwell_state_machines, bus=bus)
     subscriber.register()
 
-    bus.publish("carbonclock.prewake.requested", {"jobId": "job-1", "targetTime": NOW.isoformat()})
+    bus.publish("gridsync.prewake.requested", {"jobId": "job-1", "targetTime": NOW.isoformat()})
     assert machine.state == HostState.WAKING
     assert "host-1" not in registry.wake_started_at  # not recorded until tick() first observes it
 
@@ -171,7 +171,7 @@ def test_tick_across_many_simulated_hours_settles_both_a_deadline_and_a_wake():
     tag_job(store, "job-1", max_delay=120)
     queue = DeadlineQueue()
     queue.add(submit_job("job-1", NOW, store=store))
-    registry.register_deadline_queue("carbonclock", queue)
+    registry.register_deadline_queue("gridsync", queue)
 
     machine = DwellStateMachine("host-1", dwell_time_down_samples=1)
     machine.observe("idle-candidate")
@@ -183,7 +183,7 @@ def test_tick_across_many_simulated_hours_settles_both_a_deadline_and_a_wake():
     job_tracker.register()
     prewake_subscriber = PrewakeSubscriber(registry.dwell_state_machines, bus=bus)
     prewake_subscriber.register()
-    bus.publish("carbonclock.prewake.requested", {"jobId": "job-1", "targetTime": NOW.isoformat()})
+    bus.publish("gridsync.prewake.requested", {"jobId": "job-1", "targetTime": NOW.isoformat()})
     assert machine.state == HostState.WAKING
 
     # Simulate a full day of 30-minute ticks in a normal test-speed loop.

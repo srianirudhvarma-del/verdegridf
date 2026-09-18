@@ -1,17 +1,17 @@
 """
-carbonclock/scheduler.py
+gridsync/scheduler.py
 
 Core capacity-curve scheduling algorithm (methodology Section 4, "Core
 scheduling algorithm") plus MUST HAVE #9 (cross-wire with IdleHunter's
 capacity forecast before finalizing a scheduling window).
 
-Only deferrable jobs (carbonclock/jobs.py's DeferrableJob, produced only
+Only deferrable jobs (gridsync/jobs.py's DeferrableJob, produced only
 for jobs explicitly tagged deferrable) ever reach this scheduler --
 protected/untagged jobs never do, so they are never subject to the
 flexible-capacity cap below by construction, not by a check here.
 
 If no window works before the job's deadline, this returns proceed=False;
-carbonclock/jobs.py's DeadlineQueue.force_release_overdue() is the
+gridsync/jobs.py's DeadlineQueue.force_release_overdue() is the
 fail-safe backstop that force-runs the job at its deadline regardless of
 carbon state (MUST HAVE #7).
 """
@@ -23,7 +23,7 @@ from typing import Callable, Optional
 from shared.contracts import CapacityForecast
 from shared.eventbus import EventBus, event_bus
 
-from carbonclock.grid import HourlyForecast
+from gridsync.grid import HourlyForecast
 
 # Methodology defaults for the capacity-curve cap. gCO2/kWh-scale
 # thresholds, tunable per grid zone.
@@ -132,7 +132,7 @@ def schedule_deferrable_job(
         if forecast.standbyHostCount > 0 and lead_time_seconds > forecast.estimatedWakeLatencySeconds:
             target_time = window_start - timedelta(seconds=forecast.estimatedWakeLatencySeconds)
             bus.publish(
-                "carbonclock.prewake.requested",
+                "gridsync.prewake.requested",
                 {"jobId": job_id, "targetTime": target_time.isoformat()},
             )
             pool.reserve(window, required_capacity)

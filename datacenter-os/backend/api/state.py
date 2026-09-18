@@ -7,7 +7,7 @@ adapters and run the real module algorithms against them, instead of
 generating fresh random numbers on every request.
 
 This is also where the Phase 8c scheduler driver actually gets something
-real to tick: every DwellStateMachine and the CarbonClock DeadlineQueue
+real to tick: every DwellStateMachine and the GridSync DeadlineQueue
 created here are registered into shared.scheduler_driver.scheduler_registry,
 closing the gap confirmed at the end of Phase 8c ("the tick logic is real
 and tested, but has nothing real to tick over until routes.py/main.py
@@ -21,8 +21,8 @@ shared.eventbus.event_bus / shared.classification.classification_store).
 
 from datetime import datetime, timezone
 
-from carbonclock.grid import CarbonForecastSimulator, DEFAULT_SIGNAL_INFO, HysteresisState
-from carbonclock.jobs import DeadlineQueue, submit_job
+from gridsync.grid import CarbonForecastSimulator, DEFAULT_SIGNAL_INFO, HysteresisState
+from gridsync.jobs import DeadlineQueue, submit_job
 from idlehunter.power import DwellStateMachine
 from idlehunter.telemetry import IdleHunterTelemetry
 from netpulse.congestion import CongestionTracker
@@ -133,7 +133,7 @@ for _link_id in LINK_IDS:
 congestion_tracker = CongestionTracker()
 
 # ---------------------------------------------------------------------------
-# CarbonClock
+# GridSync
 # ---------------------------------------------------------------------------
 
 carbon_forecast_sim = CarbonForecastSimulator()
@@ -141,14 +141,14 @@ carbon_forecast_sim.register_zone(CARBON_ZONE, seed=_seed_for(CARBON_ZONE))
 carbon_hysteresis = HysteresisState()
 
 carbon_job_queue = DeadlineQueue()
-scheduler_registry.register_deadline_queue("carbonclock", carbon_job_queue)
+scheduler_registry.register_deadline_queue("gridsync", carbon_job_queue)
 
 signal_info = DEFAULT_SIGNAL_INFO
 
 # carbon_job_records is the API layer's display state (id, name, type,
 # duration_mins, est_kwh, deferrable, status) -- carbon_job_queue remains
 # the sole source of truth for deadline tracking (MUST HAVE #7); this dict
-# is kept in sync with it by the /carbonclock/* route handlers, not an
+# is kept in sync with it by the /gridsync/* route handlers, not an
 # independent copy of the scheduling logic.
 INITIAL_JOBS = [
     {"id": "job-402", "name": "AI Training Job #402", "type": "training", "duration_mins": 240, "est_kwh": 40.0, "deferrable": True, "max_delay_minutes": 180},

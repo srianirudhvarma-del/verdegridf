@@ -2,8 +2,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from carbonclock.grid import HourlyForecast
-from carbonclock.scheduler import SchedulingPool
+from gridsync.grid import HourlyForecast
+from gridsync.scheduler import SchedulingPool
 from idlehunter.power import DwellStateMachine, HostState
 from idlehunter.telemetry import IdleHunterTelemetry
 from shared.eventbus import EventBus
@@ -133,7 +133,7 @@ def test_filter_targets_excludes_hosts_on_a_real_constrained_rack():
 
 
 # ---------------------------------------------------------------------------
-# Dependency 3: IdleHunter -> CarbonClock (capacity state)
+# Dependency 3: IdleHunter -> GridSync (capacity state)
 # ---------------------------------------------------------------------------
 
 
@@ -215,13 +215,13 @@ def test_schedule_job_with_real_capacity_reflects_real_scarcity():
 
 
 # ---------------------------------------------------------------------------
-# Dependency 4: CarbonClock -> IdleHunter (prewake subscription)
+# Dependency 4: GridSync -> IdleHunter (prewake subscription)
 # ---------------------------------------------------------------------------
 
 
 def test_prewake_subscriber_wakes_a_real_standby_host_when_the_real_scheduler_publishes():
     """Full round trip: the real scheduler publishes
-    carbonclock.prewake.requested; the real PrewakeSubscriber, registered
+    gridsync.prewake.requested; the real PrewakeSubscriber, registered
     on the same bus, actually calls the standby host's real
     DwellStateMachine.request_wake() -- not a logged no-op."""
     bus = EventBus()
@@ -403,7 +403,7 @@ def test_netpulse_never_reroutes_a_flow_whose_owner_was_never_classified():
 
 
 # ---------------------------------------------------------------------------
-# JobExecutionTracker: real subscriber for carbonclock.job.scheduled
+# JobExecutionTracker: real subscriber for gridsync.job.scheduled
 # ---------------------------------------------------------------------------
 
 
@@ -414,7 +414,7 @@ def test_job_execution_tracker_records_a_real_published_event():
 
     assert tracker.has_run("job-1") is False
 
-    bus.publish("carbonclock.job.scheduled", {"jobId": "job-1", "windowStart": NOW.isoformat(), "forceRun": True})
+    bus.publish("gridsync.job.scheduled", {"jobId": "job-1", "windowStart": NOW.isoformat(), "forceRun": True})
 
     assert tracker.has_run("job-1") is True
     assert tracker.has_run("job-2") is False
@@ -425,7 +425,7 @@ def test_job_execution_tracker_unregistered_never_sees_events():
     tracker = JobExecutionTracker(bus=bus)
     # register() deliberately not called
 
-    bus.subscribe("carbonclock.job.scheduled", lambda payload: None)  # some other subscriber exists
-    bus.publish("carbonclock.job.scheduled", {"jobId": "job-1"})
+    bus.subscribe("gridsync.job.scheduled", lambda payload: None)  # some other subscriber exists
+    bus.publish("gridsync.job.scheduled", {"jobId": "job-1"})
 
     assert tracker.has_run("job-1") is False

@@ -20,13 +20,13 @@ Topic = Literal[
     "idlehunter.capacity.updated",
     "idlehunter.workload.classified",
     "thermaltrace.headroom.updated",
-    "carbonclock.job.scheduled",
+    "gridsync.job.scheduled",
     "netpulse.flow.classified",
     # Section 2's Topic list is the minimal starting set ("even if backed by
     # simple REST polling initially"); later MUST HAVE items name additional
-    # topics explicitly. carbonclock.prewake.requested comes from Phase 3's
+    # topics explicitly. gridsync.prewake.requested comes from Phase 3's
     # MUST HAVE #9 (cross-wiring with IdleHunter's capacity forecast).
-    "carbonclock.prewake.requested",
+    "gridsync.prewake.requested",
 ]
 
 # The full set of valid topics, for validation / iteration by the event bus.
@@ -35,9 +35,9 @@ TOPICS: frozenset[str] = frozenset(
         "idlehunter.capacity.updated",
         "idlehunter.workload.classified",
         "thermaltrace.headroom.updated",
-        "carbonclock.job.scheduled",
+        "gridsync.job.scheduled",
         "netpulse.flow.classified",
-        "carbonclock.prewake.requested",
+        "gridsync.prewake.requested",
     }
 )
 
@@ -74,7 +74,7 @@ class CapacityForecast(BaseModel):
     """
     shared/contracts/capacity.ts -> CapacityForecast
 
-    Published by IdleHunter, consumed by CarbonClock, CoolSense
+    Published by IdleHunter, consumed by GridSync, CoolSense
     (baseline correlation), and NetPulse.
     """
 
