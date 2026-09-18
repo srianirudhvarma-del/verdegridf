@@ -2,7 +2,7 @@ import React from 'react';
 import LiveSimBadge from './LiveSimBadge';
 
 // Common sub-header for modules
-// Pass moduleName to show the correct LIVE/SIM badge (e.g. "CarbonClock", "IDLEhunter")
+// Pass moduleName to show the correct LIVE/SIM badge (e.g. "GridSync", "IDLEhunter")
 export default function ModuleHeader({ title, subtitle, moduleName }) {
   return (
     <div className="mb-10 animate-in slide-in-from-left duration-700">

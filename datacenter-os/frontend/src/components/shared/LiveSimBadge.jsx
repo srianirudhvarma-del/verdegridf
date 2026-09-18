@@ -3,13 +3,13 @@ import React from 'react';
 /**
  * Shows a LIVE (green) or SIM (gray) badge based on the stored deployment plan.
  * Pass moduleName matching the keys in module_statuses from the plan
- * (e.g. "CarbonClock", "IDLEhunter", "CoolSense", "ThermalTrace", "NetPulse").
+ * (e.g. "GridSync", "IDLEhunter", "CoolSense", "ThermalTrace", "NetPulse").
  *
- * CarbonClock always shows LIVE regardless of profile.
+ * GridSync always shows LIVE regardless of profile.
  */
 export default function LiveSimBadge({ moduleName }) {
   const isLive = React.useMemo(() => {
-    if (moduleName === 'CarbonClock') return true; // always live per spec
+    if (moduleName === 'GridSync') return true; // always live per spec
     try {
       const raw = localStorage.getItem('verdegrid_facility_profile');
       if (!raw) return false;

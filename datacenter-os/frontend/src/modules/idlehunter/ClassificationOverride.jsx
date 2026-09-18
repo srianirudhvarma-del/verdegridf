@@ -4,7 +4,7 @@ import { setWorkloadClassification } from '../../services/idlehunterApi';
 // MUST HAVE #3 step 2: the operator-facing classification override --
 // PATCH /idlehunter/workloads/:id/classification, the one production path
 // that writes into the shared classification store every module (this
-// one's own consolidation filter, CarbonClock's job scheduler,
+// one's own consolidation filter, GridSync's job scheduler,
 // NetPulse's reroute-safety check) reads through.
 export default function ClassificationOverride({ hostIds }) {
   const [hostId, setHostId] = useState(hostIds[0] || '');

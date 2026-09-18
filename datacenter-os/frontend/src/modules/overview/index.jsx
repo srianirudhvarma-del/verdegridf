@@ -9,12 +9,12 @@ import ModuleHeader from '../../components/shared/ModuleHeader';
 import { Bot, AlertTriangle } from 'lucide-react';
 
 const MODULE_RELEVANCE = {
-  "Reduce electricity costs": ["idlehunter", "carbonclock"],
+  "Reduce electricity costs": ["idlehunter", "gridsync"],
   "Prevent cooling failures / downtime": ["thermaltrace", "coolsense"],
-  "Carbon reporting / ESG compliance": ["carbonclock"],
+  "Carbon reporting / ESG compliance": ["gridsync"],
   "Improve visibility into what's happening": ["idlehunter", "thermaltrace", "coolsense", "netpulse"],
   "Automate manual monitoring tasks": ["idlehunter", "netpulse"],
-  "Meet regulatory requirements": ["carbonclock", "coolsense"],
+  "Meet regulatory requirements": ["gridsync", "coolsense"],
 };
 
 function useRecommendedModules() {
@@ -71,8 +71,8 @@ function ModuleCards({ onNavigate, zombieCount, energySaved, wue, leaks, globalC
       ),
     },
     {
-      id: 'carbonclock',
-      label: '03. CarbonClock',
+      id: 'gridsync',
+      label: '03. GridSync',
       color: 'text-accent-green',
       extraClass: isDeferralActive ? 'border-alert-orange/50 shadow-[0_0_15px_rgba(255,165,0,0.2)]' : '',
       content: (

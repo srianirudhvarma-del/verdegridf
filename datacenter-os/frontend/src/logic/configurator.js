@@ -212,7 +212,7 @@ export function generateDeploymentPlan(profile) {
   const idleHunterStatus = getIdleHunterStatus(profile);
   const netPulseStatus = getNetPulseStatus(profile);
 
-  const modulesActiveNow = ['CarbonClock'];
+  const modulesActiveNow = ['GridSync'];
   if (idleHunterStatus.status === 'active_now') modulesActiveNow.push('IDLEhunter');
   if (netPulseStatus.status === 'active_now') modulesActiveNow.push('NetPulse');
 
@@ -245,7 +245,7 @@ export function generateDeploymentPlan(profile) {
   return {
     facility_name: profile.facility_name || 'Your Facility',
     module_statuses: {
-      CarbonClock: { status: 'active_now', label: 'Active Now — No Hardware Required', note: 'Uses ElectricityMaps API only.' },
+      GridSync: { status: 'active_now', label: 'Active Now — No Hardware Required', note: 'Uses ElectricityMaps API only.' },
       IDLEhunter: { status: idleHunterStatus.status, label: idleHunterStatus.label, note: idleHunterStatus.note },
       NetPulse: { status: netPulseStatus.status, label: netPulseStatus.label, note: netPulseStatus.note },
       ThermalTrace: { status: 'phase1_hardware', label: 'Unlocks in Phase 1', note: 'Requires temperature sensors.' },
@@ -311,7 +311,7 @@ export function generateDeploymentPlan(profile) {
     roadmap: [
       {
         title: 'Week 1–2: Install sensors, activate modules',
-        description: 'Mount temperature & flow sensors. Connect to GreenCore agent. CarbonClock, IDLEhunter, and NetPulse go live immediately.',
+        description: 'Mount temperature & flow sensors. Connect to GreenCore agent. GridSync, IDLEhunter, and NetPulse go live immediately.',
         when: 'Weeks 1–2'
       },
       {

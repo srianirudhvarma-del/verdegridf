@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 const MODULE_ICONS = {
-  CarbonClock: Leaf,
+  GridSync: Leaf,
   IDLEhunter: Terminal,
   CoolSense: Droplet,
   ThermalTrace: Thermometer,

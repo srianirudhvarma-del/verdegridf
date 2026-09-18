@@ -7,7 +7,7 @@ import HardwareGuide from './pages/HardwareGuide';
 import Overview from './modules/overview';
 import IdleHunter from './modules/idlehunter';
 import CoolSense from './modules/coolsense';
-import CarbonClock from './modules/carbonclock';
+import GridSync from './modules/gridsync';
 import ThermalTrace from './modules/thermaltrace';
 import NetPulse from './modules/netpulse';
 import { getServerCluster } from './services/idlehunterApi';
@@ -33,7 +33,7 @@ function hasProfile() {
 const MODULE_SUGGESTED_QUESTIONS = {
   idlehunter:   ["How much am I wasting on zombie servers?", "Which servers should I consolidate first?", "What's my projected savings this month?"],
   coolsense:   ["Is my WUE reading dangerous?", "Which cooling unit is most inefficient?", "What does this leak alert mean?"],
-  carbonclock:  ["When is the next clean grid window?", "Which jobs should I defer right now?", "How much CO2 have I saved this session?"],
+  gridsync:  ["When is the next clean grid window?", "Which jobs should I defer right now?", "How much CO2 have I saved this session?"],
   thermaltrace: ["Is this hotspot dangerous?", "Which rack needs attention most urgently?", "What caused this temperature spike?"],
   netpulse:   ["Which link is about to become a bottleneck?", "Should I reroute this traffic manually?", "What does 87% utilization mean for latency?"],
   overview:     ["What are my biggest savings opportunities?", "Which module should I focus on first?", "How is my facility performing overall?"],
@@ -131,7 +131,7 @@ function App() {
       case 'hardware-guide': return <HardwareGuide />;
       case 'idlehunter': return <IdleHunter />;
       case 'coolsense': return <CoolSense />;
-      case 'carbonclock': return <CarbonClock />;
+      case 'gridsync': return <GridSync />;
       case 'thermaltrace': return <ThermalTrace />;
       case 'netpulse': return <NetPulse isDeferralActive={isDeferralActive} />;
       case 'overview':

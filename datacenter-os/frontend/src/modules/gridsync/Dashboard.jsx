@@ -3,7 +3,7 @@ import { carbonIntensityApi } from '../../data/mock/carbonIntensity';
 import MetricCard from '../../components/shared/MetricCard';
 import AlertBadge from '../../components/shared/AlertBadge';
 
-const CarbonClockDashboard = () => {
+const GridSyncDashboard = () => {
     const [intensity, setIntensity] = useState(null);
     const [jobs, setJobs] = useState([]);
     const [deferredJobs, setDeferredJobs] = useState([]);
@@ -53,7 +53,7 @@ const CarbonClockDashboard = () => {
     return (
         <div className="p-8 bg-black min-h-screen text-white font-sans overflow-auto h-full">
             <header className="mb-8">
-                <h1 className="text-3xl font-black tracking-tight text-emerald-400 mb-2">CarbonClock</h1>
+                <h1 className="text-3xl font-black tracking-tight text-emerald-400 mb-2">GridSync</h1>
                 <p className="text-gray-400">Real-time grid carbon intensity & intelligent job scheduling.</p>
             </header>
 
@@ -196,4 +196,4 @@ const CarbonClockDashboard = () => {
     );
 };
 
-export default CarbonClockDashboard;
+export default GridSyncDashboard;

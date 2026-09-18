@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Zap, CheckCircle2 } from 'lucide-react';
 import ModuleHeader from '../../components/shared/ModuleHeader';
 import MetricCard from '../../components/shared/MetricCard';
-import { getCarbonIntensity, getJobQueue, deferJob, runJobNow } from '../../services/carbonclockApi';
+import { getCarbonIntensity, getJobQueue, deferJob, runJobNow } from '../../services/gridsyncApi';
 import { useLiveResource } from '../../hooks/useLiveResource';
 
 // ─── Number ticker ────────────────────────────────────────────────────────
@@ -81,9 +81,9 @@ function TimelineChart({ history }) {
   );
 }
 
-// ─── Main CarbonClock component ───────────────────────────────────────────
+// ─── Main GridSync component ───────────────────────────────────────────
 
-export default function CarbonClock() {
+export default function GridSync() {
   const intensityFetcher = useCallback(() => getCarbonIntensity(), []);
   const [intensitySnapshot] = useLiveResource(intensityFetcher, 15000);
 
@@ -156,9 +156,9 @@ export default function CarbonClock() {
     <div className="animate-in fade-in duration-500">
       <div className="flex justify-between items-start mb-10">
         <ModuleHeader
-          title="CarbonClock"
+          title="GridSync"
           subtitle="Adaptive Workload Scheduling & Grid Intensity Synchronization"
-          moduleName="CarbonClock"
+          moduleName="GridSync"
         />
       </div>
 
