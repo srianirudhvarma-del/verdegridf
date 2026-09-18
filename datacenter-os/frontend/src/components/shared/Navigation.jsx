@@ -25,7 +25,7 @@ const MODULE_RELEVANCE = {
 function useRecommendedModules() {
   return useMemo(() => {
     try {
-      const raw = localStorage.getItem('greencore_facility_profile');
+      const raw = localStorage.getItem('verdegrid_facility_profile');
       if (!raw) return new Set();
       const profile = JSON.parse(raw);
       const goals = profile.goals || [];

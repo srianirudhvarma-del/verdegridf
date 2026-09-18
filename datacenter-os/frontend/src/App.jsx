@@ -19,12 +19,12 @@ import './index.css';
 // ─── Facility profile helper ──────────────────────────────────────────────
 
 function getProfile() {
-  try { return JSON.parse(localStorage.getItem('greencore_facility_profile') || '{}'); }
+  try { return JSON.parse(localStorage.getItem('verdegrid_facility_profile') || '{}'); }
   catch { return {}; }
 }
 
 function hasProfile() {
-  try { return !!localStorage.getItem('greencore_facility_profile'); }
+  try { return !!localStorage.getItem('verdegrid_facility_profile'); }
   catch { return false; }
 }
 
@@ -115,7 +115,7 @@ function App() {
 
   const handleOnboardingComplete = () => setActiveTab('plan');
   const handleReconfigure = () => {
-    try { localStorage.removeItem('greencore_facility_profile'); } catch {}
+    try { localStorage.removeItem('verdegrid_facility_profile'); } catch {}
     setActiveTab('onboarding');
   };
 

@@ -181,7 +181,7 @@ function RoadmapItem({ item, index, total }) {
 export default function DeploymentPlan({ onNavigateDashboard, onReconfigure }) {
   const profile = useMemo(() => {
     try {
-      return JSON.parse(localStorage.getItem('greencore_facility_profile') || '{}');
+      return JSON.parse(localStorage.getItem('verdegrid_facility_profile') || '{}');
     } catch {
       return {};
     }

@@ -346,7 +346,7 @@ export default function Onboarding({ onComplete }) {
 
   const handleConfirm = () => {
     const final = { ...profile, completed_at: Date.now() };
-    localStorage.setItem('greencore_facility_profile', JSON.stringify(final));
+    localStorage.setItem('verdegrid_facility_profile', JSON.stringify(final));
     onComplete(final);
   };
 

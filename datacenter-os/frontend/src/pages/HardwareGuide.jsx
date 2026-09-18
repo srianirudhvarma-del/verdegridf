@@ -153,7 +153,7 @@ const DEVICE_GROUPS = [
 
 export default function HardwareGuide() {
   const facilityProfile = useMemo(() => {
-    try { return JSON.parse(localStorage.getItem('greencore_facility_profile') || '{}'); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem('verdegrid_facility_profile') || '{}'); } catch { return {}; }
   }, []);
 
   const relevantDevices = useMemo(() => new Set(getRelevantInstructions(facilityProfile)), [facilityProfile]);

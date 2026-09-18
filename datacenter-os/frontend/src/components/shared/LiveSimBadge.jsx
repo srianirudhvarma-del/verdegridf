@@ -11,7 +11,7 @@ export default function LiveSimBadge({ moduleName }) {
   const isLive = React.useMemo(() => {
     if (moduleName === 'CarbonClock') return true; // always live per spec
     try {
-      const raw = localStorage.getItem('greencore_facility_profile');
+      const raw = localStorage.getItem('verdegrid_facility_profile');
       if (!raw) return false;
       const profile = JSON.parse(raw);
       // Re-derive which modules are active now from stored profile.
