@@ -1,0 +1,67 @@
+--- datacenter-os/frontend/src/modules/powerprune/index.jsx
++++ datacenter-os/frontend/src/modules/powerprune/index.jsx
+@@ -93,42 +93,42 @@
+           
+           <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
+             {servers.map(server => {
+-              let bgColor = 'bg-black border-white/5 text-textSecondary opacity-20';
+-              let iconColor = 'bg-white/10';
+-              let statusLabel = 'IDL';
++              let bgColor = 'bg-black border-white/5 text-textSecondary opacity-30';
++              let iconColor = 'bg-white/20';
+               
+               if (server.state === 'active') {
+                 if (server.cpu_util >= 15 && server.cpu_util <= 30) {
+-                  bgColor = 'bg-accent-amber/20 border-accent-amber/60 text-accent-amber';
+-                  iconColor = 'bg-accent-amber shadow-[0_0_15px_currentColor]';
+-                  statusLabel = 'WRN';
++                  bgColor = 'bg-accent-amber/30 border-accent-amber text-accent-amber';
++                  iconColor = 'bg-accent-amber shadow-[0_0_20px_currentColor]';
+                 } else {
+-                  bgColor = 'bg-accent-green/20 border-accent-green/60 text-accent-green';
+-                  iconColor = 'bg-accent-green shadow-[0_0_15px_currentColor]';
+-                  statusLabel = 'ACT';
++                  bgColor = 'bg-accent-green/30 border-accent-green text-accent-green';
++                  iconColor = 'bg-accent-green shadow-[0_0_20px_currentColor]';
+                 }
+               } else if (server.state === 'zombie') {
+-                bgColor = 'bg-accent-red/30 border-accent-red text-accent-red accent-glow animate-pulse';
+-                iconColor = 'bg-accent-red shadow-[0_0_20px_currentColor]';
+-                statusLabel = 'ZMB';
++                bgColor = 'bg-accent-red/40 border-accent-red text-accent-red accent-glow animate-pulse';
++                iconColor = 'bg-accent-red shadow-[0_0_25px_currentColor]';
+               }
++              
++              // Split 'rack1-srv1' into ['rack1', 'srv1']
++              const [rack, srv] = server.id.split('-');
+ 
+               return (
+                 <div 
+                   key={server.id} 
+                   title={`${server.id} - CPU: ${server.cpu_util.toFixed(1)}% | RAM: ${server.ram_util.toFixed(1)}%`}
+-                  className={`aspect-square w-full rounded-lg border flex flex-col justify-between p-2 lg:p-3 transition-all duration-500 hover:scale-110 cursor-crosshair ${bgColor} group scanline-hover overflow-hidden relative`}
++                  className={`aspect-square w-full rounded-lg border flex flex-col justify-center items-center transition-all duration-500 hover:scale-110 cursor-crosshair ${bgColor} group scanline-hover overflow-hidden relative shadow-[0_0_15px_rgba(0,0,0,0.5)]`}
+                 >
+-                  <div className="flex justify-between items-start w-full relative z-10">
+-                    <div className="flex flex-col">
+-                      <span className="text-[8px] font-mono font-bold opacity-40 group-hover:opacity-100 transition-opacity tracking-tighter">{server.id.replace('S-', '')}</span>
+-                      <span className="text-[7px] font-mono font-black mt-1 opacity-80">{statusLabel}</span>
+-                    </div>
+-                    <div className={`w-2 h-2 rounded-full ${iconColor} transition-all duration-300`}></div>
++                  {/* Centered text instead of flex-between */}
++                  <div className="flex flex-col items-center justify-center relative z-10">
++                    <span className="text-[10px] font-mono font-bold opacity-80 group-hover:opacity-100 transition-opacity tracking-widest">{rack}</span>
++                    {srv && <span className="text-[10px] font-mono font-black mt-0.5 opacity-90">{srv}</span>}
+                   </div>
+                   
+-                  <div className="w-full mt-auto relative z-10">
+-                     <div className="h-[2px] w-full bg-borderC rounded-full overflow-hidden">
++                  {/* Dot in top right */}
++                  <div className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full ${iconColor} transition-all duration-300`}></div>
++                  
++                  {/* Progress bar at the bottom */}
++                  <div className="absolute bottom-0 left-0 w-full relative z-10 px-1 pb-1">
++                     <div className="h-[2px] w-full bg-black/50 rounded-full overflow-hidden">
+                         <div className="h-full bg-current transition-all duration-1000" style={{ width: `${server.cpu_util}%` }} />
+                      </div>
+                   </div>
