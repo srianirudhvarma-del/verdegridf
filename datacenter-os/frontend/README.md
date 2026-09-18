@@ -1,15 +1,15 @@
-# GreenCore - Smart Infrastructure Dashboard
+# VerdeGrid - Smart Infrastructure Dashboard
 
 A React-based dashboard for real-time datacenter sustainability monitoring and optimization, featuring the "Obsidian Gold" design system.
 
 ## 🚀 Modules
 
 - **Overview**: Bento-grid dashboard with unified efficiency metrics
-- **IDLEhunter**: Server consolidation with real-time idle detection
-- **WaterWatch**: Water usage efficiency monitoring and benchmarking
-- **CarbonClock**: Carbon-aware job scheduling with 24h intensity forecasting
-- **ThermalTrace**: 8×8 thermal grid with hotspot detection and prediction
-- **LightSpeed**: Network topology visualization with traffic optimization
+- **PowerPrune**: Server consolidation with real-time idle detection
+- **CoolSense**: Water usage efficiency monitoring and benchmarking
+- **GridSync**: Carbon-aware job scheduling with 24h intensity forecasting
+- **ThermOS**: 8×8 thermal grid with hotspot detection and prediction
+- **NetPulse**: Network topology visualization with traffic optimization
 
 Plus two setup/onboarding flows outside the main dashboard:
 - **Onboarding**: First-run facility profile setup (stored in `localStorage`)
@@ -52,7 +52,7 @@ The app will be available at `http://localhost:5173`
 
 ## 🏗 Backend
 
-A separate FastAPI backend lives in `datacenter-os/backend/` and exposes the same shape of data (idlehunter, waterwatch, carbonclock, thermaltrace, lightspeed). It is **not currently called by this frontend** — every module here runs on its own local mock generator instead. The backend can be run and tested independently:
+A separate FastAPI backend lives in `datacenter-os/backend/` and exposes the same shape of data (powerprune, coolsense, gridsync, thermos, netpulse). It is **not currently called by this frontend** — every module here runs on its own local mock generator instead. The backend can be run and tested independently:
 
 ```bash
 cd datacenter-os/backend
@@ -79,8 +79,8 @@ src/
 │   └── *.json             # Static seed data
 ├── logic/
 │   └── configurator.js
-├── modules/               # One folder per dashboard module (idlehunter, waterwatch,
-│                           # carbonclock, thermaltrace, lightspeed, overview) — each is
+├── modules/               # One folder per dashboard module (powerprune, coolsense,
+│                           # gridsync, thermos, netpulse, overview) — each is
 │                           # the live implementation shown in the app
 ├── pages/
 │   ├── Onboarding.jsx
@@ -106,4 +106,4 @@ The design system is fully customizable through Tailwind config. Colors, fonts, 
 
 ## 📄 License
 
-This project is part of the GreenCore datacenter optimization suite.
+This project is part of the VerdeGrid datacenter optimization suite.

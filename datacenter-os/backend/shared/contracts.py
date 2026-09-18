@@ -2,7 +2,7 @@
 Shared cross-module data contracts (methodology Section 2).
 
 Pydantic translation of the TypeScript interfaces in
-GreenCore-Implementation-Methodology.md, Section 2. Field names/shapes are
+VerdeGrid-Implementation-Methodology.md, Section 2. Field names/shapes are
 kept identical to the source spec. These are the only types modules should
 use to talk to each other -- no module reaches into another module's
 internal state directly.

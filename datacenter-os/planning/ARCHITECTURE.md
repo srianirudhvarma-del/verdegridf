@@ -1,21 +1,21 @@
 # DatacenterOS Architecture Plan
 
 ## Overview
-DatacenterOS is a unified datacenter sustainability platform designed to monitor and optimize operations across 6 key metrics: IDLEhunter (compute waste), WaterWatch (cooling water usage), CarbonClock (real-time emission tracking), ThermalTrace (heat distribution), NoiseMesh (acoustic environmental monitoring), and LightSpeed (optical interconnect efficiency).
+DatacenterOS is a unified datacenter sustainability platform designed to monitor and optimize operations across 6 key metrics: PowerPrune (compute waste), CoolSense (cooling water usage), GridSync (real-time emission tracking), ThermOS (heat distribution), NoiseMesh (acoustic environmental monitoring), and NetPulse (optical interconnect efficiency).
 
 ## Core Modules
-1.  **IDLEhunter**: Compute efficiency and zombie server detection.
-2.  **WaterWatch**: PUE/WUE correlation and cooling loss detection.
-3.  **CarbonClock**: Real-time CO2e per watt mapping based on grid intensity.
-4.  **ThermalTrace**: Hot/cold aisle delta monitoring with ML-based hotspot prediction.
+1.  **PowerPrune**: Compute efficiency and zombie server detection.
+2.  **CoolSense**: PUE/WUE correlation and cooling loss detection.
+3.  **GridSync**: Real-time CO2e per watt mapping based on grid intensity.
+4.  **ThermOS**: Hot/cold aisle delta monitoring with ML-based hotspot prediction.
 5.  **NoiseMesh**: Acoustic mapping of fan resonance and mechanical health.
-6.  **LightSpeed**: Fiber path latency and transceiver power optimization.
+6.  **NetPulse**: Fiber path latency and transceiver power optimization.
 
 ## Tech Stack
 - **Frontend**: React 18+ (Vite), Tailwind CSS, Framer Motion (for dynamic heatmaps), Recharts (for sparklines).
 - **Backend**: Python 3.10+ (FastAPI), Pydantic (data validation).
 - **Data Layer**: JSON-based simulated sensor data, stored in `data/simulated/`.
-- **ML Services**: Python models as placeholders for LSTM/Anomaly detection in ThermalTrace and NoiseMesh.
+- **ML Services**: Python models as placeholders for LSTM/Anomaly detection in ThermOS and NoiseMesh.
 
 ## Shared Data Contracts (JSON / Pydantic)
 

@@ -1,7 +1,7 @@
-# GreenCore Build Plan
+# VerdeGrid Build Plan
 ### Translating the 64-item Consolidated Change List + Implementation Methodology into concrete steps against the actual codebase
 
-Source docs: `GreenCore-Implementation-Methodology.md`, `GreenCore-Consolidated-Change-List.docx`, plus the four per-module deep-research reports.
+Source docs: `VerdeGrid-Implementation-Methodology.md`, `VerdeGrid-Consolidated-Change-List.docx`, plus the four per-module deep-research reports.
 
 ---
 
@@ -36,25 +36,25 @@ datacenter-os/backend/
     eventbus.py            # in-process pub/sub
     classification.py       # shared workload-classification logic
     telemetry_sim.py         # the stateful synthetic telemetry engine (Decision #1)
-  idlehunter/
+  powerprune/
     telemetry.py              # adapter interface + simulator-backed implementation
     threshold.py                # MAD adaptive threshold engine
     consolidation.py             # bin-packing optimizer + migration-cost model
     power.py                      # dwell-timer state machine
-  carbonclock/
+  gridsync/
     grid.py                        # Electricity Maps client (already exists) + forecast
     scheduler.py                    # capacity-curve engine + hysteresis
     jobs.py                          # job classification + deadline enforcement
-  waterwatch/
+  coolsense/
     sensors.py                       # pressure + humidity ingestion
     baseline.py                       # per-rack rolling baseline + peer comparison
     anomaly.py                         # multi-signal Z-score + maintenance suppression
-  lightspeed/
+  netpulse/
     telemetry.py                       # flow telemetry + SNMP fallback
     flow.py                             # elephant-flow detector
     congestion.py                        # dwell-time congestion confirmation
     routing.py                            # fail-safe-open path control
-  thermaltrace/
+  thermos/
     sensors.py                             # temp grid + airflow
     model.py                                # physics-lite RC core + ML residual
     control.py                               # supervised action-recommendation queue
@@ -67,15 +67,15 @@ datacenter-os/backend/
 
 ## 3. Phase-by-phase plan
 
-Phases 1–6 mirror the methodology's Section 9 build order exactly, because the dependency reasoning there is sound: IdleHunter's classification + capacity signal is the one three other modules need before their own cross-wiring items make sense.
+Phases 1–6 mirror the methodology's Section 9 build order exactly, because the dependency reasoning there is sound: PowerPrune's classification + capacity signal is the one three other modules need before their own cross-wiring items make sense.
 
 ### Phase 0 — Shared infrastructure
 - `shared/contracts.py`: `WorkloadTag`, `CapacityForecast`, `ThermalHeadroom` (Pydantic, from methodology Section 2)
 - `shared/eventbus.py`: minimal in-process pub/sub covering the 5 topics in the methodology's `Topic` type
-- `shared/classification.py`: the protected/deferrable logic reused by IdleHunter, CarbonClock, LightSpeed
+- `shared/classification.py`: the protected/deferrable logic reused by PowerPrune, GridSync, NetPulse
 - `shared/telemetry_sim.py`: the synthetic telemetry engine — per-host/per-rack/per-link time series with configurable trend + noise + injectable anomalies (leaks, thermal spikes, elephant flows), so every later phase has something real to compute over
 
-### Phase 1 — IdleHunter MUST HAVE #1–#5
+### Phase 1 — PowerPrune MUST HAVE #1–#5
 1. Adaptive multi-resource MAD threshold (replacing the fixed 15% CPU-only check)
 2. Migration-cost check before any consolidation move
 3. Workload classification (protected/deferrable), with the hard filter excluding untagged VMs from candidates
@@ -84,31 +84,31 @@ Phases 1–6 mirror the methodology's Section 9 build order exactly, because the
 
 *Everything downstream depends on this phase's capacity + classification signal.*
 
-### Phase 2 — ThermalTrace MUST HAVE #18, #19, #20, #21
+### Phase 2 — ThermOS MUST HAVE #18, #19, #20, #21
 18. Uncertainty bands (MC Dropout ensemble) on predictions
-19. Wire IdleHunter's load/power telemetry into the thermal feature vector
+19. Wire PowerPrune's load/power telemetry into the thermal feature vector
 20. Hybrid physics (RC thermal model) + ML residual core, replacing the current pure-stub prediction
-21. Basic airflow sensing (shares the pressure-sensor pipeline built for WaterWatch)
+21. Basic airflow sensing (shares the pressure-sensor pipeline built for CoolSense)
 
-*WaterWatch's SHOULD HAVE #9 and IdleHunter's SHOULD HAVE #2 depend on this phase's headroom/temperature feed.*
+*CoolSense's SHOULD HAVE #9 and PowerPrune's SHOULD HAVE #2 depend on this phase's headroom/temperature feed.*
 
-### Phase 3 — CarbonClock MUST HAVE #6–#9
+### Phase 3 — GridSync MUST HAVE #6–#9
 6. Workload classification reusing the shared contract, keyed by `jobId`
 7. Hard max-delay deadline per deferrable job (priority queue, force-run past deadline)
 8. Documented average-vs-marginal signal justification (config object, not a hidden default)
-9. Cross-wire with IdleHunter's capacity forecast before scheduling into a window
+9. Cross-wire with PowerPrune's capacity forecast before scheduling into a window
 
 *Depends on Phase 1's capacity-forecast API.*
 
-### Phase 4 — WaterWatch MUST HAVE #10–#13
+### Phase 4 — CoolSense MUST HAVE #10–#13
 10. Differential-pressure sensing added to the detection pipeline
 11. Humidity sensing (facility/zone-level)
-12. Per-rack baseline + peer-rack comparison, cross-wired with IdleHunter's utilization signal
+12. Per-rack baseline + peer-rack comparison, cross-wired with PowerPrune's utilization signal
 13. Explicit maintenance-mode suppression
 
 *MUST HAVE #12 depends on Phase 1's per-rack utilization signal.*
 
-### Phase 5 — LightSpeed MUST HAVE #14–#17
+### Phase 5 — NetPulse MUST HAVE #14–#17
 14. Elephant-flow detection alongside link-utilization
 15. Dwell-time/hysteresis before any reroute + reroute cooldown
 16. Explicit fail-safe-open story (optimizer only biases existing ECMP/BGP; watchdog reverts to default on optimizer failure)
@@ -116,21 +116,21 @@ Phases 1–6 mirror the methodology's Section 9 build order exactly, because the
 
 *MUST HAVE #17's non-latency-sensitive check depends on Phase 1's classification.*
 
-### Phase 6 — ThermalTrace MUST HAVE #22
+### Phase 6 — ThermOS MUST HAVE #22
 22. Supervised (human-approved) closed-loop control — `ActionRecommendation` queue with a trust-ladder toggle, never silently auto-enabled
 
 *Depends on Phase 2's physics+ML core already being in place.*
 
 ### Phase 7 — All 16 SHOULD HAVE items (any order, each is cross-wiring on top of an already-working MUST HAVE base)
-- IdleHunter: failure-during-consolidation handling; thermal-headroom cross-wiring; K8s telemetry adapter
-- CarbonClock: 48h forecast ingestion; hysteresis/smoothing on carbon state; electricity-price signal
-- WaterWatch: point-sensor backstop; sensor-fault/drift checks; ThermalTrace cross-wire for cooling-performance estimate
-- LightSpeed: packet-loss/queue-depth telemetry; LLDP auto-topology; SNMP fallback path; latency-sensitivity tagging cross-wire
-- ThermalTrace: ConvLSTM upgrade + explicit sensor-vs-interpolated flagging; thermal zoning/adaptive setpoints; predictive maintenance for cooling equipment
+- PowerPrune: failure-during-consolidation handling; thermal-headroom cross-wiring; K8s telemetry adapter
+- GridSync: 48h forecast ingestion; hysteresis/smoothing on carbon state; electricity-price signal
+- CoolSense: point-sensor backstop; sensor-fault/drift checks; ThermOS cross-wire for cooling-performance estimate
+- NetPulse: packet-loss/queue-depth telemetry; LLDP auto-topology; SNMP fallback path; latency-sensitivity tagging cross-wire
+- ThermOS: ConvLSTM upgrade + explicit sensor-vs-interpolated flagging; thermal zoning/adaptive setpoints; predictive maintenance for cooling equipment
 
 ### Phase 8 — MODIFY documentation changes
 - Global find-and-replace: "horizontal integration" → "cross-layer, hierarchical co-optimization"
-- ThermalTrace positioning: "a prediction model with a dashboard" → "a Physics + Data + Control system" (sequenced *after* Phases 2 and 6 so it's literally true when written)
+- ThermOS positioning: "a prediction model with a dashboard" → "a Physics + Data + Control system" (sequenced *after* Phases 2 and 6 so it's literally true when written)
 
 ### Phase 9 — Frontend integration (our added phase, per the backend-first decision)
 - Replace each module's `src/data/mock/*` calls with real requests to the now-real backend, one module at a time
@@ -149,11 +149,11 @@ Fleet-scale custom scheduler, full SDN fabric replacement, CFD simulation, dense
 ## 4. Acceptance tests per phase (reused directly from the methodology, Section 10)
 
 Each phase ships with its own test file (extending the pytest suite already in `backend/tests/`) proving the specific behaviors the methodology calls out, e.g.:
-- IdleHunter: adaptive threshold actually widens with variance (not fixed at 15%); memory-bound-but-CPU-idle host never flagged idle; poor cost/benefit migration blocked; untagged VM never in candidate list; power-down never breaches `minRedundancy`
-- CarbonClock: untagged job never delayed; deferrable job force-runs at deadline even on a dirty grid; scheduling into insufficient-capacity window triggers pre-wake or reschedule
-- WaterWatch: workload-explained flow drop does not alert; unexplained flow drop does; maintenance window suppresses; flatlined sensor raises `sensor_fault`, not false-clear
-- LightSpeed: single congested sample doesn't reroute; confirmed elephant-flow collision on non-latency traffic can; latency-tagged flow never auto-rerouted; optimizer-down still routes via default ECMP
-- ThermalTrace: every prediction ships a confidence band; physics-only core produces a plausible prediction with zero training data; `ActionRecommendation` always requires approval until the trust ladder is explicitly enabled
+- PowerPrune: adaptive threshold actually widens with variance (not fixed at 15%); memory-bound-but-CPU-idle host never flagged idle; poor cost/benefit migration blocked; untagged VM never in candidate list; power-down never breaches `minRedundancy`
+- GridSync: untagged job never delayed; deferrable job force-runs at deadline even on a dirty grid; scheduling into insufficient-capacity window triggers pre-wake or reschedule
+- CoolSense: workload-explained flow drop does not alert; unexplained flow drop does; maintenance window suppresses; flatlined sensor raises `sensor_fault`, not false-clear
+- NetPulse: single congested sample doesn't reroute; confirmed elephant-flow collision on non-latency traffic can; latency-tagged flow never auto-rerouted; optimizer-down still routes via default ECMP
+- ThermOS: every prediction ships a confidence band; physics-only core produces a plausible prediction with zero training data; `ActionRecommendation` always requires approval until the trust ladder is explicitly enabled
 
 ---
 

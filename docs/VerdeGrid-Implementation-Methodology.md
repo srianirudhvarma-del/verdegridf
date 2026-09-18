@@ -1,7 +1,7 @@
-# GreenCore Implementation Methodology
-### A build spec for implementing all 64 reviewed changes across IdleHunter, CarbonClock, WaterWatch, LightSpeed, and ThermalTrace
+# VerdeGrid Implementation Methodology
+### A build spec for implementing all 64 reviewed changes across PowerPrune, GridSync, CoolSense, NetPulse, and ThermOS
 
-This document translates the consolidated change list into exact, buildable methodology: data schemas, algorithms/formulas, pseudocode, APIs, and acceptance tests, per item. It assumes GreenCore is a Node/TypeScript backend with a React + WebSocket dashboard (per the existing GreenCore architecture), but every algorithm below is stack-agnostic and can be adapted to whatever the actual codebase uses.
+This document translates the consolidated change list into exact, buildable methodology: data schemas, algorithms/formulas, pseudocode, APIs, and acceptance tests, per item. It assumes VerdeGrid is a Node/TypeScript backend with a React + WebSocket dashboard (per the existing VerdeGrid architecture), but every algorithm below is stack-agnostic and can be adapted to whatever the actual codebase uses.
 
 **How to use this with Claude Code:** feed this whole document as context, then ask it to implement one numbered item (or one module's MUST HAVE block) at a time, in the sequencing order given in Section 9. Each item is self-contained: data it needs, exact algorithm, schema, and a test to prove it works. Do not ask for the whole thing in one shot — implement, test, commit, move to the next item.
 
@@ -9,41 +9,41 @@ This document translates the consolidated change list into exact, buildable meth
 
 ## 0. Conventions Used Throughout
 
-- **Sampling cadence**: unless stated otherwise, telemetry polling is 30–60s. This is not a millisecond control system anywhere in GreenCore.
+- **Sampling cadence**: unless stated otherwise, telemetry polling is 30–60s. This is not a millisecond control system anywhere in VerdeGrid.
 - **Fail-safe-open default**: every classification defaults to the safest state (`protected`, not `deferrable`; `normal`, not `idle-candidate`) until explicitly overridden by data or an operator.
 - **Cross-module communication**: modules publish to and subscribe from a shared internal event bus / REST API (Section 2). No module should reach directly into another module's database — always go through the published contract.
-- **Every MUST HAVE item ships with an automatic fallback to current (pre-change) behavior if its new dependency is unavailable** — e.g., if IdleHunter's capacity API is down, CarbonClock schedules as if no capacity data exists (conservative), rather than failing entirely.
+- **Every MUST HAVE item ships with an automatic fallback to current (pre-change) behavior if its new dependency is unavailable** — e.g., if PowerPrune's capacity API is down, GridSync schedules as if no capacity data exists (conservative), rather than failing entirely.
 
 ---
 
 ## 1. Repo / Module Structure (suggested)
 
 ```
-greencore/
+verdegrid/
   shared/
     contracts/           <- shared TypeScript types & JSON schemas (Section 2)
     eventbus/             <- pub/sub client (or REST client if no bus yet)
-    classification/       <- shared workload-classification logic (reused by IdleHunter, CarbonClock, LightSpeed)
-  idlehunter/
+    classification/       <- shared workload-classification logic (reused by PowerPrune, GridSync, NetPulse)
+  powerprune/
     telemetry/             <- hypervisor/BMC polling
     threshold/             <- adaptive MAD threshold engine
     consolidation/          <- bin-packing optimizer, migration-cost model
     power/                  <- dwell-timer state machine, BMC wake/sleep
-  carbonclock/
+  gridsync/
     grid/                   <- Electricity Maps client (current + forecast)
     scheduler/              <- capacity-curve engine, hysteresis
     jobs/                    <- job classification, deadline enforcement
-  waterwatch/
+  coolsense/
     sensors/                <- flow, pressure, humidity ingestion
     baseline/                <- per-rack rolling baseline + peer comparison
     anomaly/                  <- multi-signal Z-score + maintenance suppression
-  lightspeed/
+  netpulse/
     telemetry/               <- streaming telemetry + SNMP fallback + LLDP
     flow/                     <- elephant-flow detector
     congestion/               <- dwell-time congestion confirmation
     routing/                   <- fail-safe-open path control
-  thermaltrace/
-    sensors/                   <- temp grid + airflow (shares waterwatch/sensors pressure code)
+  thermos/
+    sensors/                   <- temp grid + airflow (shares coolsense/sensors pressure code)
     model/                      <- physics-lite RC core + ML residual correction
     control/                     <- supervised action-recommendation queue
 ```
@@ -79,7 +79,7 @@ interface CapacityForecast {
   standbyHostCount: number;        // powered down but wakeable
   estimatedWakeLatencySeconds: number;
 }
-// Published by IdleHunter, consumed by CarbonClock, WaterWatch (for baseline correlation), LightSpeed
+// Published by PowerPrune, consumed by GridSync, CoolSense (for baseline correlation), NetPulse
 ```
 
 ```typescript
@@ -90,23 +90,23 @@ interface ThermalHeadroom {
   headroomCelsius: number;    // distance to ASHRAE envelope ceiling
   status: "ok" | "constrained" | "critical";
 }
-// Published by ThermalTrace, consumed by IdleHunter (avoid consolidating into constrained racks)
+// Published by ThermOS, consumed by PowerPrune (avoid consolidating into constrained racks)
 ```
 
 ```typescript
 // shared/contracts/events.ts
 // Minimal pub/sub topics every module must support, even if backed by simple REST polling initially:
 type Topic =
-  | "idlehunter.capacity.updated"
-  | "idlehunter.workload.classified"
-  | "thermaltrace.headroom.updated"
-  | "carbonclock.job.scheduled"
-  | "lightspeed.flow.classified";
+  | "powerprune.capacity.updated"
+  | "powerprune.workload.classified"
+  | "thermos.headroom.updated"
+  | "gridsync.job.scheduled"
+  | "netpulse.flow.classified";
 ```
 
 ---
 
-## 3. IdleHunter — Implementation Methodology
+## 3. PowerPrune — Implementation Methodology
 
 ### MUST HAVE #1 — Adaptive multi-resource threshold (replace fixed 15% CPU-only)
 
@@ -184,8 +184,8 @@ interface MigrationDecision {
 
 Use the shared `WorkloadTag` contract (Section 2). Implementation steps:
 
-1. `GET /api/idlehunter/workloads/:vmId/classification` → returns tag, defaulting to `{classification:"protected", source:"default"}` if none exists.
-2. `PATCH /api/idlehunter/workloads/:vmId/classification` (operator-only) → sets `classification`, requires `maxDelayMinutes` if `deferrable`.
+1. `GET /api/powerprune/workloads/:vmId/classification` → returns tag, defaulting to `{classification:"protected", source:"default"}` if none exists.
+2. `PATCH /api/powerprune/workloads/:vmId/classification` (operator-only) → sets `classification`, requires `maxDelayMinutes` if `deferrable`.
 3. Optional inference helper: suggest `deferrable` for VM names/tags matching `/batch|backup|etl|report|training/i` — **never auto-apply**; surface as a one-click confirm in the UI.
 4. Consolidation optimizer (`consolidation/optimizer.ts`) must hard-filter: any VM without `classification === "deferrable"` is excluded from the migration candidate list entirely.
 
@@ -230,17 +230,17 @@ Defaults: `dwellTimeDownSamples` = 20–40 samples of continuous idle-candidate 
 Subscribe to hypervisor HA/failure events during any active migration/consolidation window. On host failure: immediately re-run the placement optimizer excluding the failed host, treat all VMs that were on it as top-priority (not subject to the normal dwell/threshold gating), and log the incident.
 
 ### SHOULD HAVE #7 — Thermal-headroom cross-wiring
-Before finalizing any consolidation plan, call `GET /api/thermaltrace/headroom/:rackId`. If `status !== "ok"` for the target rack, exclude that rack's hosts from the candidate target list for this cycle.
+Before finalizing any consolidation plan, call `GET /api/thermos/headroom/:rackId`. If `status !== "ok"` for the target rack, exclude that rack's hosts from the candidate target list for this cycle.
 
 ### SHOULD HAVE #8 — Container/Kubernetes telemetry support
 Add a second telemetry adapter (`telemetry/k8sAdapter.ts`) polling the Kubernetes metrics-server (`/apis/metrics.k8s.io/v1beta1/nodes`) and normalize into the same `HostUtilizationState` schema as the hypervisor adapter, so the rest of the pipeline (threshold engine, optimizer) is adapter-agnostic.
 
 ---
 
-## 4. CarbonClock — Implementation Methodology
+## 4. GridSync — Implementation Methodology
 
 ### MUST HAVE #6 — Explicit workload-classification criteria with safe default
-Reuse the shared `WorkloadTag` contract exactly as IdleHunter does, keyed by `jobId` instead of `vmId`. Same default: unclassified = `protected`.
+Reuse the shared `WorkloadTag` contract exactly as PowerPrune does, keyed by `jobId` instead of `vmId`. Same default: unclassified = `protected`.
 
 ### MUST HAVE #7 — Hard maximum-delay deadline per deferrable job
 
@@ -257,20 +257,20 @@ interface DeferrableJob {
 ### MUST HAVE #8 — Documented average-vs-marginal carbon-signal justification
 
 ```typescript
-// GET /api/carbonclock/signal-info
+// GET /api/gridsync/signal-info
 { type: "average", provider: "electricitymaps", methodology: "flow-traced",
   rationale: "Matches Google CICS's own data source; average/flow-traced is the accounting standard; marginal signals disagree in direction across many grids per peer-reviewed comparison." }
 ```
 Implementation: hardcode this as a config object, not a hidden default — it should be visible in an admin/about panel and in code comments at the top of `grid/client.ts`. Leave a `signalType` config flag (`"average" | "marginal"`) even though only `"average"` is implemented now, so the future multi-provider item (Section 8) has a clean extension point.
 
-### MUST HAVE #9 — Cross-wire with IdleHunter's capacity state
+### MUST HAVE #9 — Cross-wire with PowerPrune's capacity state
 
 ```
 before scheduling deferrableJob into window W:
-    forecast = GET /api/idlehunter/capacity-forecast?start=W.start&end=W.end
+    forecast = GET /api/powerprune/capacity-forecast?start=W.start&end=W.end
     if forecast.availableCpuCapacity < job.requiredCapacity:
         if forecast.standbyHostCount > 0 and W.start - now > forecast.estimatedWakeLatencySeconds:
-            emit "carbonclock.prewake.requested" { targetTime: W.start - forecast.estimatedWakeLatencySeconds }
+            emit "gridsync.prewake.requested" { targetTime: W.start - forecast.estimatedWakeLatencySeconds }
             proceed with W
         else:
             pick next-best window from the ranked carbon-intensity list, repeat check
@@ -311,7 +311,7 @@ Rank hours by this combined score instead of carbon alone when a price feed is a
 
 ---
 
-## 5. WaterWatch — Implementation Methodology
+## 5. CoolSense — Implementation Methodology
 
 ### MUST HAVE #10 — Add differential-pressure sensing
 
@@ -326,17 +326,17 @@ interface HumidityReading { zoneId: string; timestamp: string; relativeHumidityP
 ```
 Facility/zone-level granularity is sufficient — does not need per-rack resolution.
 
-### MUST HAVE #12 — Per-rack baseline + peer-rack comparison, cross-wired with IdleHunter
+### MUST HAVE #12 — Per-rack baseline + peer-rack comparison, cross-wired with PowerPrune
 
 ```
-1. Bucket time into "load buckets" using IdleHunter's per-rack utilization signal:
+1. Bucket time into "load buckets" using PowerPrune's per-rack utilization signal:
      low / medium / high (tertiles of historical utilization)
 2. baseline(rack, signal, loadBucket) = { mean, std } computed over trailing 7 days,
      only using samples from matching loadBucket
 3. z(rack, signal, t) = (value(t) - baseline.mean) / baseline.std
 4. peerZ(rack, t) = z(rack,t) - average(z(peerRacksInSameLoadBucket, t))
 5. anomaly flagged if:
-     z(flow) < -2.5  AND  |peerZ(flow)| > 2.0   AND  IdleHunter utilization delta for this rack
+     z(flow) < -2.5  AND  |peerZ(flow)| > 2.0   AND  PowerPrune utilization delta for this rack
         is within its own normal range (i.e., NOT explained by a workload change)
 ```
 This directly implements "distinguish a leak from normal workload-driven variation" — the flow drop must be unexplained by workload before it counts as a leak signal.
@@ -344,7 +344,7 @@ This directly implements "distinguish a leak from normal workload-driven variati
 ### MUST HAVE #13 — Explicit maintenance-mode suppression
 ```typescript
 interface MaintenanceWindow { loopId: string; start: string; end: string; operatorId: string; }
-// POST /api/waterwatch/maintenance-mode
+// POST /api/coolsense/maintenance-mode
 ```
 Anomaly engine checks active windows before raising an alert (still logs the raw anomaly for audit, but suppresses the notification/escalation).
 
@@ -363,15 +363,15 @@ flag sensor_fault if:
 ```
 A `sensor_fault` flag suppresses that signal from the anomaly engine (does not count as "no anomaly" — surfaces a separate "sensor needs attention" alert instead).
 
-### SHOULD HAVE #16 — Cross-wiring with ThermalTrace for combined cooling-performance estimate
+### SHOULD HAVE #16 — Cross-wiring with ThermOS for combined cooling-performance estimate
 ```
 coolingPerformance(rack, t) = flow(rack,t) * specificHeatConstant * (T_return(rack,t) - T_supply(rack,t))
 ```
-Pull `T_return`/`T_supply` from ThermalTrace's existing per-rack temperature feed rather than adding new sensors.
+Pull `T_return`/`T_supply` from ThermOS's existing per-rack temperature feed rather than adding new sensors.
 
 ---
 
-## 6. LightSpeed — Implementation Methodology
+## 6. NetPulse — Implementation Methodology
 
 ### MUST HAVE #14 — Flow-level ("elephant flow") detection
 
@@ -399,7 +399,7 @@ onRerouteExecuted(link, flow):
 
 ### MUST HAVE #16 — Explicit fail-safe-open controller/optimizer failure story
 
-Architectural rule, not just code: LightSpeed's optimizer only ever **adds a preference weight on top of** the existing loop-free routing (BGP/ECMP) — it never replaces or removes the default path.
+Architectural rule, not just code: NetPulse's optimizer only ever **adds a preference weight on top of** the existing loop-free routing (BGP/ECMP) — it never replaces or removes the default path.
 ```
 watchdog: if optimizerService.lastHeartbeat > healthCheckTimeoutSeconds ago:
     switch-side agent reverts any active path-preference overrides to default ECMP automatically
@@ -409,7 +409,7 @@ watchdog: if optimizerService.lastHeartbeat > healthCheckTimeoutSeconds ago:
 ```
 autoReroute(flow) allowed only if ALL true:
     flow.isElephant == true
-    flow.latencySensitive == false        // from LightSpeed <- IdleHunter cross-wire, SHOULD HAVE #21
+    flow.latencySensitive == false        // from NetPulse <- PowerPrune cross-wire, SHOULD HAVE #21
     congestionConfirmed(flow.currentLink) == true
     exists altPath with utilization < altPathThresholdPct (default 60%)
 else: recommend only, require operator approval via UI action
@@ -428,12 +428,12 @@ telemetryClient.connect(switch):
     catch (unsupported): fallback to snmpPoller.poll(switch, intervalSeconds=15)
 ```
 
-### SHOULD HAVE #21 — Latency-sensitivity tagging cross-wired with IdleHunter
-Map each flow's source/destination IP to its owning VM (via a simple IP→VM lookup table synced from the hypervisor), then call IdleHunter's `WorkloadTag` API for that VM to populate `flow.latencySensitive = (classification !== "deferrable")`.
+### SHOULD HAVE #21 — Latency-sensitivity tagging cross-wired with PowerPrune
+Map each flow's source/destination IP to its owning VM (via a simple IP→VM lookup table synced from the hypervisor), then call PowerPrune's `WorkloadTag` API for that VM to populate `flow.latencySensitive = (classification !== "deferrable")`.
 
 ---
 
-## 7. ThermalTrace — Implementation Methodology
+## 7. ThermOS — Implementation Methodology
 
 ### MUST HAVE #18 — Add uncertainty bands to predictions
 
@@ -446,17 +446,17 @@ confidenceBand  = [mean - 1.96*std, mean + 1.96*std]   // ~95% CI
 ```
 (Alternative if the model architecture doesn't support dropout-at-inference easily: switch the output layer to quantile regression, predicting p10/p50/p90 directly — more work, more principled; use MC Dropout first to ship quickly.)
 
-### MUST HAVE #19 — Wire IT load/power telemetry (from IdleHunter) into the thermal model
+### MUST HAVE #19 — Wire IT load/power telemetry (from PowerPrune) into the thermal model
 ```typescript
 interface ThermalFeatureVector {
   rackId: string; timestamp: string;
   tempGrid: number[][];         // existing 8x8 heatmap
   humidity: number;
-  workloadUtil: number;         // <- from IdleHunter, joined by rackId + nearest timestamp
-  powerDrawWatts: number;       // <- from IdleHunter
+  workloadUtil: number;         // <- from PowerPrune, joined by rackId + nearest timestamp
+  powerDrawWatts: number;       // <- from PowerPrune
 }
 ```
-Add a join step in the feature-preparation pipeline: for every thermal sample timestamp, look up IdleHunter's most recent utilization/power reading for the same rack (tolerate up to 1 sampling-interval staleness).
+Add a join step in the feature-preparation pipeline: for every thermal sample timestamp, look up PowerPrune's most recent utilization/power reading for the same rack (tolerate up to 1 sampling-interval staleness).
 
 ### MUST HAVE #20 — Move from pure ML to a hybrid physics+ML core
 
@@ -476,7 +476,7 @@ final_prediction(t+dt) = T_physics_predicted(t+dt) + ML_residual_predicted(t+dt)
 This is the standard physics-informed ML (PIML) pattern — ship the physics core alone first (it needs no training data), add the ML correction once enough historical residuals exist to train on.
 
 ### MUST HAVE #21 — Add basic airflow sensing
-Shares the exact `PressureReading` schema and ingestion pipeline built for WaterWatch (Section 5, MUST HAVE #10) — one differential-pressure sensor type, two consumers. Airflow estimate from pressure:
+Shares the exact `PressureReading` schema and ingestion pipeline built for CoolSense (Section 5, MUST HAVE #10) — one differential-pressure sensor type, two consumers. Airflow estimate from pressure:
 ```
 airflowEstimate = calibrationConstant * sqrt(differentialKPa)   // fan-law derived relationship
 ```
@@ -501,17 +501,17 @@ Cluster racks into zones based on measured airflow/thermal coupling (e.g., corre
 ```
 track fan/pump runHours and (if available) current-draw signature over time
 flag maintenance_due if runHours > ratedServiceInterval
-   OR current-draw trend deviates from its own historical baseline by > X% (simple trend/Z-score, same pattern as WaterWatch's sensor-drift check)
+   OR current-draw trend deviates from its own historical baseline by > X% (simple trend/Z-score, same pattern as CoolSense's sensor-drift check)
 ```
 
 ---
 
-## 8. MODIFY Items (ThermalTrace) — Documentation-Only Changes
+## 8. MODIFY Items (ThermOS) — Documentation-Only Changes
 
 These require no code — only copy/documentation edits, but should be done in the same PR pass as the MUST HAVE items so the pitch deck and code comments stay consistent:
 
 1. Find-and-replace `"horizontal integration"` → `"cross-layer, hierarchical co-optimization"` across README, pitch deck, and code comments.
-2. Update ThermalTrace's product description from `"a prediction model with a dashboard"` → `"a Physics + Data + Control system"` — this should be literally true once MUST HAVE #20 and #22 ship (physics core + ML correction + supervised control loop), so sequence this copy change after those two are done, not before.
+2. Update ThermOS's product description from `"a prediction model with a dashboard"` → `"a Physics + Data + Control system"` — this should be literally true once MUST HAVE #20 and #22 ship (physics core + ML correction + supervised control loop), so sequence this copy change after those two are done, not before.
 
 ---
 
@@ -520,24 +520,24 @@ These require no code — only copy/documentation edits, but should be done in t
 ```
 Phase 0 — Shared infrastructure
   - shared/contracts/* (Section 2)
-  - shared/classification/* (reused by IdleHunter, CarbonClock, LightSpeed)
+  - shared/classification/* (reused by PowerPrune, GridSync, NetPulse)
 
-Phase 1 — IdleHunter MUST HAVE #1-#5
-  (Everything else depends on IdleHunter's workload classification + capacity signal)
+Phase 1 — PowerPrune MUST HAVE #1-#5
+  (Everything else depends on PowerPrune's workload classification + capacity signal)
 
-Phase 2 — ThermalTrace MUST HAVE #18, #19, #20, #21
-  (WaterWatch's SHOULD HAVE #16 and IdleHunter's SHOULD HAVE #7 depend on ThermalTrace's headroom/temp feed)
+Phase 2 — ThermOS MUST HAVE #18, #19, #20, #21
+  (CoolSense's SHOULD HAVE #16 and PowerPrune's SHOULD HAVE #7 depend on ThermOS's headroom/temp feed)
 
-Phase 3 — CarbonClock MUST HAVE #6-#9
-  (Depends on IdleHunter's capacity-forecast API from Phase 1)
+Phase 3 — GridSync MUST HAVE #6-#9
+  (Depends on PowerPrune's capacity-forecast API from Phase 1)
 
-Phase 4 — WaterWatch MUST HAVE #10-#13
-  (MUST HAVE #12 depends on IdleHunter's per-rack utilization signal from Phase 1)
+Phase 4 — CoolSense MUST HAVE #10-#13
+  (MUST HAVE #12 depends on PowerPrune's per-rack utilization signal from Phase 1)
 
-Phase 5 — LightSpeed MUST HAVE #14-#17
-  (MUST HAVE #17's non-latency-sensitive check depends on IdleHunter classification from Phase 1)
+Phase 5 — NetPulse MUST HAVE #14-#17
+  (MUST HAVE #17's non-latency-sensitive check depends on PowerPrune classification from Phase 1)
 
-Phase 6 — ThermalTrace MUST HAVE #22
+Phase 6 — ThermOS MUST HAVE #22
   (Depends on the physics+ML core from Phase 2 being in place)
 
 Phase 7 — All SHOULD HAVE items, in any order
@@ -549,13 +549,13 @@ Phase 9 — FUTURE items (out of current build scope; do not implement without a
   each has a stated precondition, e.g. "once sufficient historical data exists")
 ```
 
-**Note on Phase 1 priority**: IdleHunter is the critical-path module. Three other modules' MUST HAVE items (CarbonClock #9, WaterWatch #12, LightSpeed #17) directly depend on IdleHunter's Phase 1 output. Do not start Phases 3–5 in parallel with Phase 1 unless you're willing to stub IdleHunter's API with fixed test data first.
+**Note on Phase 1 priority**: PowerPrune is the critical-path module. Three other modules' MUST HAVE items (GridSync #9, CoolSense #12, NetPulse #17) directly depend on PowerPrune's Phase 1 output. Do not start Phases 3–5 in parallel with Phase 1 unless you're willing to stub PowerPrune's API with fixed test data first.
 
 ---
 
 ## 10. Acceptance Test Checklist (run before considering a module "done")
 
-**IdleHunter**
+**PowerPrune**
 - [ ] Adaptive threshold changes when synthetic variance changes (not fixed at 15%)
 - [ ] A memory-bound-but-CPU-idle host is never flagged idle-candidate
 - [ ] A migration with poor cost/benefit ratio is blocked (`proceed=false`)
@@ -563,25 +563,25 @@ Phase 9 — FUTURE items (out of current build scope; do not implement without a
 - [ ] Powering down never drops capacity below `minRedundancy`
 - [ ] Host power-down requires sustained dwell; wake is near-immediate
 
-**CarbonClock**
+**GridSync**
 - [ ] An untagged job defaults to protected and is never delayed
 - [ ] A deferrable job force-runs at its deadline even if the grid is still dirty
 - [ ] The signal-type endpoint returns `"average"` with a stated rationale
-- [ ] Scheduling into a window with insufficient IdleHunter-reported capacity either triggers a pre-wake request or reschedules
+- [ ] Scheduling into a window with insufficient PowerPrune-reported capacity either triggers a pre-wake request or reschedules
 
-**WaterWatch**
+**CoolSense**
 - [ ] A flow drop that coincides with a documented workload drop does NOT raise an alert
 - [ ] A flow drop with no corresponding workload change DOES raise an alert
 - [ ] Alerts are suppressed during an active, operator-declared maintenance window
 - [ ] A flatlined sensor raises a `sensor_fault`, not a false "all clear"
 
-**LightSpeed**
+**NetPulse**
 - [ ] A single congested sample does not trigger a reroute (dwell-time enforced)
 - [ ] A confirmed elephant-flow collision on non-latency-sensitive traffic can auto-reroute
 - [ ] A latency-tagged flow is never auto-rerouted
 - [ ] If the optimizer service is down, traffic still flows via default ECMP/BGP (fail-safe-open)
 
-**ThermalTrace**
+**ThermOS**
 - [ ] Every prediction ships with a confidence band, not a bare point estimate
 - [ ] The physics-lite core alone (no ML) produces a plausible prediction with zero training data
 - [ ] An `ActionRecommendation` requires explicit approval before execution, every time, until the trust-ladder toggle is explicitly enabled by an operator
@@ -592,25 +592,25 @@ Phase 9 — FUTURE items (out of current build scope; do not implement without a
 
 | # | Module | Item | Primary file(s) |
 |---|--------|------|------------------|
-| 1 | IdleHunter | Adaptive multi-resource threshold | `idlehunter/threshold/mad.ts` |
-| 2 | IdleHunter | Migration-cost check | `idlehunter/consolidation/migrationCost.ts` |
-| 3 | IdleHunter | Workload classification | `shared/classification/*`, `idlehunter/consolidation/optimizer.ts` |
-| 4 | IdleHunter | Redundancy-aware placement | `idlehunter/consolidation/optimizer.ts` |
-| 5 | IdleHunter | Asymmetric dwell-time/wake | `idlehunter/power/dwellStateMachine.ts` |
-| 6 | CarbonClock | Workload classification | `shared/classification/*`, `carbonclock/jobs/classify.ts` |
-| 7 | CarbonClock | Max-delay deadline | `carbonclock/jobs/deadline.ts` |
-| 8 | CarbonClock | Signal-type justification | `carbonclock/grid/client.ts` |
-| 9 | CarbonClock | Cross-wire IdleHunter capacity | `carbonclock/scheduler/capacityCheck.ts` |
-| 10 | WaterWatch | Differential-pressure sensing | `waterwatch/sensors/pressure.ts` |
-| 11 | WaterWatch | Humidity sensing | `waterwatch/sensors/humidity.ts` |
-| 12 | WaterWatch | Per-rack baseline + peer comparison | `waterwatch/baseline/*` |
-| 13 | WaterWatch | Maintenance-mode suppression | `waterwatch/anomaly/maintenanceMode.ts` |
-| 14 | LightSpeed | Elephant-flow detection | `lightspeed/flow/detector.ts` |
-| 15 | LightSpeed | Dwell-time/hysteresis | `lightspeed/congestion/dwell.ts` |
-| 16 | LightSpeed | Fail-safe-open story | `lightspeed/routing/watchdog.ts` |
-| 17 | LightSpeed | Narrow auto-reroute scope | `lightspeed/routing/autoReroute.ts` |
-| 18 | ThermalTrace | Uncertainty bands | `thermaltrace/model/uncertainty.ts` |
-| 19 | ThermalTrace | Wire IdleHunter telemetry | `thermaltrace/model/featurePipeline.ts` |
-| 20 | ThermalTrace | Hybrid physics+ML core | `thermaltrace/model/physicsCore.ts`, `mlResidual.ts` |
-| 21 | ThermalTrace | Basic airflow sensing | `thermaltrace/sensors/airflow.ts` (shares `waterwatch/sensors/pressure.ts`) |
-| 22 | ThermalTrace | Supervised closed-loop control | `thermaltrace/control/actionQueue.ts` |
+| 1 | PowerPrune | Adaptive multi-resource threshold | `powerprune/threshold/mad.ts` |
+| 2 | PowerPrune | Migration-cost check | `powerprune/consolidation/migrationCost.ts` |
+| 3 | PowerPrune | Workload classification | `shared/classification/*`, `powerprune/consolidation/optimizer.ts` |
+| 4 | PowerPrune | Redundancy-aware placement | `powerprune/consolidation/optimizer.ts` |
+| 5 | PowerPrune | Asymmetric dwell-time/wake | `powerprune/power/dwellStateMachine.ts` |
+| 6 | GridSync | Workload classification | `shared/classification/*`, `gridsync/jobs/classify.ts` |
+| 7 | GridSync | Max-delay deadline | `gridsync/jobs/deadline.ts` |
+| 8 | GridSync | Signal-type justification | `gridsync/grid/client.ts` |
+| 9 | GridSync | Cross-wire PowerPrune capacity | `gridsync/scheduler/capacityCheck.ts` |
+| 10 | CoolSense | Differential-pressure sensing | `coolsense/sensors/pressure.ts` |
+| 11 | CoolSense | Humidity sensing | `coolsense/sensors/humidity.ts` |
+| 12 | CoolSense | Per-rack baseline + peer comparison | `coolsense/baseline/*` |
+| 13 | CoolSense | Maintenance-mode suppression | `coolsense/anomaly/maintenanceMode.ts` |
+| 14 | NetPulse | Elephant-flow detection | `netpulse/flow/detector.ts` |
+| 15 | NetPulse | Dwell-time/hysteresis | `netpulse/congestion/dwell.ts` |
+| 16 | NetPulse | Fail-safe-open story | `netpulse/routing/watchdog.ts` |
+| 17 | NetPulse | Narrow auto-reroute scope | `netpulse/routing/autoReroute.ts` |
+| 18 | ThermOS | Uncertainty bands | `thermos/model/uncertainty.ts` |
+| 19 | ThermOS | Wire PowerPrune telemetry | `thermos/model/featurePipeline.ts` |
+| 20 | ThermOS | Hybrid physics+ML core | `thermos/model/physicsCore.ts`, `mlResidual.ts` |
+| 21 | ThermOS | Basic airflow sensing | `thermos/sensors/airflow.ts` (shares `coolsense/sensors/pressure.ts`) |
+| 22 | ThermOS | Supervised closed-loop control | `thermos/control/actionQueue.ts` |
