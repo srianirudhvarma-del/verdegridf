@@ -396,7 +396,7 @@ Your role:
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#f0b429', boxShadow: '0 0 20px rgba(240,180,41,0.4)' }}>
               <div className="w-4 h-4 border-2 border-black rounded-sm" />
             </div>
-            <span className="text-2xl font-bold text-white tracking-tight">DatacenterOS</span>
+            <span className="text-2xl font-bold text-white tracking-tight">VerdeGrid</span>
           </div>
           <p className="text-white text-xl font-light mt-3">Let's build your deployment plan</p>
           <p className="text-gray-500 text-sm mt-1">Step {step + 1} of {STEPS.length}</p>

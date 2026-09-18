@@ -91,7 +91,7 @@ const Navigation = ({ active, onNavigate, onReconfigure }) => {
                        <div className="w-4 h-4 border-2 border-black" />
                     </div>
                     <span className="font-bold text-xl tracking-tighter text-textMain group-hover:text-accent-green transition-colors">
-                        DatacenterOS
+                        VerdeGrid
                     </span>
                 </div>
                 
