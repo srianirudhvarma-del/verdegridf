@@ -5,14 +5,14 @@ cooling equipment.
 track fan/pump runHours and (if available) current-draw signature over time
 flag maintenance_due if runHours > ratedServiceInterval
    OR current-draw trend deviates from its own historical baseline by > X%
-   (simple trend/Z-score, same pattern as WaterWatch's sensor-drift check)
+   (simple trend/Z-score, same pattern as CoolSense's sensor-drift check)
 """
 
 from dataclasses import dataclass
 from typing import Optional
 
 # The methodology doesn't give an exact number for "X%" -- a documented
-# default, same pattern as WaterWatch's sensor-drift threshold.
+# default, same pattern as CoolSense's sensor-drift threshold.
 DEFAULT_CURRENT_DRAW_DEVIATION_THRESHOLD_PCT = 15.0
 
 

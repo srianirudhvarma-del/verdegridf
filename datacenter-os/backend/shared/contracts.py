@@ -74,7 +74,7 @@ class CapacityForecast(BaseModel):
     """
     shared/contracts/capacity.ts -> CapacityForecast
 
-    Published by IdleHunter, consumed by CarbonClock, WaterWatch
+    Published by IdleHunter, consumed by CarbonClock, CoolSense
     (baseline correlation), and NetPulse.
     """
 

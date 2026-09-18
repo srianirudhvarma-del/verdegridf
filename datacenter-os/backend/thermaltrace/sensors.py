@@ -2,13 +2,13 @@
 thermaltrace/sensors.py -- MUST HAVE #21: basic airflow sensing.
 
 Per the methodology (Section 7, MUST HAVE #21): "Shares the exact
-PressureReading schema and ingestion pipeline built for WaterWatch (Section
+PressureReading schema and ingestion pipeline built for CoolSense (Section
 5, MUST HAVE #10) -- one differential-pressure sensor type, two consumers."
 
 Build sequencing (Phase 2 before Phase 4) means ThermalTrace needs this
-schema before WaterWatch's own package exists. `PressureReading` is defined
+schema before CoolSense's own package exists. `PressureReading` is defined
 here, once, as the real shared primitive the methodology describes -- when
-WaterWatch's MUST HAVE #10 is implemented (Phase 4), it should import
+CoolSense's MUST HAVE #10 is implemented (Phase 4), it should import
 `PressureReading` from this module rather than redefining it, so there is
 still exactly one sensor type serving two consumers.
 

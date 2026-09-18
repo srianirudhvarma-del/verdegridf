@@ -1,17 +1,17 @@
 import pytest
 
 from thermaltrace.sensors import PressureReading as ThermalTracePressureReading
-from waterwatch.sensors import AMBIENT_ABSOLUTE_KPA, HumidityReading, PressureReading, WaterWatchTelemetry
+from coolsense.sensors import AMBIENT_ABSOLUTE_KPA, HumidityReading, PressureReading, CoolSenseTelemetry
 
 
-def test_waterwatch_reuses_the_thermaltrace_pressure_reading_class():
+def test_coolsense_reuses_the_thermaltrace_pressure_reading_class():
     """One differential-pressure sensor type, two consumers -- not a
     parallel redefinition."""
     assert PressureReading is ThermalTracePressureReading
 
 
 def test_registered_loop_polls_flow_rate_and_differential_pressure():
-    telemetry = WaterWatchTelemetry()
+    telemetry = CoolSenseTelemetry()
     telemetry.register_loop("loop-1", seed=1)
 
     sample = telemetry.poll("loop-1")
@@ -20,7 +20,7 @@ def test_registered_loop_polls_flow_rate_and_differential_pressure():
 
 
 def test_pressure_reading_matches_the_shared_schema():
-    telemetry = WaterWatchTelemetry()
+    telemetry = CoolSenseTelemetry()
     telemetry.register_loop("loop-1", seed=1)
     telemetry.poll("loop-1")
 
@@ -32,7 +32,7 @@ def test_pressure_reading_matches_the_shared_schema():
 
 
 def test_humidity_reading_is_zone_scoped_not_per_rack():
-    telemetry = WaterWatchTelemetry()
+    telemetry = CoolSenseTelemetry()
     telemetry.register_zone("zone-a", seed=1)
     telemetry.poll("zone-a")
 
@@ -43,7 +43,7 @@ def test_humidity_reading_is_zone_scoped_not_per_rack():
 
 
 def test_loops_and_zones_have_independent_telemetry():
-    telemetry = WaterWatchTelemetry()
+    telemetry = CoolSenseTelemetry()
     telemetry.register_loop("loop-a", seed=1)
     telemetry.register_loop("loop-b", seed=2)
 

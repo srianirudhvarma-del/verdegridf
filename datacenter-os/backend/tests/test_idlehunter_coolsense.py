@@ -1,5 +1,5 @@
 """
-Phase 9 update: api/routes.py's IdleHunter/WaterWatch endpoints now
+Phase 9 update: api/routes.py's IdleHunter/CoolSense endpoints now
 delegate to the real module packages (api/state.py's fixed 5-rack x
 4-host topology) instead of generating canned/random mock data. These
 tests were written against the old mock shapes; updated to match the real
@@ -36,7 +36,7 @@ def test_consolidate_idle_servers_returns_a_real_count_not_a_fixed_four(client):
 
 
 def test_get_water_flows_returns_5_real_racks(client):
-    resp = client.get("/api/waterwatch/flows")
+    resp = client.get("/api/coolsense/flows")
     assert resp.status_code == 200
     body = resp.json()
     assert len(body["units"]) == 5
@@ -47,7 +47,7 @@ def test_get_water_flows_returns_5_real_racks(client):
 
 
 def test_get_water_anomalies_matches_the_flows_endpoints_anomaly_list(client):
-    resp = client.get("/api/waterwatch/anomaly")
+    resp = client.get("/api/coolsense/anomaly")
     assert resp.status_code == 200
     body = resp.json()
     assert "anomalies" in body

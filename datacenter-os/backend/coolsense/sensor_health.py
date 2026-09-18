@@ -1,5 +1,5 @@
 """
-waterwatch/sensor_health.py -- SHOULD HAVE #15: sensor-failure/drift
+coolsense/sensor_health.py -- SHOULD HAVE #15: sensor-failure/drift
 plausibility checks.
 
 flag sensor_fault if:
@@ -9,7 +9,7 @@ flag sensor_fault if:
 
 A sensor_fault flag suppresses that signal from the anomaly engine (does
 NOT count as "no anomaly") -- callers should check check_sensor_fault()
-before feeding a reading into waterwatch/anomaly.py's detect_flow_anomaly,
+before feeding a reading into coolsense/anomaly.py's detect_flow_anomaly,
 and surface the fault as its own "sensor needs attention" alert instead.
 """
 

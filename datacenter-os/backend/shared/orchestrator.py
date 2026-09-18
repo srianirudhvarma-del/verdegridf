@@ -32,9 +32,9 @@ from shared.contracts import CapacityForecast, ThermalHeadroom, WorkloadTag
 from shared.eventbus import EventBus, event_bus
 from thermaltrace.model import IdleHunterRackReading, ThermalFeatureVector, build_feature_vector
 from thermaltrace.sensors import ThermalTelemetry
-from waterwatch.baseline import LoadBucket, bucket_utilization
-from waterwatch.cooling import cooling_performance
-from waterwatch.sensors import WaterWatchTelemetry
+from coolsense.baseline import LoadBucket, bucket_utilization
+from coolsense.cooling import cooling_performance
+from coolsense.sensors import CoolSenseTelemetry
 
 # Same idle/active watt figures api/routes.py's mock ServerData already uses,
 # reused here to derive a power estimate from a host's real cpu utilization.
@@ -263,7 +263,7 @@ class PrewakeSubscriber:
 
 
 # ---------------------------------------------------------------------------
-# Dependency 5: IdleHunter -> WaterWatch (per-rack workload signal)
+# Dependency 5: IdleHunter -> CoolSense (per-rack workload signal)
 # ---------------------------------------------------------------------------
 
 
@@ -276,7 +276,7 @@ def bucket_rack_load(
 ) -> LoadBucket:
     """
     Aggregates this rack's hosts' real current + historical IdleHunter cpu
-    utilization and calls waterwatch.baseline.bucket_utilization() with
+    utilization and calls coolsense.baseline.bucket_utilization() with
     it -- MUST HAVE #12's "bucket time into load buckets using IdleHunter's
     per-rack utilization signal" step, fed by real telemetry instead of a
     caller-supplied list of floats.
@@ -295,29 +295,29 @@ def bucket_rack_load(
 
 
 # ---------------------------------------------------------------------------
-# Dependency 6: ThermalTrace -> WaterWatch (cooling-performance estimate)
+# Dependency 6: ThermalTrace -> CoolSense (cooling-performance estimate)
 # ---------------------------------------------------------------------------
 
-# waterwatch/sensors.py's flow_rate metric, like api/routes.py's original
+# coolsense/sensors.py's flow_rate metric, like api/routes.py's original
 # WaterFlowData mock, is in L/hr; cooling_performance() wants L/s.
 _LITERS_PER_HOUR_TO_LITERS_PER_SECOND = 1.0 / 3600.0
 
 
 def compute_rack_cooling_performance(
     rack_id: str,
-    waterwatch_telemetry: WaterWatchTelemetry,
+    coolsense_telemetry: CoolSenseTelemetry,
     thermal_telemetry: ThermalTelemetry,
     *,
     supply_temp_celsius: float,
 ) -> float:
     """
-    Pulls real flow from WaterWatch's own telemetry and real T_return from
+    Pulls real flow from CoolSense's own telemetry and real T_return from
     ThermalTrace's telemetry (rack_id must be a loop registered in both),
-    then calls waterwatch.cooling.cooling_performance() with both real
+    then calls coolsense.cooling.cooling_performance() with both real
     readings -- SHOULD HAVE #16's cross-wire, not two caller-supplied
     floats.
     """
-    flow_l_per_s = waterwatch_telemetry.current(rack_id)["flow_rate"] * _LITERS_PER_HOUR_TO_LITERS_PER_SECOND
+    flow_l_per_s = coolsense_telemetry.current(rack_id)["flow_rate"] * _LITERS_PER_HOUR_TO_LITERS_PER_SECOND
     t_return_c = thermal_telemetry.current(rack_id)["temperature"]
     return cooling_performance(flow_l_per_s, t_return_c, supply_temp_celsius)
 

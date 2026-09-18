@@ -12,8 +12,8 @@ from idlehunter.threshold import RESOURCES, classify_host
 from shared.classification import classification_store
 from shared.orchestrator import HOST_ACTIVE_WATTS, HOST_IDLE_WATTS
 from thermaltrace.spatial import GridCellReading, interpolate_grid
-from waterwatch.anomaly import MaintenanceWindow
-from waterwatch.baseline import compute_baseline, z_score
+from coolsense.anomaly import MaintenanceWindow
+from coolsense.baseline import compute_baseline, z_score
 
 logger = logging.getLogger(__name__)
 
@@ -218,31 +218,31 @@ async def set_workload_classification(workload_id: str, request: ClassificationR
     return tag.model_dump()
 
 
-# ===================== WaterWatch Routes =====================
+# ===================== CoolSense Routes =====================
 
 WATER_BENCHMARKS = {"google": 1.1, "industry": 1.8, "poor": 3.0}
 WATER_ANOMALY_Z_THRESHOLD = -2.0
 WATER_MIN_HISTORY_FOR_BASELINE = 10
 
 
-@router.get("/waterwatch/flows", response_model=WaterFlowSnapshot)
+@router.get("/coolsense/flows", response_model=WaterFlowSnapshot)
 async def get_water_flows():
     """
-    Real per-loop flow telemetry (waterwatch/sensors.py). Anomaly
+    Real per-loop flow telemetry (coolsense/sensors.py). Anomaly
     detection here is a documented simplification of MUST HAVE #12's full
     algorithm: z-score against the loop's own trailing history, without
     the peer-rack/load-bucket comparison or the IdleHunter workload-delta
-    check the full waterwatch/anomaly.py pipeline applies (that full
+    check the full coolsense/anomaly.py pipeline applies (that full
     pipeline is exercised directly by its own tests).
     """
     units = []
     anomalies = []
     for rack in state.RACKS:
-        current = state.waterwatch_telemetry.poll(rack)
+        current = state.coolsense_telemetry.poll(rack)
         flow = current["flow_rate"]
         units.append(WaterUnit(id=rack, flow_rate_lph=round(flow, 1)))
 
-        history = state.waterwatch_telemetry.history(rack, "flow_rate", 30)
+        history = state.coolsense_telemetry.history(rack, "flow_rate", 30)
         if len(history) >= WATER_MIN_HISTORY_FOR_BASELINE:
             baseline = compute_baseline(history[:-1])
             z = z_score(flow, baseline)
@@ -264,13 +264,13 @@ async def get_water_flows():
     )
 
 
-@router.get("/waterwatch/anomaly")
+@router.get("/coolsense/anomaly")
 async def get_water_anomalies():
     snapshot = await get_water_flows()
     return {"anomalies": [a.model_dump() for a in snapshot.anomalies]}
 
 
-@router.post("/waterwatch/maintenance-mode")
+@router.post("/coolsense/maintenance-mode")
 async def declare_maintenance_window(request: MaintenanceWindowRequest):
     """SHOULD HAVE #13/#15: declare a real maintenance window; the anomaly engine checks it before escalating."""
     window = MaintenanceWindow(loopId=request.loopId, start=request.start, end=request.end, operatorId=request.operatorId)
@@ -278,7 +278,7 @@ async def declare_maintenance_window(request: MaintenanceWindowRequest):
     return window.model_dump()
 
 
-@router.get("/waterwatch/maintenance-mode/{loop_id}")
+@router.get("/coolsense/maintenance-mode/{loop_id}")
 async def get_maintenance_status(loop_id: str):
     active = state.maintenance_registry.is_active(loop_id, datetime.now(timezone.utc))
     return {"loopId": loop_id, "active": active}
@@ -519,7 +519,7 @@ async def api_status():
         "status": "operational",
         "version": "2.0.0",
         "modules": {
-            "idlehunter": "live", "waterwatch": "live", "carbonclock": "live",
+            "idlehunter": "live", "coolsense": "live", "carbonclock": "live",
             "thermaltrace": "live (ML bridge stub pending)", "netpulse": "live",
             "noisemesh": "excluded",
         },

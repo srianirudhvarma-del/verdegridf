@@ -1,6 +1,6 @@
-from waterwatch.anomaly import PointSensorReading, evaluate_point_sensor
-from waterwatch.cooling import cooling_performance
-from waterwatch.sensor_health import check_sensor_fault, is_flatlined, is_out_of_bounds, missing_samples_exceeded
+from coolsense.anomaly import PointSensorReading, evaluate_point_sensor
+from coolsense.cooling import cooling_performance
+from coolsense.sensor_health import check_sensor_fault, is_flatlined, is_out_of_bounds, missing_samples_exceeded
 
 
 # ---------------------------------------------------------------------------

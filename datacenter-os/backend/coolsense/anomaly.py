@@ -1,5 +1,5 @@
 """
-waterwatch/anomaly.py
+coolsense/anomaly.py
 
 MUST HAVE #12's anomaly decision: a flow drop must be unexplained by a
 workload change before it counts as a leak signal.
@@ -16,7 +16,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from waterwatch.baseline import peer_z_score, z_score  # noqa: F401  (re-exported for convenience)
+from coolsense.baseline import peer_z_score, z_score  # noqa: F401  (re-exported for convenience)
 
 # Methodology's exact thresholds for MUST HAVE #12.
 Z_FLOW_DROP_THRESHOLD = -2.5
@@ -24,7 +24,7 @@ PEER_Z_DIVERGENCE_THRESHOLD = 2.0
 
 # The methodology doesn't give an exact number for "IdleHunter utilization
 # delta ... within its own normal range" -- reusing the same z-score
-# approach as the flow baseline itself (waterwatch/baseline.py) is the
+# approach as the flow baseline itself (coolsense/baseline.py) is the
 # natural, documented simplification: the rack's utilization delta gets
 # baselined the same way, and this is the z-score magnitude below which a
 # delta counts as "normal" (i.e. NOT a workload change big enough to

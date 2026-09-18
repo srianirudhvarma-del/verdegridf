@@ -1,6 +1,6 @@
 import pytest
 
-from waterwatch.baseline import Baseline, bucket_utilization, compute_baseline, peer_z_score, z_score
+from coolsense.baseline import Baseline, bucket_utilization, compute_baseline, peer_z_score, z_score
 
 
 def test_bucket_utilization_falls_back_to_medium_with_insufficient_history():

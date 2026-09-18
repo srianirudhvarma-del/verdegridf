@@ -1,5 +1,5 @@
 """
-waterwatch/baseline.py -- MUST HAVE #12: per-rack baseline + peer-rack
+coolsense/baseline.py -- MUST HAVE #12: per-rack baseline + peer-rack
 comparison, cross-wired with IdleHunter's per-rack utilization signal.
 
 1. Bucket time into "load buckets" using IdleHunter's per-rack utilization
@@ -10,7 +10,7 @@ comparison, cross-wired with IdleHunter's per-rack utilization signal.
 4. peerZ(rack, t) = z(rack,t) - average(z(peerRacksInSameLoadBucket, t))
 
 The anomaly decision itself (combining z, peerZ, and the workload-delta
-check) lives in waterwatch/anomaly.py.
+check) lives in coolsense/anomaly.py.
 """
 
 import statistics

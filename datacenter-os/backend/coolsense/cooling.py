@@ -1,5 +1,5 @@
 """
-waterwatch/cooling.py -- SHOULD HAVE #16: cross-wiring with ThermalTrace
+coolsense/cooling.py -- SHOULD HAVE #16: cross-wiring with ThermalTrace
 for a combined cooling-performance estimate.
 
 coolingPerformance(rack, t) = flow(rack, t) * specificHeatConstant *

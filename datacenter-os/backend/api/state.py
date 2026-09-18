@@ -13,7 +13,7 @@ closing the gap confirmed at the end of Phase 8c ("the tick logic is real
 and tested, but has nothing real to tick over until routes.py/main.py
 actually create jobs and hosts").
 
-A small, fixed topology -- 5 racks x 4 hosts, one WaterWatch loop and one
+A small, fixed topology -- 5 racks x 4 hosts, one CoolSense loop and one
 ThermalTrace sensor per rack, an 8-link NetPulse fabric -- is registered
 once at import time (module-level singletons, same pattern as
 shared.eventbus.event_bus / shared.classification.classification_store).
@@ -32,8 +32,8 @@ from shared.contracts import WorkloadTag
 from shared.scheduler_driver import scheduler_registry
 from thermaltrace.control import ActionRecommendationQueue
 from thermaltrace.sensors import ThermalTelemetry
-from waterwatch.anomaly import MaintenanceModeRegistry
-from waterwatch.sensors import WaterWatchTelemetry
+from coolsense.anomaly import MaintenanceModeRegistry
+from coolsense.sensors import CoolSenseTelemetry
 
 RACKS = [f"rack{i}" for i in range(1, 6)]
 HOSTS_PER_RACK = 4
@@ -111,15 +111,15 @@ action_recommendation_queue.submit(
 )
 
 # ---------------------------------------------------------------------------
-# WaterWatch -- one loop per rack (same id, so the ThermalTrace
+# CoolSense -- one loop per rack (same id, so the ThermalTrace
 # cooling-performance cross-wire can key off it directly), plus one
 # facility-level humidity zone.
 # ---------------------------------------------------------------------------
 
-waterwatch_telemetry = WaterWatchTelemetry()
+coolsense_telemetry = CoolSenseTelemetry()
 for _rack in RACKS:
-    waterwatch_telemetry.register_loop(_rack, seed=_seed_for(f"water-{_rack}"))
-waterwatch_telemetry.register_zone(FACILITY_ZONE, seed=_seed_for(FACILITY_ZONE))
+    coolsense_telemetry.register_loop(_rack, seed=_seed_for(f"water-{_rack}"))
+coolsense_telemetry.register_zone(FACILITY_ZONE, seed=_seed_for(FACILITY_ZONE))
 
 maintenance_registry = MaintenanceModeRegistry()
 

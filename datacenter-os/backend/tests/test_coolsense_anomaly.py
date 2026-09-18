@@ -1,4 +1,4 @@
-from waterwatch.anomaly import (
+from coolsense.anomaly import (
     MaintenanceModeRegistry,
     MaintenanceWindow,
     detect_flow_anomaly,

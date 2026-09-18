@@ -1,5 +1,5 @@
 """
-waterwatch/sensors.py
+coolsense/sensors.py
 
 MUST HAVE #10 -- differential-pressure sensing. Imports PressureReading
 from thermaltrace/sensors.py rather than redefining it -- per the
@@ -9,7 +9,7 @@ package existed.
 
 MUST HAVE #11 -- facility/zone-level humidity sensing.
 
-Also owns WaterWatch's own per-loop flow telemetry, ingested on the same
+Also owns CoolSense's own per-loop flow telemetry, ingested on the same
 pipeline/cadence as pressure (1-5 min sampling), using the shared
 synthetic simulator like every other module (Phase 0 Decision #1).
 """
@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from shared.telemetry_sim import TelemetryAdapter, TelemetrySimulator
 from thermaltrace.sensors import AMBIENT_ABSOLUTE_KPA, PressureReading
 
-__all__ = ["PressureReading", "HumidityReading", "WaterWatchTelemetry"]
+__all__ = ["PressureReading", "HumidityReading", "CoolSenseTelemetry"]
 
 
 class HumidityReading(BaseModel):
@@ -38,7 +38,7 @@ LOOP_METRIC_DEFAULTS = {
 ZONE_HUMIDITY_DEFAULTS = dict(baseline=45.0, noise_std=2.0, reversion=0.15, min_value=0.0, max_value=100.0)
 
 
-class WaterWatchTelemetry(TelemetryAdapter):
+class CoolSenseTelemetry(TelemetryAdapter):
     """Simulator-backed TelemetryAdapter for per-loop flow/pressure and per-zone humidity."""
 
     def __init__(self, simulator: TelemetrySimulator | None = None) -> None:
