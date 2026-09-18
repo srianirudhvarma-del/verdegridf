@@ -29,8 +29,6 @@ export default function PowerPrune() {
 
   const { servers } = data;
   const zombies = servers.filter(s => s.state === 'zombie');
-  const activeCount = servers.filter(s => s.state === 'active').length;
-  const warnings = servers.filter(s => s.cpu_util >= 15 && s.cpu_util <= 30 && s.state === 'active');
   const avgCpu = servers.reduce((acc, curr) => acc + curr.cpu_util, 0) / servers.length;
 
   return (

@@ -11,7 +11,7 @@ const ThermOSDashboard = () => {
     const [avgTemp, setAvgTemp] = useState(0);
     const [hotspots, setHotspots] = useState(0);
 
-    const temperatureToColor = (inlet, outlet) => {
+    const temperatureToColor = (inlet) => {
         // Color gradient: blue (cool) -> yellow -> red (hot)
         // Thresholds: < 20°C = blue, 22-26°C = cyan, 26-30°C = yellow, > 30°C = orange/red
         if (inlet < 20) return { color: '#0084ff', label: 'Cold' };

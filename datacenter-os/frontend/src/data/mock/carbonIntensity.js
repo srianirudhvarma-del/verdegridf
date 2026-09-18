@@ -27,24 +27,7 @@ let subscribers = [];
 let deferredJobs = [];
 let executedJobs = [];
 
-// Simulate job execution
-const processJobs = (intensity) => {
-    const newQueue = [...jobQueue];
-    const newDeferred = [...deferredJobs];
-    
-    // Check if any deferred jobs should now run (carbon intensity dropped)
-    deferredJobs = deferredJobs.filter(job => {
-        if (intensity < 200) {
-            // Carbon intensity is good, execute deferred job
-            executedJobs.push({ ...job, executedAt: new Date().toISOString() });
-            return false;
-        }
-        return true;
-    });
-};
-
 const fluctuate = () => {
-    const oldIntensity = currentIntensity.carbonIntensity;
     currentIntensity = generateIntensity();
     
     // Simulate Job scheduling logic

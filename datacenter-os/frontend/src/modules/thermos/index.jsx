@@ -35,16 +35,6 @@ export default function ThermOS() {
   });
   const avgTemp = totalTemp / 64;
 
-  const getCellColor = (temp, isPredicted = false) => {
-    // Add fake temp if ML predicted (slightly worse temp if > 28)
-    const t = isPredicted ? temp + (temp > 28 ? 1.5 : 0.5) : temp;
-    if (t < 20) return '#3b82f6';
-    if (t < 24) return '#06b6d4';
-    if (t < 28) return '#eab308';
-    if (t < 32) return '#f97316';
-    return '#ef4444';
-  };
-
   return (
     <div className="animate-in fade-in duration-500">
       <div className="flex justify-between items-start mb-10">

@@ -113,7 +113,7 @@ function Chips({ questions, onSelect }) {
 
 // ─── Chat body ────────────────────────────────────────────────────────────
 
-function ChatBody({ messages, inputValue, setInputValue, onSend, isLoading, suggestedQuestions }) {
+function ChatBody({ messages, inputValue, setInputValue, onSend, isLoading, suggestedQuestions, placeholder }) {
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -148,7 +148,7 @@ function ChatBody({ messages, inputValue, setInputValue, onSend, isLoading, sugg
           value={inputValue}
           onChange={e => setInputValue(e.target.value)}
           onKeyDown={handleKey}
-          placeholder="Ask anything..."
+          placeholder={placeholder}
           disabled={isLoading}
           className="flex-1 bg-transparent text-sm text-white outline-none placeholder-gray-600"
           style={{ borderBottom: '1px solid #1e2a45', paddingBottom: 4 }}
@@ -277,6 +277,7 @@ export default function AIAgent({
           onSend={sendMessage}
           isLoading={isLoading}
           suggestedQuestions={suggestedQuestions}
+          placeholder={placeholder}
         />
       </div>
     );
@@ -375,6 +376,7 @@ export default function AIAgent({
               onSend={sendMessage}
               isLoading={isLoading}
               suggestedQuestions={suggestedQuestions}
+              placeholder={placeholder}
             />
           </div>
         </div>

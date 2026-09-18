@@ -59,7 +59,6 @@ function getNetPulseStatus(profile) {
   const managedVendors = ['Cisco Catalyst / Nexus', 'Arista', 'Juniper', 'HPE / Aruba'];
   const hasManaged = switches.some(v => managedVendors.includes(v));
   const hasUnmanaged = switches.includes('Unmanaged switches only');
-  const dontKnow = switches.includes("Don't know") || switches.length === 0;
 
   if (hasManaged) {
     return { status: 'active_now', label: 'Active Now — Enable SNMP (5 min config)', note: 'SNMP community string needed on your switch.' };
@@ -75,7 +74,7 @@ function buildPhase1Hardware(profile, monthlyBill, serverCount, budgetValue) {
   const items = [];
   let totalCost = 0;
   const modulesUnlocked = [];
-  let projectedSavingsPerYear = 0;
+  let projectedSavingsPerYear;
 
   const sensors = EQUIPMENT_CATALOG.sensors;
 

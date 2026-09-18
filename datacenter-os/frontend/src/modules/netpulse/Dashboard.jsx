@@ -51,7 +51,7 @@ const NetPulseDashboard = () => {
             .data(networkData.links)
             .enter()
             .append('line')
-            .attr('stroke', (d, i) => d.utilization_percent > 85 ? '#ef4444' : d.utilization_percent > 60 ? '#f59e0b' : '#10b981')
+            .attr('stroke', d => d.utilization_percent > 85 ? '#ef4444' : d.utilization_percent > 60 ? '#f59e0b' : '#10b981')
             .attr('stroke-width', d => Math.max(2, (d.utilization_percent / 100) * 15))
             .attr('stroke-opacity', 0.8)
             .attr('class', 'transition-all');

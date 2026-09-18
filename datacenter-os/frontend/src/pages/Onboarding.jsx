@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import AIAgent from '../components/shared/AIAgent';
 import { EQUIPMENT_CATALOG } from '../data/equipmentCatalog';

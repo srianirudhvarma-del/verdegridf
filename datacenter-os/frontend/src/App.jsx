@@ -110,6 +110,8 @@ function App() {
   const [globalCarbonIntensity, setGlobalCarbonIntensity] = useState(245);
   const [isDeferralActive, setIsDeferralActive] = useState(false);
 
+  // Re-reads localStorage when the tab changes (e.g. after onboarding just wrote the profile)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const facilityProfile = useMemo(() => getProfile(), [activeTab]);
   const moduleData = useModuleDataSnapshot(activeTab);
 

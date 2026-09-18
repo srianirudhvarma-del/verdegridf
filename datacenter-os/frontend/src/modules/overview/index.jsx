@@ -179,7 +179,8 @@ function ModuleCards({ onNavigate, zombieCount, energySaved, wue, leaks, globalC
 
 export default function Overview({ onNavigate, globalCarbonIntensity, setGlobalCarbonIntensity, isDeferralActive, setIsDeferralActive }) {
   const recommended = useRecommendedModules();
-  const [stamp, setStamp] = useState(0);
+  // _stamp is unused by design -- setStamp exists purely to force a re-render tick
+  const [_stamp, setStamp] = useState(0);
 
   useEffect(() => {
     const i = setInterval(() => {
@@ -189,12 +190,12 @@ export default function Overview({ onNavigate, globalCarbonIntensity, setGlobalC
       }
     }, 2000);
     return () => clearInterval(i);
-  }, [globalCarbonIntensity, isDeferralActive]);
+  }, [globalCarbonIntensity, isDeferralActive, setGlobalCarbonIntensity]);
 
   useEffect(() => {
     if (globalCarbonIntensity > 450 && !isDeferralActive) setIsDeferralActive(true);
     else if (globalCarbonIntensity < 400 && isDeferralActive) setIsDeferralActive(false);
-  }, [globalCarbonIntensity, isDeferralActive]);
+  }, [globalCarbonIntensity, isDeferralActive, setIsDeferralActive]);
 
   const idleFetcher = useCallback(() => getServerCluster(), []);
   const [idleData] = useLiveResource(idleFetcher, 10000);

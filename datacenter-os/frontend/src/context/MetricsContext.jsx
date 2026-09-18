@@ -24,6 +24,8 @@ export const MetricsProvider = ({ children }) => {
   );
 };
 
+// Standard context + hook pattern; splitting the hook into its own file isn't worth it
+// eslint-disable-next-line react-refresh/only-export-components
 export const useMetrics = () => {
   const context = useContext(MetricsContext);
   if (!context) {
