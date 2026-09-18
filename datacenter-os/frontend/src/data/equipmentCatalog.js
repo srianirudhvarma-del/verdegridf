@@ -146,7 +146,7 @@ export const EQUIPMENT_CATALOG = {
       cost: 500,
       per: "per loop",
       where: "Robu.in",
-      unlocks: ["waterwatch_basic"],
+      unlocks: ["coolsense_basic"],
       note: "Entry-level, suitable for demo/pilot"
     },
     flow_industrial: {
@@ -154,7 +154,7 @@ export const EQUIPMENT_CATALOG = {
       cost: 45000,
       per: "per loop",
       where: "Keyence India",
-      unlocks: ["waterwatch_full"],
+      unlocks: ["coolsense_full"],
       note: "Non-invasive clamp-on, no pipe cutting"
     },
     leak_detection: {
@@ -162,7 +162,7 @@ export const EQUIPMENT_CATALOG = {
       cost: 12000,
       per: "per zone",
       where: "Dorlen Products India",
-      unlocks: ["waterwatch_leak"],
+      unlocks: ["coolsense_leak"],
       note: "Under-floor leak detection cable"
     },
     ups_monitoring: {

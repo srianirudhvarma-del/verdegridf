@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getServerCluster } from '../../services/idlehunterApi';
-import { getWaterFlows } from '../../services/waterwatchApi';
+import { getWaterFlows } from '../../services/coolsenseApi';
 import { getNetworkTraffic } from '../../services/netpulseApi';
 import { getThermalSnapshot } from '../../services/thermaltraceApi';
 import { useLiveResource } from '../../hooks/useLiveResource';
@@ -10,11 +10,11 @@ import { Bot, AlertTriangle } from 'lucide-react';
 
 const MODULE_RELEVANCE = {
   "Reduce electricity costs": ["idlehunter", "carbonclock"],
-  "Prevent cooling failures / downtime": ["thermaltrace", "waterwatch"],
+  "Prevent cooling failures / downtime": ["thermaltrace", "coolsense"],
   "Carbon reporting / ESG compliance": ["carbonclock"],
-  "Improve visibility into what's happening": ["idlehunter", "thermaltrace", "waterwatch", "netpulse"],
+  "Improve visibility into what's happening": ["idlehunter", "thermaltrace", "coolsense", "netpulse"],
   "Automate manual monitoring tasks": ["idlehunter", "netpulse"],
-  "Meet regulatory requirements": ["carbonclock", "waterwatch"],
+  "Meet regulatory requirements": ["carbonclock", "coolsense"],
 };
 
 function useRecommendedModules() {
@@ -54,8 +54,8 @@ function ModuleCards({ onNavigate, zombieCount, energySaved, wue, leaks, globalC
       ),
     },
     {
-      id: 'waterwatch',
-      label: '02. WaterWatch',
+      id: 'coolsense',
+      label: '02. CoolSense',
       color: 'text-[#00E5FF]',
       content: (
         <div className="space-y-4">

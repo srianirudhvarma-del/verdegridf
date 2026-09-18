@@ -1,17 +1,17 @@
 import { apiGet, apiPost } from './api';
 
 export function getWaterFlows() {
-  return apiGet('/waterwatch/flows');
+  return apiGet('/coolsense/flows');
 }
 
 export function getWaterAnomalies() {
-  return apiGet('/waterwatch/anomaly');
+  return apiGet('/coolsense/anomaly');
 }
 
 export function declareMaintenanceWindow(loopId, startIso, endIso, operatorId = 'operator') {
-  return apiPost('/waterwatch/maintenance-mode', { loopId, start: startIso, end: endIso, operatorId });
+  return apiPost('/coolsense/maintenance-mode', { loopId, start: startIso, end: endIso, operatorId });
 }
 
 export function getMaintenanceStatus(loopId) {
-  return apiGet(`/waterwatch/maintenance-mode/${encodeURIComponent(loopId)}`);
+  return apiGet(`/coolsense/maintenance-mode/${encodeURIComponent(loopId)}`);
 }

@@ -1,12 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { getWaterFlows } from '../../services/waterwatchApi';
+import { getWaterFlows } from '../../services/coolsenseApi';
 import { useLiveResource } from '../../hooks/useLiveResource';
 import ModuleHeader from '../../components/shared/ModuleHeader';
 import MetricCard from '../../components/shared/MetricCard';
 import AlertBadge from '../../components/shared/AlertBadge';
 import MaintenanceModeToggle from './MaintenanceModeToggle';
 
-export default function WaterWatch() {
+export default function CoolSense() {
   const fetcher = useCallback(() => getWaterFlows(), []);
   const [data] = useLiveResource(fetcher, 5000);
   const [reportOpen, setReportOpen] = useState(false);
@@ -17,9 +17,9 @@ export default function WaterWatch() {
     <div className="animate-in fade-in duration-500">
       <div className="flex justify-between items-start mb-10">
         <ModuleHeader 
-          title="WaterWatch" 
+          title="CoolSense" 
           subtitle="Statistical processing — Z-Score Anomaly Detection (σ > 2.5)" 
-          moduleName="WaterWatch"
+          moduleName="CoolSense"
         />
         <button 
           onClick={() => setReportOpen(!reportOpen)}

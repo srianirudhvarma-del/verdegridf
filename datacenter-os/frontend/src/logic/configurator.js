@@ -101,12 +101,12 @@ function buildPhase1Hardware(profile, monthlyBill, serverCount, budgetValue) {
       unit_cost: sensors.flow_basic.cost,
       total_cost: sensors.flow_basic.cost,
       where_to_buy: sensors.flow_basic.where,
-      what_it_unlocks: 'WaterWatch (basic)',
+      what_it_unlocks: 'CoolSense (basic)',
       why_this_first: 'Entry-level cooling loop monitoring, no pipe cutting required.'
     };
     items.push(flowItem);
     totalCost += flowItem.total_cost;
-    modulesUnlocked.push('WaterWatch');
+    modulesUnlocked.push('CoolSense');
 
     projectedSavingsPerYear = (monthlyBill * 0.08 + monthlyBill * 0.05) * 12;
 
@@ -145,12 +145,12 @@ function buildPhase1Hardware(profile, monthlyBill, serverCount, budgetValue) {
       unit_cost: sensors.flow_industrial.cost,
       total_cost: sensors.flow_industrial.cost,
       where_to_buy: sensors.flow_industrial.where,
-      what_it_unlocks: 'WaterWatch (full accuracy)',
+      what_it_unlocks: 'CoolSense (full accuracy)',
       why_this_first: 'Clamp-on design requires no pipe cutting — install in minutes.'
     };
     items.push(flowItem);
     totalCost += flowItem.total_cost;
-    modulesUnlocked.push('WaterWatch');
+    modulesUnlocked.push('CoolSense');
 
     projectedSavingsPerYear = (monthlyBill * 0.08 + monthlyBill * 0.05) * 12;
 
@@ -178,7 +178,7 @@ function buildPhase1Hardware(profile, monthlyBill, serverCount, budgetValue) {
       unit_cost: sensors.leak_detection.cost,
       total_cost: 2 * sensors.leak_detection.cost,
       where_to_buy: sensors.leak_detection.where,
-      what_it_unlocks: 'WaterWatch (leak detection zones)',
+      what_it_unlocks: 'CoolSense (leak detection zones)',
       why_this_first: 'Under-floor leak detection prevents catastrophic water damage.'
     };
     items.push(leakItem);
@@ -190,12 +190,12 @@ function buildPhase1Hardware(profile, monthlyBill, serverCount, budgetValue) {
       unit_cost: sensors.flow_industrial.cost,
       total_cost: sensors.flow_industrial.cost,
       where_to_buy: sensors.flow_industrial.where,
-      what_it_unlocks: 'WaterWatch (full flow accuracy)',
+      what_it_unlocks: 'CoolSense (full flow accuracy)',
       why_this_first: 'Industrial-grade non-invasive flow meter.'
     };
     items.push(flowItem);
     totalCost += flowItem.total_cost;
-    modulesUnlocked.push('WaterWatch');
+    modulesUnlocked.push('CoolSense');
 
     projectedSavingsPerYear = (monthlyBill * 0.08 + monthlyBill * 0.05) * 12;
   }
@@ -218,7 +218,7 @@ export function generateDeploymentPlan(profile) {
 
   const modulesNeedHardware = [];
   if (idleHunterStatus.status !== 'active_now') modulesNeedHardware.push('IDLEhunter');
-  modulesNeedHardware.push('ThermalTrace', 'WaterWatch');
+  modulesNeedHardware.push('ThermalTrace', 'CoolSense');
   if (netPulseStatus.status !== 'active_now') modulesNeedHardware.push('NetPulse');
 
   // --- ROI ---
@@ -249,7 +249,7 @@ export function generateDeploymentPlan(profile) {
       IDLEhunter: { status: idleHunterStatus.status, label: idleHunterStatus.label, note: idleHunterStatus.note },
       NetPulse: { status: netPulseStatus.status, label: netPulseStatus.label, note: netPulseStatus.note },
       ThermalTrace: { status: 'phase1_hardware', label: 'Unlocks in Phase 1', note: 'Requires temperature sensors.' },
-      WaterWatch: { status: 'phase1_hardware', label: 'Unlocks in Phase 1', note: 'Requires flow sensor.' },
+      CoolSense: { status: 'phase1_hardware', label: 'Unlocks in Phase 1', note: 'Requires flow sensor.' },
     },
     summary: {
       modules_active_now: modulesActiveNow,

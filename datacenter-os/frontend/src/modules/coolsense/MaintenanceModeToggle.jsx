@@ -1,11 +1,11 @@
 import React, { useCallback, useState } from 'react';
-import { declareMaintenanceWindow, getMaintenanceStatus } from '../../services/waterwatchApi';
+import { declareMaintenanceWindow, getMaintenanceStatus } from '../../services/coolsenseApi';
 import { useLiveResource } from '../../hooks/useLiveResource';
 
 // SHOULD HAVE #13/#15: operator-facing maintenance-mode declaration UI.
-// Declaring a window here suppresses WaterWatch's anomaly *escalation*
+// Declaring a window here suppresses CoolSense's anomaly *escalation*
 // for that loop -- the raw anomaly is still logged for audit, it just
-// doesn't alert (waterwatch/anomaly.py's evaluate_and_log/should_notify).
+// doesn't alert (coolsense/anomaly.py's evaluate_and_log/should_notify).
 export default function MaintenanceModeToggle({ loopIds }) {
   const [selectedLoop, setSelectedLoop] = useState(loopIds[0] || '');
   const [durationHours, setDurationHours] = useState(2);

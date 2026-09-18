@@ -15,11 +15,11 @@ import ThemeToggle from './ThemeToggle';
 // Maps user goals to recommended module IDs
 const MODULE_RELEVANCE = {
   "Reduce electricity costs": ["IDLEhunter", "CarbonClock"],
-  "Prevent cooling failures / downtime": ["ThermalTrace", "WaterWatch"],
+  "Prevent cooling failures / downtime": ["ThermalTrace", "CoolSense"],
   "Carbon reporting / ESG compliance": ["CarbonClock"],
-  "Improve visibility into what's happening": ["IDLEhunter", "ThermalTrace", "WaterWatch", "NetPulse"],
+  "Improve visibility into what's happening": ["IDLEhunter", "ThermalTrace", "CoolSense", "NetPulse"],
   "Automate manual monitoring tasks": ["IDLEhunter", "NetPulse"],
-  "Meet regulatory requirements": ["CarbonClock", "WaterWatch"],
+  "Meet regulatory requirements": ["CarbonClock", "CoolSense"],
 };
 
 function useRecommendedModules() {
@@ -46,7 +46,7 @@ const Navigation = ({ active, onNavigate, onReconfigure }) => {
     const modules = [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard, recKey: null },
         { id: 'idlehunter', label: 'IDLEhunter', icon: Terminal, recKey: 'IDLEhunter' },
-        { id: 'waterwatch', label: 'WaterWatch', icon: Droplet, recKey: 'WaterWatch' },
+        { id: 'coolsense', label: 'CoolSense', icon: Droplet, recKey: 'CoolSense' },
         { id: 'carbonclock', label: 'CarbonClock', icon: Clock, recKey: 'CarbonClock' },
         { id: 'thermaltrace', label: 'ThermalTrace', icon: Thermometer, recKey: 'ThermalTrace' },
         { id: 'netpulse', label: 'NetPulse', icon: Activity, recKey: 'NetPulse' },

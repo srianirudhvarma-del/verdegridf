@@ -9,7 +9,7 @@ import {
 const MODULE_ICONS = {
   CarbonClock: Leaf,
   IDLEhunter: Terminal,
-  WaterWatch: Droplet,
+  CoolSense: Droplet,
   ThermalTrace: Thermometer,
   NetPulse: Activity,
   PowerWatch: LayoutDashboard,

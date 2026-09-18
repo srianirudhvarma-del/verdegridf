@@ -6,12 +6,12 @@ import DeploymentPlan from './pages/DeploymentPlan';
 import HardwareGuide from './pages/HardwareGuide';
 import Overview from './modules/overview';
 import IdleHunter from './modules/idlehunter';
-import WaterWatch from './modules/waterwatch';
+import CoolSense from './modules/coolsense';
 import CarbonClock from './modules/carbonclock';
 import ThermalTrace from './modules/thermaltrace';
 import NetPulse from './modules/netpulse';
 import { getServerCluster } from './services/idlehunterApi';
-import { getWaterFlows } from './services/waterwatchApi';
+import { getWaterFlows } from './services/coolsenseApi';
 import { getNetworkTraffic } from './services/netpulseApi';
 import { getThermalSnapshot } from './services/thermaltraceApi';
 import './index.css';
@@ -32,7 +32,7 @@ function hasProfile() {
 
 const MODULE_SUGGESTED_QUESTIONS = {
   idlehunter:   ["How much am I wasting on zombie servers?", "Which servers should I consolidate first?", "What's my projected savings this month?"],
-  waterwatch:   ["Is my WUE reading dangerous?", "Which cooling unit is most inefficient?", "What does this leak alert mean?"],
+  coolsense:   ["Is my WUE reading dangerous?", "Which cooling unit is most inefficient?", "What does this leak alert mean?"],
   carbonclock:  ["When is the next clean grid window?", "Which jobs should I defer right now?", "How much CO2 have I saved this session?"],
   thermaltrace: ["Is this hotspot dangerous?", "Which rack needs attention most urgently?", "What caused this temperature spike?"],
   netpulse:   ["Which link is about to become a bottleneck?", "Should I reroute this traffic manually?", "What does 87% utilization mean for latency?"],
@@ -49,7 +49,7 @@ async function fetchModuleData(activeModule) {
       const d = await getServerCluster();
       return { zombie_count: d.servers.filter(s => s.state === 'zombie').length, total_servers: d.servers.length, avg_cpu: (d.servers.reduce((a, b) => a + b.cpu_util, 0) / d.servers.length).toFixed(1) };
     }
-    case 'waterwatch': {
+    case 'coolsense': {
       const d = await getWaterFlows();
       return { wue: d.wue?.toFixed(2), total_flow: Math.round(d.totalFlow), anomalies: d.anomalies.length, unit_count: d.units?.length };
     }
@@ -130,7 +130,7 @@ function App() {
       case 'plan': return <DeploymentPlan onNavigateDashboard={() => setActiveTab('overview')} onReconfigure={handleReconfigure} />;
       case 'hardware-guide': return <HardwareGuide />;
       case 'idlehunter': return <IdleHunter />;
-      case 'waterwatch': return <WaterWatch />;
+      case 'coolsense': return <CoolSense />;
       case 'carbonclock': return <CarbonClock />;
       case 'thermaltrace': return <ThermalTrace />;
       case 'netpulse': return <NetPulse isDeferralActive={isDeferralActive} />;

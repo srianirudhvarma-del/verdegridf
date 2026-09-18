@@ -3,7 +3,7 @@ import { waterFlowApi } from '../../data/mock/waterFlow';
 import MetricCard from '../../components/shared/MetricCard';
 import AlertBadge from '../../components/shared/AlertBadge';
 
-const WaterWatchDashboard = () => {
+const CoolSenseDashboard = () => {
     const [flows, setFlows] = useState([]);
     const [overallWue, setOverallWue] = useState(0);
     const [anomalies, setAnomalies] = useState([]);
@@ -33,7 +33,7 @@ const WaterWatchDashboard = () => {
         
         const newReport = `
 ═══════════════════════════════════════════════════════════════
-    WATERWATCH OPTIMIZATION REPORT
+    COOLSENSE OPTIMIZATION REPORT
     Generated: ${timestamp}
 ═══════════════════════════════════════════════════════════════
 
@@ -90,7 +90,7 @@ ${flows.map(f => `  ${f.rack_id}: ${f.flow_rate_l_hr.toFixed(0)} L/hr | ${f.it_l
         <div className="p-8 bg-black min-h-screen text-white font-sans overflow-auto h-full">
             <header className="mb-8 flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-white mb-2 text-blue-400">WaterWatch</h1>
+                    <h1 className="text-3xl font-black tracking-tight text-white mb-2 text-blue-400">CoolSense</h1>
                     <p className="text-gray-400">PUE/WUE correlation and cooling loss detection.</p>
                 </div>
                 <button onClick={generateReport} className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-bold text-sm transition-colors">
@@ -241,4 +241,4 @@ ${flows.map(f => `  ${f.rack_id}: ${f.flow_rate_l_hr.toFixed(0)} L/hr | ${f.it_l
     );
 };
 
-export default WaterWatchDashboard;
+export default CoolSenseDashboard;

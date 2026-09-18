@@ -280,7 +280,7 @@ while True:
   },
 
   "YF-S201 Water Flow Sensor": {
-    module: "WaterWatch",
+    module: "CoolSense",
     estimated_time: "25 minutes",
     difficulty: "Medium",
     prerequisites: [
@@ -407,7 +407,7 @@ snmpwalk -v2c -c greencore_ro [SWITCH-IP] 1.3.6.1.2.1.2.2
   },
 
   "Liebert/Vertiv CRAC (Modbus)": {
-    module: "ThermalTrace + WaterWatch",
+    module: "ThermalTrace + CoolSense",
     estimated_time: "30 minutes",
     difficulty: "Medium",
     prerequisites: [

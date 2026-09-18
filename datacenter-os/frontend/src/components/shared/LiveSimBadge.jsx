@@ -3,7 +3,7 @@ import React from 'react';
 /**
  * Shows a LIVE (green) or SIM (gray) badge based on the stored deployment plan.
  * Pass moduleName matching the keys in module_statuses from the plan
- * (e.g. "CarbonClock", "IDLEhunter", "WaterWatch", "ThermalTrace", "NetPulse").
+ * (e.g. "CarbonClock", "IDLEhunter", "CoolSense", "ThermalTrace", "NetPulse").
  *
  * CarbonClock always shows LIVE regardless of profile.
  */
@@ -27,7 +27,7 @@ export default function LiveSimBadge({ moduleName }) {
       if (moduleName === 'NetPulse') {
         return switches.some(v => managedSwitches.includes(v));
       }
-      // ThermalTrace and WaterWatch always need hardware
+      // ThermalTrace and CoolSense always need hardware
       return false;
     } catch {
       return false;
