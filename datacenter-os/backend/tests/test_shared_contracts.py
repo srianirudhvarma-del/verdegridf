@@ -93,5 +93,5 @@ def test_topics_cover_the_five_methodology_topics():
         "idlehunter.workload.classified",
         "thermaltrace.headroom.updated",
         "carbonclock.job.scheduled",
-        "lightspeed.flow.classified",
+        "netpulse.flow.classified",
     }.issubset(TOPICS)

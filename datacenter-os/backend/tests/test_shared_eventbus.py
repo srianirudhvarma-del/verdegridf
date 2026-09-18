@@ -16,10 +16,10 @@ def test_subscriber_receives_published_payload():
 def test_multiple_subscribers_all_receive_the_event_in_order():
     bus = EventBus()
     order = []
-    bus.subscribe("lightspeed.flow.classified", lambda p: order.append(("first", p)))
-    bus.subscribe("lightspeed.flow.classified", lambda p: order.append(("second", p)))
+    bus.subscribe("netpulse.flow.classified", lambda p: order.append(("first", p)))
+    bus.subscribe("netpulse.flow.classified", lambda p: order.append(("second", p)))
 
-    bus.publish("lightspeed.flow.classified", "flow-123")
+    bus.publish("netpulse.flow.classified", "flow-123")
 
     assert order == [("first", "flow-123"), ("second", "flow-123")]
 

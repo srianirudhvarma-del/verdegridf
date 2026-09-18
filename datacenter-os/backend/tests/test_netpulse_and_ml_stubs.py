@@ -1,9 +1,9 @@
 from tests.conftest import make_snapshot
-from lightspeed.congestion import DEFAULT_CONGESTION_THRESHOLD_PCT
+from netpulse.congestion import DEFAULT_CONGESTION_THRESHOLD_PCT
 
 
 def test_get_network_traffic(client):
-    resp = client.get("/api/lightspeed/network")
+    resp = client.get("/api/netpulse/network")
     assert resp.status_code == 200
     body = resp.json()
     assert len(body["nodes"]) == 5
@@ -18,13 +18,13 @@ def test_inject_spike_produces_a_real_elevated_reading(client):
     can't simulate -- so this only checks the injection's direct, real
     effect: the next poll shows a genuinely elevated reading on that link.
     """
-    resp = client.post("/api/lightspeed/inject-spike")
+    resp = client.post("/api/netpulse/inject-spike")
     assert resp.status_code == 200
     link_id = resp.json()["linkId"]
     valid_ids = {f"{a}-{b}" for a, b in [("A1", "A2"), ("A1", "B1"), ("A2", "B2"), ("B1", "B2"), ("C1", "A1"), ("C1", "A2"), ("C1", "B1"), ("C1", "B2")]}
     assert link_id in valid_ids
 
-    network = client.get("/api/lightspeed/network").json()
+    network = client.get("/api/netpulse/network").json()
     spiked_link = next(l for l in network["links"] if f"{l['source']}-{l['target']}" == link_id)
     assert spiked_link["utilization_pct"] > DEFAULT_CONGESTION_THRESHOLD_PCT
 
@@ -36,7 +36,7 @@ def test_optimize_network(client):
     freshly polled telemetry has no confirmed-congested links yet, so 0
     is the expected real answer.
     """
-    resp = client.post("/api/lightspeed/optimize")
+    resp = client.post("/api/netpulse/optimize")
     assert resp.status_code == 200
     body = resp.json()
     assert body["optimized"] is True

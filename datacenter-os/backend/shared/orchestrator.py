@@ -25,8 +25,8 @@ from carbonclock.scheduler import SchedulingDecision, SchedulingPool, schedule_d
 from idlehunter.consolidation import filter_targets_by_thermal_headroom
 from idlehunter.power import DwellStateMachine, HostState
 from idlehunter.telemetry import IdleHunterTelemetry
-from lightspeed.flow import Flow
-from lightspeed.routing import IpToVmLookup, auto_tag_latency_sensitivity
+from netpulse.flow import Flow
+from netpulse.routing import IpToVmLookup, auto_tag_latency_sensitivity
 from shared.classification import WorkloadClassificationStore, classification_store
 from shared.contracts import CapacityForecast, ThermalHeadroom, WorkloadTag
 from shared.eventbus import EventBus, event_bus
@@ -323,7 +323,7 @@ def compute_rack_cooling_performance(
 
 
 # ---------------------------------------------------------------------------
-# Dependency 7: IdleHunter -> LightSpeed (workload classification for
+# Dependency 7: IdleHunter -> NetPulse (workload classification for
 # reroute safety)
 # ---------------------------------------------------------------------------
 
@@ -343,7 +343,7 @@ def apply_operator_classification(
     (operator-only)"). This is the one production code path that actually
     calls classification_store.set_tag() -- every consumer
     (idlehunter.consolidation.filter_consolidation_candidates,
-    carbonclock.jobs.submit_job, lightspeed.routing's
+    carbonclock.jobs.submit_job, netpulse.routing's
     resolve_latency_sensitivity/tag_latency_sensitivity) reads through the
     exact same store this writes to.
     """
@@ -365,9 +365,9 @@ def tag_flow_with_real_classification(
     store: WorkloadClassificationStore = classification_store,
 ) -> Flow:
     """
-    Calls lightspeed.routing.auto_tag_latency_sensitivity(), reading
+    Calls netpulse.routing.auto_tag_latency_sensitivity(), reading
     through the same classification store apply_operator_classification()
-    above writes to -- the real IdleHunter -> LightSpeed link, not just
+    above writes to -- the real IdleHunter -> NetPulse link, not just
     two functions that happen to accept the same store type.
     """
     return auto_tag_latency_sensitivity(flow, lookup, store=store)

@@ -1,13 +1,13 @@
-from lightspeed.telemetry import LightSpeedTelemetry
+from netpulse.telemetry import NetPulseTelemetry
 from shared.telemetry_sim import TelemetryAdapter
 
 
 def test_adapter_implements_the_shared_telemetry_interface():
-    assert isinstance(LightSpeedTelemetry(), TelemetryAdapter)
+    assert isinstance(NetPulseTelemetry(), TelemetryAdapter)
 
 
 def test_registered_link_polls_utilization():
-    telemetry = LightSpeedTelemetry()
+    telemetry = NetPulseTelemetry()
     telemetry.register_link("link-1", seed=1)
 
     sample = telemetry.poll("link-1")
@@ -17,7 +17,7 @@ def test_registered_link_polls_utilization():
 
 
 def test_links_have_independent_telemetry():
-    telemetry = LightSpeedTelemetry()
+    telemetry = NetPulseTelemetry()
     telemetry.register_link("link-1", seed=1)
     telemetry.register_link("link-2", seed=2)
 

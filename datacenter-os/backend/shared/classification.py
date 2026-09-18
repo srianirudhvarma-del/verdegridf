@@ -2,7 +2,7 @@
 shared/classification.py
 
 Shared workload-classification logic reused by IdleHunter, CarbonClock, and
-LightSpeed (methodology Section 1 & 2). This module owns *tag resolution and
+NetPulse (methodology Section 1 & 2). This module owns *tag resolution and
 storage* -- looking up a workload's protected/deferrable status and applying
 the fail-safe-open default. It does not own any module's domain algorithm
 (e.g. IdleHunter's MAD threshold, CarbonClock's deadline enforcement) --

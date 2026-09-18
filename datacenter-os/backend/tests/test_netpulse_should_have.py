@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta, timezone
 
-from lightspeed.congestion import CongestionTracker
-from lightspeed.flow import classify_flow
-from lightspeed.routing import IpToVmLookup, auto_tag_latency_sensitivity
-from lightspeed.telemetry import UnsupportedStreamingTelemetryError, connect_telemetry
-from lightspeed.topology import LldpNeighbor, LldpTopologyDiscovery, TopologyGraph
+from netpulse.congestion import CongestionTracker
+from netpulse.flow import classify_flow
+from netpulse.routing import IpToVmLookup, auto_tag_latency_sensitivity
+from netpulse.telemetry import UnsupportedStreamingTelemetryError, connect_telemetry
+from netpulse.topology import LldpNeighbor, LldpTopologyDiscovery, TopologyGraph
 from shared.classification import WorkloadClassificationStore
 from shared.contracts import WorkloadTag
 

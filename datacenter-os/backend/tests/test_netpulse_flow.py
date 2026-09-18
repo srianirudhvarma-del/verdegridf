@@ -1,4 +1,4 @@
-from lightspeed.flow import classify_flow
+from netpulse.flow import classify_flow
 
 
 def make_flow(bytes_last_interval, duration_seconds, **overrides):

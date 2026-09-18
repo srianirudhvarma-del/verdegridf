@@ -448,11 +448,11 @@ async def predict_thermal_hotspots(request: ThermalPredictionRequest):
     return ThermalPredictionResponse(predicted_grid=predicted_grid, hotspots=hotspots, confidence=round(confidence, 2), timestamp=_now_iso())
 
 
-# ===================== LightSpeed Routes =====================
+# ===================== NetPulse Routes =====================
 
-@router.get("/lightspeed/network", response_model=NetworkTraffic)
+@router.get("/netpulse/network", response_model=NetworkTraffic)
 async def get_network_traffic():
-    """Real per-link utilization telemetry (lightspeed/telemetry.py), fed into the real congestion dwell tracker (MUST HAVE #15)."""
+    """Real per-link utilization telemetry (netpulse/telemetry.py), fed into the real congestion dwell tracker (MUST HAVE #15)."""
     now = datetime.now(timezone.utc)
     links = []
     nodes = set()
@@ -460,7 +460,7 @@ async def get_network_traffic():
         link_id = f"{source}-{target}"
         nodes.add(source)
         nodes.add(target)
-        current = state.lightspeed_telemetry.poll(link_id)
+        current = state.netpulse_telemetry.poll(link_id)
         utilization = current["utilization_pct"]
         state.congestion_tracker.observe_utilization(link_id, utilization, now)
         links.append(NetworkLink(source=source, target=target, capacity_gbps=10.0, utilization_pct=round(utilization, 1)))
@@ -468,17 +468,17 @@ async def get_network_traffic():
     return NetworkTraffic(nodes=sorted(nodes), links=links)
 
 
-@router.post("/lightspeed/inject-spike")
+@router.post("/netpulse/inject-spike")
 async def inject_traffic_spike():
     """Demo control: injects a real utilization spike (shared/telemetry_sim.py's anomaly injection, Phase 0) into a random link, for exercising the congestion/optimize path."""
     import random
 
     link_id = random.choice(state.LINK_IDS)
-    state.lightspeed_telemetry.inject_anomaly(link_id, "utilization_pct", "traffic_spike", magnitude=60.0, duration_ticks=5)
+    state.netpulse_telemetry.inject_anomaly(link_id, "utilization_pct", "traffic_spike", magnitude=60.0, duration_ticks=5)
     return {"linkId": link_id, "message": f"Injected a traffic spike on {link_id}"}
 
 
-@router.post("/lightspeed/optimize")
+@router.post("/netpulse/optimize")
 async def optimize_network():
     """
     Real optimization pass: reports every link the real CongestionTracker
@@ -490,7 +490,7 @@ async def optimize_network():
     for source, target in state.LINKS:
         link_id = f"{source}-{target}"
         if state.congestion_tracker.congestion_confirmed(link_id, now):
-            current = state.lightspeed_telemetry.current(link_id)["utilization_pct"]
+            current = state.netpulse_telemetry.current(link_id)["utilization_pct"]
             adjusted.append({"source": source, "target": target, "utilization_pct": round(max(current * 0.6, 0.0), 1)})
 
     return {"optimized": True, "adjustedLinks": adjusted}
@@ -520,7 +520,7 @@ async def api_status():
         "version": "2.0.0",
         "modules": {
             "idlehunter": "live", "waterwatch": "live", "carbonclock": "live",
-            "thermaltrace": "live (ML bridge stub pending)", "lightspeed": "live",
+            "thermaltrace": "live (ML bridge stub pending)", "netpulse": "live",
             "noisemesh": "excluded",
         },
         "timestamp": _now_iso(),

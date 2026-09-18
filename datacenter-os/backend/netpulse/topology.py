@@ -1,5 +1,5 @@
 """
-lightspeed/topology.py -- SHOULD HAVE #19: automatic LLDP-based topology
+netpulse/topology.py -- SHOULD HAVE #19: automatic LLDP-based topology
 discovery.
 
 Poll LLDP neighbor tables per switch on a slower interval (topology

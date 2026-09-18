@@ -1,5 +1,5 @@
 """
-lightspeed/routing.py
+netpulse/routing.py
 
 MUST HAVE #16 -- explicit fail-safe-open controller/optimizer failure
 story. Architectural rule, not just code: the optimizer only ever adds a
@@ -28,8 +28,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional
 
-from lightspeed.congestion import CongestionTracker
-from lightspeed.flow import Flow
+from netpulse.congestion import CongestionTracker
+from netpulse.flow import Flow
 from shared.classification import WorkloadClassificationStore, classification_store
 
 DEFAULT_HEALTH_CHECK_TIMEOUT_SECONDS = 30.0

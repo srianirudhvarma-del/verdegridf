@@ -1,5 +1,5 @@
 """
-lightspeed/congestion.py -- MUST HAVE #15: dwell-time/hysteresis before any
+netpulse/congestion.py -- MUST HAVE #15: dwell-time/hysteresis before any
 reroute.
 
 congestionConfirmed(link) =
@@ -18,7 +18,7 @@ loss can confirm congestion even when utilization alone looks borderline.
 from datetime import datetime, timedelta
 from typing import Optional
 
-from lightspeed.flow import Flow
+from netpulse.flow import Flow
 
 DEFAULT_CONGESTION_THRESHOLD_PCT = 80.0
 DEFAULT_DWELL_TIME_SECONDS = 45.0  # methodology default range: 30-60s

@@ -21,7 +21,7 @@ Topic = Literal[
     "idlehunter.workload.classified",
     "thermaltrace.headroom.updated",
     "carbonclock.job.scheduled",
-    "lightspeed.flow.classified",
+    "netpulse.flow.classified",
     # Section 2's Topic list is the minimal starting set ("even if backed by
     # simple REST polling initially"); later MUST HAVE items name additional
     # topics explicitly. carbonclock.prewake.requested comes from Phase 3's
@@ -36,7 +36,7 @@ TOPICS: frozenset[str] = frozenset(
         "idlehunter.workload.classified",
         "thermaltrace.headroom.updated",
         "carbonclock.job.scheduled",
-        "lightspeed.flow.classified",
+        "netpulse.flow.classified",
         "carbonclock.prewake.requested",
     }
 )
@@ -75,7 +75,7 @@ class CapacityForecast(BaseModel):
     shared/contracts/capacity.ts -> CapacityForecast
 
     Published by IdleHunter, consumed by CarbonClock, WaterWatch
-    (baseline correlation), and LightSpeed.
+    (baseline correlation), and NetPulse.
     """
 
     timestampRangeStart: str

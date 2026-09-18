@@ -1,5 +1,5 @@
 """
-lightspeed/flow.py -- MUST HAVE #14: flow-level ("elephant flow") detection.
+netpulse/flow.py -- MUST HAVE #14: flow-level ("elephant flow") detection.
 
 Real collection would poll edge-switch flow tables every 5-10s via
 sFlow/NetFlow/IPFIX (or an SNMP flow-stats extension); classify_flow()
@@ -26,7 +26,7 @@ class Flow(BaseModel):
     firstSeen: str
     lastSeen: str
     isElephant: bool = False
-    # Populated only by the IdleHunter cross-wire (lightspeed/routing.py's
+    # Populated only by the IdleHunter cross-wire (netpulse/routing.py's
     # resolve_latency_sensitivity) -- None means "not yet classified,"
     # never treated as "safe to auto-reroute."
     latencySensitive: Optional[bool] = None

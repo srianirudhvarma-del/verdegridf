@@ -1,5 +1,5 @@
 """
-lightspeed/telemetry.py -- LightSpeed's per-link utilization telemetry
+netpulse/telemetry.py -- NetPulse's per-link utilization telemetry
 source, feeding MUST HAVE #15's congestion dwell timer, same pattern as
 every other module (shared/telemetry_sim.py, Phase 0 Decision #1).
 
@@ -17,7 +17,7 @@ from shared.telemetry_sim import TelemetryAdapter, TelemetrySimulator
 LINK_METRIC_DEFAULTS = dict(baseline=40.0, noise_std=8.0, reversion=0.2, min_value=0.0, max_value=100.0)
 
 
-class LightSpeedTelemetry(TelemetryAdapter):
+class NetPulseTelemetry(TelemetryAdapter):
     def __init__(self, simulator: TelemetrySimulator | None = None) -> None:
         self._simulator = simulator or TelemetrySimulator()
 

@@ -14,7 +14,7 @@ and tested, but has nothing real to tick over until routes.py/main.py
 actually create jobs and hosts").
 
 A small, fixed topology -- 5 racks x 4 hosts, one WaterWatch loop and one
-ThermalTrace sensor per rack, an 8-link LightSpeed fabric -- is registered
+ThermalTrace sensor per rack, an 8-link NetPulse fabric -- is registered
 once at import time (module-level singletons, same pattern as
 shared.eventbus.event_bus / shared.classification.classification_store).
 """
@@ -25,8 +25,8 @@ from carbonclock.grid import CarbonForecastSimulator, DEFAULT_SIGNAL_INFO, Hyste
 from carbonclock.jobs import DeadlineQueue, submit_job
 from idlehunter.power import DwellStateMachine
 from idlehunter.telemetry import IdleHunterTelemetry
-from lightspeed.congestion import CongestionTracker
-from lightspeed.telemetry import LightSpeedTelemetry
+from netpulse.congestion import CongestionTracker
+from netpulse.telemetry import NetPulseTelemetry
 from shared.classification import classification_store
 from shared.contracts import WorkloadTag
 from shared.scheduler_driver import scheduler_registry
@@ -124,12 +124,12 @@ waterwatch_telemetry.register_zone(FACILITY_ZONE, seed=_seed_for(FACILITY_ZONE))
 maintenance_registry = MaintenanceModeRegistry()
 
 # ---------------------------------------------------------------------------
-# LightSpeed
+# NetPulse
 # ---------------------------------------------------------------------------
 
-lightspeed_telemetry = LightSpeedTelemetry()
+netpulse_telemetry = NetPulseTelemetry()
 for _link_id in LINK_IDS:
-    lightspeed_telemetry.register_link(_link_id, seed=_seed_for(_link_id))
+    netpulse_telemetry.register_link(_link_id, seed=_seed_for(_link_id))
 congestion_tracker = CongestionTracker()
 
 # ---------------------------------------------------------------------------

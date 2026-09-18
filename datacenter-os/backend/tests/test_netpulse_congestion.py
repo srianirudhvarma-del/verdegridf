@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
-from lightspeed.congestion import CongestionTracker
-from lightspeed.flow import classify_flow
+from netpulse.congestion import CongestionTracker
+from netpulse.flow import classify_flow
 
 NOW = datetime(2026, 8, 25, 0, 0, 0, tzinfo=timezone.utc)
 

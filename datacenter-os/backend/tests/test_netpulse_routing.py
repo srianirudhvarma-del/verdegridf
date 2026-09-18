@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta, timezone
 
-from lightspeed.congestion import CongestionTracker
-from lightspeed.flow import classify_flow
-from lightspeed.routing import (
+from netpulse.congestion import CongestionTracker
+from netpulse.flow import classify_flow
+from netpulse.routing import (
     OptimizerWatchdog,
     PathPreferenceOverride,
     auto_reroute_allowed,

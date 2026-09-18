@@ -8,8 +8,8 @@ from idlehunter.power import DwellStateMachine, HostState
 from idlehunter.telemetry import IdleHunterTelemetry
 from shared.eventbus import EventBus
 from idlehunter.consolidation import filter_consolidation_candidates
-from lightspeed.flow import classify_flow
-from lightspeed.routing import IpToVmLookup
+from netpulse.flow import classify_flow
+from netpulse.routing import IpToVmLookup
 from shared.classification import WorkloadClassificationStore
 from shared.orchestrator import (
     JobExecutionTracker,
@@ -343,7 +343,7 @@ def test_cooling_performance_changes_when_real_flow_telemetry_changes():
 
 
 # ---------------------------------------------------------------------------
-# Dependency 7: IdleHunter -> LightSpeed (workload classification for
+# Dependency 7: IdleHunter -> NetPulse (workload classification for
 # reroute safety)
 # ---------------------------------------------------------------------------
 
@@ -377,9 +377,9 @@ def test_idlehunter_consolidation_filter_sees_the_real_write():
     assert candidates == ["vm-batch"]
 
 
-def test_lightspeed_reads_the_same_real_classification_write():
+def test_netpulse_reads_the_same_real_classification_write():
     """End-to-end: the exact classification apply_operator_classification()
-    writes is what tag_flow_with_real_classification() (LightSpeed's real
+    writes is what tag_flow_with_real_classification() (NetPulse's real
     consumer) reads back through the IP->VM lookup."""
     store = WorkloadClassificationStore()
     apply_operator_classification("vm-batch", "deferrable", max_delay_minutes=60, store=store)
@@ -392,7 +392,7 @@ def test_lightspeed_reads_the_same_real_classification_write():
     assert flow.latencySensitive is False
 
 
-def test_lightspeed_never_reroutes_a_flow_whose_owner_was_never_classified():
+def test_netpulse_never_reroutes_a_flow_whose_owner_was_never_classified():
     store = WorkloadClassificationStore()  # nothing written for vm-unknown
     lookup = IpToVmLookup()
     lookup.sync({"10.0.0.7": "vm-unknown"})
