@@ -1,0 +1,12 @@
+{
+  "hostId": "omen-transcend-16",
+  "backendUrl": "http://192.168.1.50:8100",
+  "pollIntervalSeconds": 5,
+  "diskMaxBytesPerSec": 209715200,
+  "networkMaxBytesPerSec": 52428800,
+  "dryRun": true,
+  "fanActuatorCommands": {
+    "fanMaxOn": "REPLACE_ME -- e.g. an OmenMon CLI call that enables max fan mode on this exact model",
+    "fanMaxOff": "REPLACE_ME -- e.g. the same tool's call to return fan control to automatic"
+  }
+}

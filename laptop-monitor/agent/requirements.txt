@@ -1,0 +1,6 @@
+psutil>=5.9.0
+requests>=2.31.0
+# Optional: only needed for real CPU temperature via LibreHardwareMonitor's
+# WMI provider. Without it the agent still runs -- cpuTempC is reported as
+# null and hotspot prediction is simply skipped for this host.
+wmi>=1.5.1; sys_platform == 'win32'
