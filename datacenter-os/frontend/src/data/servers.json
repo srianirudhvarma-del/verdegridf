@@ -1,0 +1,47 @@
+{
+  "before": {
+    "servers": [
+      { "id": "S01", "status": "active", "utilization": 85, "x": 0, "y": 0 },
+      { "id": "S02", "status": "idle", "utilization": 5, "x": 1, "y": 0 },
+      { "id": "S03", "status": "active", "utilization": 90, "x": 2, "y": 0 },
+      { "id": "S04", "status": "idle", "utilization": 2, "x": 3, "y": 0 },
+      { "id": "S05", "status": "active", "utilization": 75, "x": 0, "y": 1 },
+      { "id": "S06", "status": "idle", "utilization": 3, "x": 1, "y": 1 },
+      { "id": "S07", "status": "idle", "utilization": 1, "x": 2, "y": 1 },
+      { "id": "S08", "status": "active", "utilization": 80, "x": 3, "y": 1 },
+      { "id": "S09", "status": "idle", "utilization": 4, "x": 0, "y": 2 },
+      { "id": "S10", "status": "active", "utilization": 88, "x": 1, "y": 2 },
+      { "id": "S11", "status": "idle", "utilization": 2, "x": 2, "y": 2 },
+      { "id": "S12", "status": "active", "utilization": 92, "x": 3, "y": 2 }
+    ],
+    "clusters": [
+      { "type": "idle", "count": 6, "location": "North Wing" },
+      { "type": "active", "count": 6, "location": "South Wing" }
+    ],
+    "metrics": {
+      "totalServers": 12,
+      "activeServers": 6,
+      "idleServers": 6,
+      "efficiency": 50
+    }
+  },
+  "after": {
+    "servers": [
+      { "id": "S01", "status": "active", "utilization": 85, "x": 0, "y": 0 },
+      { "id": "S03", "status": "active", "utilization": 90, "x": 1, "y": 0 },
+      { "id": "S05", "status": "active", "utilization": 75, "x": 2, "y": 0 },
+      { "id": "S08", "status": "active", "utilization": 80, "x": 3, "y": 0 },
+      { "id": "S10", "status": "active", "utilization": 88, "x": 0, "y": 1 },
+      { "id": "S12", "status": "active", "utilization": 92, "x": 1, "y": 1 }
+    ],
+    "clusters": [
+      { "type": "active", "count": 6, "location": "Optimized Cluster" }
+    ],
+    "metrics": {
+      "totalServers": 6,
+      "activeServers": 6,
+      "idleServers": 0,
+      "efficiency": 100
+    }
+  }
+}
