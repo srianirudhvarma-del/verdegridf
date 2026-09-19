@@ -1,0 +1,12 @@
+{
+  "name": "antigravity",
+  "version": "1.0.0",
+  "description": "Modular plugin architecture for Antigravity",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test"
+  },
+  "dependencies": {}
+}
