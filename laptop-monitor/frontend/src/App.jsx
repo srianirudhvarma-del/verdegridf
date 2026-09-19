@@ -1,20 +1,27 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "./api.js";
 import HostCard from "./HostCard.jsx";
+import GridSyncPanel from "./GridSyncPanel.jsx";
 
 const POLL_INTERVAL_MS = 4000;
 
 export default function App() {
   const [hosts, setHosts] = useState([]);
   const [actions, setActions] = useState([]);
+  const [gridsync, setGridsync] = useState(null);
   const [error, setError] = useState(null);
   const [pendingDecision, setPendingDecision] = useState(null);
 
   const refresh = useCallback(async () => {
     try {
-      const [hostsData, actionsData] = await Promise.all([api.getHosts(), api.getPendingActions()]);
+      const [hostsData, actionsData, gridsyncData] = await Promise.all([
+        api.getHosts(),
+        api.getPendingActions(),
+        api.getGridSync(),
+      ]);
       setHosts(hostsData);
       setActions(actionsData);
+      setGridsync(gridsyncData);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -46,7 +53,11 @@ export default function App() {
   return (
     <>
       <h1>Laptop Monitor</h1>
-      <p className="subtitle">Real telemetry from physical laptops — idle → sleep prompts, temperature + clock speed → fan-speed recommendations.</p>
+      <p className="subtitle">
+        Real telemetry from physical laptops driving 5 module analogs: PowerPrune (idle → sleep),
+        ThermOS (hotspot → fan speed), CoolSense (cooling-baseline anomalies), NetPulse (elephant
+        flows), and GridSync (real carbon-intensity-aware scheduling).
+      </p>
 
       {error && <div className="error-banner">Couldn't reach the backend: {error}</div>}
 
@@ -60,6 +71,9 @@ export default function App() {
           ))}
         </div>
       )}
+
+      <div className="section-title">GridSync — carbon-aware scheduling</div>
+      <GridSyncPanel gridsync={gridsync} />
 
       <div className="section-title">Pending fan-speed approvals ({actions.length})</div>
       {actions.length === 0 ? (

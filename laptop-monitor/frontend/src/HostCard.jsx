@@ -2,6 +2,39 @@ function fmt(value, digits = 1) {
   return typeof value === "number" ? value.toFixed(digits) : "—";
 }
 
+const COMMAND_LABELS = {
+  sleep_prompt: "PowerPrune — sleep recommended",
+  fan_max_on: "ThermOS — raise fan speed",
+  fan_max_off: "ThermOS — fan speed reverted",
+};
+
+const RESULT_CLASS = {
+  executed: "signal-ok",
+  skipped: "signal-watch",
+  declined: "signal-watch",
+  failed: "signal-anomaly",
+};
+
+const COOLING_LABELS = {
+  ok: { text: "CoolSense — normal", className: "signal-ok" },
+  anomaly: { text: "CoolSense — cooling anomaly", className: "signal-anomaly" },
+  insufficient_data: { text: "CoolSense — learning baseline", className: "signal-watch" },
+};
+
+const NETWORK_LABELS = {
+  normal: { text: "NetPulse — normal", className: "signal-ok" },
+  elephant_flow: { text: "NetPulse — elephant flow detected", className: "signal-anomaly" },
+};
+
+function SignalRow({ text, className }) {
+  return (
+    <div className="signal-row">
+      <span className={`signal-dot ${className}`} />
+      <span>{text}</span>
+    </div>
+  );
+}
+
 export default function HostCard({ host }) {
   const sample = host.lastSample;
   const badge = host.stale
@@ -9,6 +42,15 @@ export default function HostCard({ host }) {
     : host.isIdle
     ? { className: "badge-idle", label: "IDLE" }
     : { className: "badge-active", label: "ACTIVE" };
+
+  const cooling = host.cooling ? COOLING_LABELS[host.cooling.status] : null;
+  const network = NETWORK_LABELS[host.network] || null;
+  const lastCommand = host.lastAck
+    ? {
+        text: `${COMMAND_LABELS[host.lastAck.type] || host.lastAck.type} → ${host.lastAck.result}`,
+        className: RESULT_CLASS[host.lastAck.result] || "signal-watch",
+      }
+    : null;
 
   return (
     <div className="card">
@@ -35,12 +77,12 @@ export default function HostCard({ host }) {
       ) : (
         <div className="metric-row"><span>No data yet</span></div>
       )}
-      {host.lastAck && (
-        <div className="metric-row">
-          <span>Last command</span>
-          <span>{host.lastAck.type} → {host.lastAck.result}</span>
-        </div>
-      )}
+
+      <div className="signal-section">
+        {cooling && <SignalRow text={cooling.text} className={cooling.className} />}
+        {network && <SignalRow text={network.text} className={network.className} />}
+        {lastCommand && <SignalRow text={lastCommand.text} className={lastCommand.className} />}
+      </div>
     </div>
   );
 }

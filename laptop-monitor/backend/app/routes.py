@@ -33,10 +33,19 @@ async def ingest_telemetry(sample: TelemetrySample):
 
 @router.get("/hosts")
 async def list_hosts():
+    """
+    Per-host status across all 5 module analogs: PowerPrune (isIdle +
+    lastAck, which shows a sleep_prompt was issued even when actionsEnabled
+    is false and the agent only acked "skipped" -- the decision is visible
+    on the dashboard whether or not it was actually acted on), ThermOS
+    (surfaced separately via /actions, the supervised approval queue),
+    CoolSense (cooling), and NetPulse (network).
+    """
     now = datetime.now(timezone.utc)
     hosts = []
     for host_id in state.telemetry_registry.known_hosts():
         sample = state.telemetry_registry.latest(host_id)
+        cooling = state.orchestrator.cooling_status(host_id)
         hosts.append(
             {
                 "hostId": host_id,
@@ -44,9 +53,33 @@ async def list_hosts():
                 "isIdle": state.orchestrator.is_idle(host_id),
                 "stale": state.telemetry_registry.is_stale(host_id, now, max_age_seconds=state.STALE_SECONDS),
                 "lastAck": state.command_queue.last_ack_for_host(host_id),
+                "cooling": cooling.model_dump() if cooling else None,
+                "network": state.orchestrator.network_status(host_id),
             }
         )
     return hosts
+
+
+@router.get("/gridsync")
+async def get_gridsync():
+    """Real carbon-intensity-aware scheduling decisions -- see
+    app/gridsync.py for the real (rate-limited) API call this is backed
+    by. Decisions only; nothing here actually launches a job."""
+    signal = state.gridsync_scheduler.last_signal
+    return {
+        "signal": signal.model_dump() if signal else None,
+        "jobs": [
+            {
+                "id": job.id,
+                "name": job.name,
+                "status": job.status,
+                "maxWaitMinutes": job.max_wait.total_seconds() / 60.0,
+                "submittedAt": job.submitted_at.isoformat(),
+                "decidedAt": job.decided_at.isoformat() if job.decided_at else None,
+            }
+            for job in state.gridsync_scheduler.jobs.values()
+        ],
+    }
 
 
 @router.get("/commands/{host_id}")

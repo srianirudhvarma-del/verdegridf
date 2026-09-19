@@ -81,6 +81,34 @@ h1 {
 .badge-stale { background: rgba(224, 69, 58, 0.15); color: var(--critical); }
 .badge-active { background: rgba(53, 194, 107, 0.15); color: var(--ok); }
 
+.signal-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.signal-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  padding: 3px 0;
+}
+
+.signal-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.signal-ok { background: var(--ok); }
+.signal-watch { background: var(--watch); }
+.signal-anomaly { background: var(--critical); }
+
 .metric-row {
   display: flex;
   justify-content: space-between;

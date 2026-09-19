@@ -16,4 +16,5 @@ export const api = {
   getPendingActions: () => request("/actions"),
   approveAction: (id) => request(`/actions/${id}/approve`, { method: "POST", body: JSON.stringify({ operatorId: "dashboard" }) }),
   rejectAction: (id) => request(`/actions/${id}/reject`, { method: "POST", body: JSON.stringify({ operatorId: "dashboard" }) }),
+  getGridSync: () => request("/gridsync"),
 };

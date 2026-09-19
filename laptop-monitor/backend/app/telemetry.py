@@ -51,6 +51,12 @@ class TelemetryRegistry:
         self._latest: dict[str, TelemetrySample] = {}
         self._received_at: dict[str, datetime] = {}
         self._history: dict[str, dict[str, deque]] = {}
+        # (cpuPercent, cpuTempC) pairs, appended together only on samples
+        # where temp is actually present -- kept separate from the plain
+        # per-field histories below so a run of missing-temp samples (e.g.
+        # before LibreHardwareMonitor was started) can never desync the
+        # two lists relied on for cooling-baseline regression.
+        self._cpu_temp_pairs: dict[str, deque] = {}
 
     def ingest(self, sample: TelemetrySample, *, received_at: Optional[datetime] = None) -> None:
         received_at = received_at or datetime.now(timezone.utc)
@@ -62,6 +68,9 @@ class TelemetryRegistry:
             if value is None:
                 continue
             host_history.setdefault(field_name, deque(maxlen=self._history_len)).append(value)
+        if sample.cpuTempC is not None:
+            pairs = self._cpu_temp_pairs.setdefault(sample.hostId, deque(maxlen=self._history_len))
+            pairs.append((sample.cpuPercent, sample.cpuTempC))
 
     def known_hosts(self) -> list[str]:
         return list(self._latest.keys())
@@ -90,3 +99,9 @@ class TelemetryRegistry:
         if not values:
             return []
         return list(values)[-n:]
+
+    def cpu_temp_pairs(self, host_id: str, n: int) -> list[tuple[float, float]]:
+        pairs = self._cpu_temp_pairs.get(host_id)
+        if not pairs:
+            return []
+        return list(pairs)[-n:]

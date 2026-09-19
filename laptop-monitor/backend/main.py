@@ -25,13 +25,15 @@ async def _tick_loop(interval_seconds: float) -> None:
     is the one place that actually reads datetime.now() and sleeps."""
     while True:
         try:
+            now = datetime.now(timezone.utc)
             state.orchestrator.tick(
-                datetime.now(timezone.utc),
+                now,
                 registry=state.telemetry_registry,
                 command_queue=state.command_queue,
                 action_queue=state.action_queue,
                 stale_seconds=state.STALE_SECONDS,
             )
+            state.gridsync_scheduler.tick(now, state.http_client)
         except Exception:
             logger.exception("orchestrator tick failed")
         await asyncio.sleep(interval_seconds)
@@ -46,6 +48,7 @@ async def lifespan(app: FastAPI):
         task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await task
+        state.http_client.close()
 
 
 app = FastAPI(title="Laptop Monitor API", lifespan=lifespan)

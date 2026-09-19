@@ -9,11 +9,14 @@ never sent a stale command.
 """
 
 from datetime import datetime
+from typing import Optional
 
 from app.actions import ActionQueue, ActionRecommendation
 from app.commands import CommandQueue
+from app.coolsense import CoolingAssessment, assess_cooling
 from app.hotspot import predict_hotspot
 from app.idle import IdleTracker
+from app.netpulse import ElephantFlowTracker, NetworkStatus
 from app.telemetry import TelemetryRegistry
 from app.threshold import classify_host
 
@@ -26,6 +29,8 @@ DEFAULT_DWELL_SAMPLES = 30
 class Orchestrator:
     def __init__(self) -> None:
         self._idle_trackers: dict[str, IdleTracker] = {}
+        self._netpulse_trackers: dict[str, ElephantFlowTracker] = {}
+        self._cooling_status: dict[str, CoolingAssessment] = {}
         self._fan_maxed: set[str] = set()
 
     def _idle_tracker_for(self, host_id: str, dwell_samples: int) -> IdleTracker:
@@ -33,6 +38,13 @@ class Orchestrator:
         if tracker is None:
             tracker = IdleTracker(host_id, dwell_samples=dwell_samples)
             self._idle_trackers[host_id] = tracker
+        return tracker
+
+    def _netpulse_tracker_for(self, host_id: str) -> ElephantFlowTracker:
+        tracker = self._netpulse_trackers.get(host_id)
+        if tracker is None:
+            tracker = ElephantFlowTracker()
+            self._netpulse_trackers[host_id] = tracker
         return tracker
 
     def mark_fan_executed(self, host_id: str) -> None:
@@ -44,6 +56,13 @@ class Orchestrator:
     def is_idle(self, host_id: str) -> bool:
         tracker = self._idle_trackers.get(host_id)
         return tracker.is_idle if tracker else False
+
+    def network_status(self, host_id: str) -> NetworkStatus:
+        tracker = self._netpulse_trackers.get(host_id)
+        return tracker.status if tracker else "normal"
+
+    def cooling_status(self, host_id: str) -> Optional[CoolingAssessment]:
+        return self._cooling_status.get(host_id)
 
     def tick(
         self,
@@ -74,10 +93,25 @@ class Orchestrator:
                 command_queue.enqueue(host_id, "sleep_prompt", {"idleMinutes": idle_minutes})
                 prompted_sleep.append(host_id)
 
+            # NetPulse: sustained-high-throughput check. Independent of
+            # temperature data, so it runs regardless of whether this
+            # host has a working temp sensor.
+            self._netpulse_tracker_for(host_id).observe(current["network"])
+
             latest = registry.latest(host_id)
             temp_history = registry.field_history(host_id, "cpuTempC", 30)
             if latest is None or latest.cpuTempC is None or not temp_history:
                 continue
+
+            # CoolSense: is this host running hotter than ITS OWN
+            # established temp-vs-load relationship predicts -- a
+            # different question than the hotspot predictor below asks.
+            self._cooling_status[host_id] = assess_cooling(
+                host_id,
+                registry.cpu_temp_pairs(host_id, 120),
+                current_cpu=current["cpu"],
+                current_temp=latest.cpuTempC,
+            )
 
             prediction = predict_hotspot(
                 host_id,

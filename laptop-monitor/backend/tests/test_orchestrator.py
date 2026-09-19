@@ -133,3 +133,45 @@ class TestFanHotspotAndRevert:
 
         assert revert_seen
         assert HOST not in orchestrator._fan_maxed
+
+
+class TestNetPulseAndCoolSenseWiring:
+    def test_network_status_defaults_to_normal_for_unknown_host(self):
+        _, _, _, orchestrator = build()
+        assert orchestrator.network_status("nope") == "normal"
+
+    def test_sustained_high_network_flags_elephant_flow(self):
+        registry, commands, actions, orchestrator = build()
+        now = datetime.now(timezone.utc)
+        for _ in range(5):
+            now += timedelta(seconds=5)
+            registry.ingest(make_sample(net=95.0), received_at=now)
+            orchestrator.tick(now, registry=registry, command_queue=commands, action_queue=actions)
+        assert orchestrator.network_status(HOST) == "elephant_flow"
+
+    def test_cooling_status_is_none_before_enough_history(self):
+        registry, commands, actions, orchestrator = build()
+        now = datetime.now(timezone.utc)
+        now += timedelta(seconds=5)
+        registry.ingest(make_sample(), received_at=now)
+        orchestrator.tick(now, registry=registry, command_queue=commands, action_queue=actions)
+        cooling = orchestrator.cooling_status(HOST)
+        assert cooling is not None
+        assert cooling.status == "insufficient_data"
+
+    def test_cooling_anomaly_surfaces_after_baseline_established(self):
+        registry, commands, actions, orchestrator = build()
+        now = datetime.now(timezone.utc)
+        # Build a real baseline: temp tracks cpu closely and consistently.
+        for i in range(25):
+            now += timedelta(seconds=5)
+            cpu = 20.0 + (i % 5)
+            registry.ingest(make_sample(cpu=cpu, temp=30.0 + 0.5 * cpu), received_at=now)
+            orchestrator.tick(now, registry=registry, command_queue=commands, action_queue=actions)
+        assert orchestrator.cooling_status(HOST).status == "ok"
+
+        # Now the same CPU load produces a wildly higher temp -- degraded cooling.
+        now += timedelta(seconds=5)
+        registry.ingest(make_sample(cpu=22.0, temp=85.0), received_at=now)
+        orchestrator.tick(now, registry=registry, command_queue=commands, action_queue=actions)
+        assert orchestrator.cooling_status(HOST).status == "anomaly"

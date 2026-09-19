@@ -55,6 +55,21 @@ def test_list_hosts_reflects_ingested_sample(client):
     assert HOST in entries
     assert entries[HOST]["lastSample"]["cpuPercent"] == 77.0
     assert entries[HOST]["stale"] is False
+    # CoolSense/NetPulse fields are always present, even before enough
+    # history exists to say anything more specific than "normal"/None.
+    assert entries[HOST]["network"] in ("normal", "elephant_flow")
+    assert "cooling" in entries[HOST]
+
+
+def test_gridsync_endpoint_returns_signal_and_jobs(client):
+    resp = client.get("/api/gridsync")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "signal" in body
+    assert isinstance(body["jobs"], list)
+    assert {job["id"] for job in body["jobs"]} == {"backup-sync", "update-check", "virus-scan"}
+    for job in body["jobs"]:
+        assert job["status"] in ("waiting_for_clean_grid", "running", "force_run_deadline")
 
 
 def test_approving_fan_recommendation_queues_fan_max_on(client):
