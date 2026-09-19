@@ -1,0 +1,17 @@
+[
+  {
+    "link_id": "core-agg-01",
+    "latency_ns": 450,
+    "rx_power_dbm": -4.2,
+    "errors_per_sec": 0,
+    "status": "NORMAL"
+  },
+  {
+    "link_id": "spine-leaf-14",
+    "latency_ns": 1200,
+    "rx_power_dbm": -12.5,
+    "errors_per_sec": 45,
+    "status": "ALERT",
+    "note": "Signal degradation detected on optical interconnect"
+  }
+]

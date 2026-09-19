@@ -1,0 +1,27 @@
+[
+  {
+    "timestamp": "2026-04-07T10:00:00Z",
+    "pue": 1.15,
+    "wue": 0.42,
+    "cooling_load_kw": 850,
+    "water_consumed_liters": 1200,
+    "status": "NORMAL"
+  },
+  {
+    "timestamp": "2026-04-07T10:05:00Z",
+    "pue": 1.16,
+    "wue": 0.43,
+    "cooling_load_kw": 865,
+    "water_consumed_liters": 1250,
+    "status": "NORMAL"
+  },
+  {
+    "timestamp": "2026-04-07T10:10:00Z",
+    "pue": 1.25,
+    "wue": 0.60,
+    "cooling_load_kw": 1050,
+    "water_consumed_liters": 1800,
+    "status": "ALERT",
+    "note": "Unexpected cooling load spike detected"
+  }
+]
