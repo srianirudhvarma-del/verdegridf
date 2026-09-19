@@ -21,8 +21,11 @@ Laptop Monitor backend (`../backend`).
 3. Copy `config.example.json` to `config.json`, and set:
    - `hostId`: a name for this specific laptop.
    - `backendUrl`: the backend machine's LAN IP and port, e.g. `"http://192.168.1.50:8100"`.
-   - `dryRun`: leave `true` for your first run on each machine — sleep prompts still show for real either way; only the *fan* actuator step is gated by `dryRun`.
-4. `python agent.py` (or `python agent.py --dry-run` to force dry-run regardless of `config.json`).
+   - `actionsEnabled`: **defaults to `false`.** While `false`, the agent only measures and reports real telemetry -- it still receives sleep-prompt and fan commands from the backend, but logs them and acks them as `"skipped"` instead of acting on either one. No sleep dialog will pop up, no fan command will run, no matter what the dashboard is recommending. Leave this `false` until you've watched telemetry flow correctly and you're ready to test the real actions.
+   - `dryRun`: only matters once `actionsEnabled` is `true` -- it separately gates *just* the fan-actuator step (see "Fan control" below). Leave it `true` even after enabling actions, until you've verified `fanActuatorCommands` on this exact machine.
+4. `python agent.py` (add `-v` for more verbose logs). The startup log line tells you both flags' current state, e.g. `actions_enabled=False dry_run=True`.
+
+**Turning actions on later:** flip `actionsEnabled` to `true` in `config.json` once you're ready to see the real sleep-prompt dialog and (separately, once `dryRun` is also `false`) real fan commands. Restart the agent for the change to take effect.
 
 ## Fan control — read this before setting `fanActuatorCommands`
 
@@ -51,8 +54,12 @@ pretending it worked.
 
 ## Safety notes
 
+- **`actionsEnabled: false` (the shipped default) means this agent takes
+  no action at all** -- it measures and reports real data, and silently
+  skips (acks as `"skipped"`) any command the backend sends back. Nothing
+  pops up, nothing runs, until you deliberately set it to `true`.
 - **Sleep never happens without a person clicking Yes** on this specific
-  machine, every time — there's no auto-execute path for it.
+  machine, every time (once actions are enabled) — there's no auto-execute path for it.
 - **Fan speed increases only after an operator approves the
   recommendation in the dashboard** — reverting the fan speed back down
   once the hotspot clears is the one thing that happens automatically,

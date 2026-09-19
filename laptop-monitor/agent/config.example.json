@@ -4,6 +4,7 @@
   "pollIntervalSeconds": 5,
   "diskMaxBytesPerSec": 209715200,
   "networkMaxBytesPerSec": 52428800,
+  "actionsEnabled": false,
   "dryRun": true,
   "fanActuatorCommands": {
     "fanMaxOn": "REPLACE_ME -- e.g. an OmenMon CLI call that enables max fan mode on this exact model",

@@ -46,10 +46,15 @@ same class of idea against *real* hardware data instead.
    cd agent
    pip install -r requirements.txt
    cp config.example.json config.json   # set hostId + backendUrl (the backend machine's LAN IP:8100)
-   python agent.py --dry-run            # verify telemetry shows up in the dashboard first
+   python agent.py                      # actionsEnabled defaults to false: measures/reports only
    ```
-   See `agent/README.md` before turning off `--dry-run` — especially the
-   fan-control section.
+   The shipped config has `"actionsEnabled": false` — the agent measures
+   and reports real telemetry, but any sleep-prompt or fan command coming
+   back from the backend is logged and skipped, not acted on. Watch the
+   dashboard fill with real numbers first; only flip `actionsEnabled` to
+   `true` in `config.json` (and read `agent/README.md`'s fan-control
+   section before also disabling `dryRun`) once you're ready to see the
+   real sleep prompt and real fan actuation.
 3. Run the dashboard (can be on any of the three machines, or your own):
    ```bash
    cd frontend

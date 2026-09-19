@@ -57,6 +57,13 @@ class Config:
         self.disk_max_bytes_per_sec: float = float(data.get("diskMaxBytesPerSec", 200 * 1024 * 1024))
         self.network_max_bytes_per_sec: float = float(data.get("networkMaxBytesPerSec", 50 * 1024 * 1024))
         self.dry_run: bool = bool(data.get("dryRun", True))
+        # Master switch for whether this agent is allowed to act on ANY
+        # command at all (sleep prompt included). Defaults to False --
+        # a fresh config.json only measures and reports real telemetry
+        # until you deliberately turn this on. dryRun (above) is a
+        # separate, narrower switch that only ever gated fan commands;
+        # this is the one that also covers the sleep prompt.
+        self.actions_enabled: bool = bool(data.get("actionsEnabled", False))
         fan_cmds = data.get("fanActuatorCommands", {})
         self.fan_max_on_cmd: Optional[str] = fan_cmds.get("fanMaxOn")
         self.fan_max_off_cmd: Optional[str] = fan_cmds.get("fanMaxOff")
@@ -222,7 +229,12 @@ def run(config: Config) -> None:
     net_meter = ThroughputMeter(config.network_max_bytes_per_sec)
     psutil.cpu_percent(interval=None)  # prime the first (meaningless) reading
 
-    logger.info("Laptop Monitor agent starting: host=%s backend=%s dry_run=%s", config.host_id, config.backend_url, config.dry_run)
+    logger.info(
+        "Laptop Monitor agent starting: host=%s backend=%s actions_enabled=%s dry_run=%s",
+        config.host_id, config.backend_url, config.actions_enabled, config.dry_run,
+    )
+    if not config.actions_enabled:
+        logger.info("actionsEnabled=false: telemetry only. Sleep prompts and fan commands will be logged and skipped, not acted on.")
 
     while True:
         try:
@@ -232,9 +244,13 @@ def run(config: Config) -> None:
             resp = session.get(f"{config.backend_url}/api/commands/{config.host_id}", timeout=10)
             command = resp.json()
             if command.get("type") != "none":
-                # Run in a thread so a blocking sleep-prompt dialog doesn't
-                # stall the next poll cycle's telemetry post indefinitely.
-                threading.Thread(target=handle_command, args=(config, command, session), daemon=True).start()
+                if not config.actions_enabled:
+                    logger.info("Received %s command but actionsEnabled=false -- skipping (observe-only mode)", command["type"])
+                    ack(session, config, command["id"], "skipped", "actionsEnabled=false in config.json (observe-only mode)")
+                else:
+                    # Run in a thread so a blocking sleep-prompt dialog
+                    # doesn't stall the next poll cycle's telemetry post.
+                    threading.Thread(target=handle_command, args=(config, command, session), daemon=True).start()
         except requests.RequestException:
             logger.exception("backend request failed; will retry next cycle")
         except Exception:
