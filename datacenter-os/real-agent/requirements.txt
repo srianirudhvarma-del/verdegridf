@@ -1,7 +1,0 @@
-psutil>=5.9.0
-requests>=2.31.0
-# Optional: only needed for real CPU temperature via LibreHardwareMonitor's
-# WMI provider (get_cpu_temp_c in agent.py). Without it the agent still
-# runs -- cpuTempC is reported as null and ThermOS hotspot prediction is
-# simply skipped for this host until it's installed.
-wmi>=1.5.1; sys_platform == 'win32'

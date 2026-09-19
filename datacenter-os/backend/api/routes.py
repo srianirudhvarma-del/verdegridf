@@ -11,7 +11,6 @@ from powerprune.power import HostState
 from powerprune.threshold import RESOURCES, classify_host
 from shared.classification import classification_store
 from shared.orchestrator import HOST_ACTIVE_WATTS, HOST_IDLE_WATTS
-from shared.real_agent import RealAgentSample
 from thermos.spatial import GridCellReading, interpolate_grid
 from coolsense.anomaly import MaintenanceWindow
 from coolsense.baseline import compute_baseline, z_score
@@ -102,10 +101,6 @@ class ThermalSnapshot(BaseModel):
 
 class ActionDecisionRequest(BaseModel):
     operatorId: str = "operator"
-
-class RealCommandAckRequest(BaseModel):
-    result: str  # "executed" | "declined" | "failed"
-    detail: str = ""
 
 # ML Models (unrelated to Phase 9, left as-is)
 class ThermalPredictionRequest(BaseModel):
@@ -407,14 +402,6 @@ async def approve_action(action_id: str, request: ActionDecisionRequest):
         rec = state.action_recommendation_queue.approve(action_id)
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
-    if rec.type == "adjust_fan_speed" and rec.rackId in state.real_agent_registry.known_hosts():
-        # rec.rackId is a real laptop (not a simulated rack) -- the
-        # approval this endpoint already required is exactly the human
-        # sign-off MUST HAVE #22 demands before anything touches real
-        # hardware. Queue the real command; the laptop's own agent
-        # executes it and acks back via /real/commands/{id}/ack.
-        state.real_command_queue.enqueue(rec.rackId, "fan_max_on", {"recommendationId": rec.id})
-        state.real_node_manager.mark_fan_executed(rec.rackId)
     return rec.model_dump()
 
 
@@ -425,60 +412,6 @@ async def reject_action(action_id: str, request: ActionDecisionRequest):
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return rec.model_dump()
-
-
-# ===================== Real hardware integration =====================
-# datacenter-os/real-agent/agent.py runs on each physical laptop and talks
-# to these three endpoints only. Hosts self-register on first ingest --
-# see api/real_nodes.py's module docstring for why they aren't part of the
-# fixed simulated topology.
-
-@router.post("/real/telemetry")
-async def ingest_real_telemetry(sample: RealAgentSample):
-    state.real_agent_registry.ingest(sample)
-    return {"ok": True, "knownHosts": state.real_agent_registry.known_hosts()}
-
-
-@router.get("/real/commands/{host_id}")
-async def poll_real_command(host_id: str):
-    """The agent polls this every cycle; a command, once returned, is
-    removed from the queue (see RealCommandQueue.poll)."""
-    command = state.real_command_queue.poll(host_id)
-    if command is None:
-        return {"type": "none"}
-    return {"id": command.id, "type": command.type, "payload": command.payload, "issuedAt": command.issuedAt}
-
-
-@router.post("/real/commands/{command_id}/ack")
-async def ack_real_command(command_id: str, request: RealCommandAckRequest):
-    try:
-        return state.real_command_queue.ack(command_id, request.result, request.detail)
-    except KeyError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
-
-
-@router.get("/real/hosts")
-async def list_real_hosts():
-    """Visibility into real-node state -- not wired into the React
-    dashboard (out of scope for this pass; the existing 5 modules stay as
-    they are)."""
-    now = datetime.now(timezone.utc)
-    hosts = []
-    for host_id in state.real_agent_registry.known_hosts():
-        sample = state.real_agent_registry.latest(host_id)
-        machine = state.real_node_manager.dwell_machines.get(host_id)
-        hosts.append(
-            {
-                "hostId": host_id,
-                "lastSample": sample.model_dump() if sample else None,
-                "dwellState": machine.state.value if machine else None,
-                "stale": state.real_agent_registry.is_stale(
-                    host_id, now, max_age_seconds=state.REAL_AGENT_STALE_SECONDS
-                ),
-                "lastAck": state.real_command_queue.last_ack_for_host(host_id),
-            }
-        )
-    return hosts
 
 
 @router.post("/thermos/predict", response_model=ThermalPredictionResponse)

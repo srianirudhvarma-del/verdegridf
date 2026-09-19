@@ -13,7 +13,6 @@ logging.basicConfig(
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes import router as api_router
-import api.state as state
 import uvicorn
 
 from shared.scheduler_driver import tick
@@ -35,14 +34,7 @@ async def _scheduler_driver_loop(interval_seconds: float) -> None:
     """
     while True:
         try:
-            now = datetime.now(timezone.utc)
-            tick(now)
-            state.real_node_manager.tick(
-                now,
-                registry=state.real_agent_registry,
-                command_queue=state.real_command_queue,
-                action_queue=state.action_recommendation_queue,
-            )
+            tick(datetime.now(timezone.utc))
         except Exception:
             logger.exception("scheduler driver tick failed")
         await asyncio.sleep(interval_seconds)

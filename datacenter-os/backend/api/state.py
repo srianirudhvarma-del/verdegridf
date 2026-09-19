@@ -29,13 +29,11 @@ from netpulse.congestion import CongestionTracker
 from netpulse.telemetry import NetPulseTelemetry
 from shared.classification import classification_store
 from shared.contracts import WorkloadTag
-from shared.real_agent import RealAgentRegistry
 from shared.scheduler_driver import scheduler_registry
 from thermos.control import ActionRecommendationQueue
 from thermos.sensors import ThermalTelemetry
 from coolsense.anomaly import MaintenanceModeRegistry
 from coolsense.sensors import CoolSenseTelemetry
-from api.real_nodes import RealCommandQueue, RealNodeManager
 
 RACKS = [f"rack{i}" for i in range(1, 6)]
 HOSTS_PER_RACK = 4
@@ -111,23 +109,6 @@ action_recommendation_queue.submit(
         predictedBenefit="rack4 fan speed +10%, headroom improves ~0.8C",
     )
 )
-
-# ---------------------------------------------------------------------------
-# Real hardware integration -- two physical Windows laptops
-# (datacenter-os/real-agent/agent.py) acting as real PowerPrune/ThermOS
-# nodes, alongside (not instead of) the simulated topology above. Not part
-# of HOST_IDS_BY_RACK: real machine ids aren't known until the agent's
-# first POST to /api/real/telemetry (see api/real_nodes.py's docstring).
-# api/routes.py wires the ingestion/command endpoints; main.py's scheduler
-# driver loop calls real_node_manager.tick() on the same cadence as the
-# simulated scheduler_registry.tick().
-# ---------------------------------------------------------------------------
-
-REAL_AGENT_STALE_SECONDS = 20.0
-
-real_agent_registry = RealAgentRegistry()
-real_command_queue = RealCommandQueue()
-real_node_manager = RealNodeManager(scheduler_registry=scheduler_registry)
 
 # ---------------------------------------------------------------------------
 # CoolSense -- one loop per rack (same id, so the ThermOS
